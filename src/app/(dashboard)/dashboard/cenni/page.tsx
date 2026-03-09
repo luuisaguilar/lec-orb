@@ -1,0 +1,807 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import useSWR from "swr";
+import { useI18n } from "@/lib/i18n";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Plus, Search, Download, Loader2, Check, X,
+    MoreHorizontal, Trash2, FileSpreadsheet, Pencil,
+    LayoutList, KanbanSquare
+} from "lucide-react";
+import {
+    DndContext, DragOverlay, closestCorners, KeyboardSensor,
+    PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent,
+    useDraggable, useDroppable
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
+import { CenniImportDialog } from "@/components/cenni/cenni-import-dialog";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// ── Status definitions ────────────────────────────────────────────────────────
+const STATUSES = [
+    "SOLICITADO",
+    "EN OFICINA",
+    "EN OFICINA/POR ENVIAR",
+    "EN TRAMITE",
+    "REVISION",
+    "APROBADO",
+    "RECHAZADO",
+] as const;
+
+const CERT_STATUSES = [
+    "EN PROCESO DE DICTAMINACION",
+    "APROBADO",
+    "RECHAZADO",
+] as const;
+
+const statusColors: Record<string, string> = {
+    "SOLICITADO": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "EN OFICINA": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    "EN OFICINA/POR ENVIAR": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    "EN TRAMITE": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "REVISION": "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+    "APROBADO": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    "RECHAZADO": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
+
+const certColors: Record<string, string> = {
+    "APROBADO": "bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
+    "RECHAZADO": "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+    "EN PROCESO DE DICTAMINACION": "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
+};
+
+const kanbanColors: Record<string, string> = {
+    "SOLICITADO": "border-blue-400 bg-blue-50 dark:bg-blue-950/20",
+    "EN OFICINA": "border-gray-400 bg-gray-50 dark:bg-gray-950/20",
+    "EN OFICINA/POR ENVIAR": "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/20",
+    "EN TRAMITE": "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
+    "REVISION": "border-violet-400 bg-violet-50 dark:bg-violet-950/20",
+    "APROBADO": "border-green-400 bg-green-50 dark:bg-green-950/20",
+    "RECHAZADO": "border-red-400 bg-red-50 dark:bg-red-950/20",
+};
+
+interface CenniCase {
+    id: string;
+    folio_cenni: string;
+    cliente_estudiante: string;
+    celular: string | null;
+    correo: string | null;
+    solicitud_cenni: boolean;
+    acta_o_curp: boolean;
+    id_documento: boolean;
+    certificado: string | null;
+    datos_curp: string | null;
+    cliente: string | null;
+    estatus: string;
+    estatus_certificado: string | null;
+    notes: string | null;
+    created_at: string;
+}
+
+// ── DocDisplay — read-only indicator ────────────────────────────────────────
+const DocDisplay = ({ checked }: { checked: boolean }) => (
+    <span className={`w-6 h-6 rounded flex items-center justify-center mx-auto ${checked
+        ? "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400"
+        : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
+        }`}>
+        {checked ? <Check className="h-4 w-4" /> : <X className="h-3.5 w-3.5" />}
+    </span>
+);
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function CENNIPage() {
+    const { t } = useI18n();
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [showCreate, setShowCreate] = useState(false);
+    const [showImport, setShowImport] = useState(false);
+    const [editCase, setEditCase] = useState<CenniCase | null>(null);
+    const [view, setView] = useState<"table" | "kanban">("table");
+
+    const { data, isLoading, mutate } = useSWR("/api/v1/cenni", fetcher);
+    const allCases: CenniCase[] = data?.cases || [];
+    const userRole = data?.role || "operador";
+
+    const filteredCases = allCases.filter((c) => {
+        const q = search.toLowerCase();
+        const matchesSearch = !search
+            || c.folio_cenni.toLowerCase().includes(q)
+            || c.cliente_estudiante.toLowerCase().includes(q)
+            || (c.correo && c.correo.toLowerCase().includes(q));
+        const matchesStatus = statusFilter === "all" || c.estatus === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    const handlePatch = useCallback(async (id: string, patch: Record<string, unknown>) => {
+        try {
+            const res = await fetch(`/api/v1/cenni/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(patch),
+            });
+            if (res.ok) { mutate(); } else { toast.error("Error guardando"); }
+        } catch { toast.error("Error"); }
+    }, [mutate]);
+
+    const handleDelete = useCallback(async (id: string) => {
+        if (!confirm("¿Eliminar este registro de CENNI? Esta acción no se puede deshacer.")) return;
+        try {
+            const res = await fetch(`/api/v1/cenni/${id}`, { method: "DELETE" });
+            if (res.ok) { toast.success("Registro eliminado"); mutate(); }
+            else toast.error("Error eliminando registro");
+        } catch { toast.error("Error"); }
+    }, [mutate]);
+
+    const handleExportExcel = useCallback(async () => {
+        try {
+            const xlsx = await import("xlsx");
+            const rows = filteredCases.map((c) => ({
+                "FECHA REGISTRO": new Date(c.created_at).toLocaleDateString(),
+                "FOLIO": c.folio_cenni,
+                "CLIENTE/ESTUDIANTE": c.cliente_estudiante,
+                "CELULAR": c.celular || "",
+                "CORREO": c.correo || "",
+                "SOLICITUD CENNI": c.solicitud_cenni ? "✅" : "",
+                "ACTA O CURP": c.acta_o_curp ? "✅" : "",
+                "ID": c.id_documento ? "✅" : "",
+                "CERTIFICADO": c.certificado || "",
+                "DATOS CURP": c.datos_curp || "",
+                "CLIENTE": c.cliente || "",
+                "ESTATUS": c.estatus,
+                "ESTATUS CERTIFICADO": c.estatus_certificado || "",
+                "NOTAS": c.notes || "",
+            }));
+            const ws = xlsx.utils.json_to_sheet(rows);
+            const wb = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(wb, ws, "CENNI");
+            xlsx.writeFile(wb, `CENNI_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            toast.success("Excel exportado");
+        } catch { toast.error("Error al exportar"); }
+    }, [filteredCases]);
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
+                <h2 className="text-2xl font-bold tracking-tight">{t("cenni.title")}</h2>
+                <div className="flex gap-2 flex-wrap">
+                    {/* View toggle */}
+                    <div className="flex rounded-md border overflow-hidden">
+                        <Button size="sm" variant={view === "table" ? "default" : "ghost"} className="rounded-none px-3" onClick={() => setView("table")}>
+                            <LayoutList className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant={view === "kanban" ? "default" : "ghost"} className="rounded-none px-3" onClick={() => setView("kanban")}>
+                            <KanbanSquare className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <Button variant="outline" onClick={() => setShowImport(true)}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar
+                    </Button>
+                    <Button variant="outline" onClick={handleExportExcel}>
+                        <Download className="mr-2 h-4 w-4" /> Exportar
+                    </Button>
+                    <Button onClick={() => setShowCreate(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> Nuevo Registro
+                    </Button>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-3 items-center flex-wrap">
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input className="pl-9" placeholder="Buscar folio, nombre, correo..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                    <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>
+                        Todos ({allCases.length})
+                    </Button>
+                    {STATUSES.map((s) => (
+                        <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)}>
+                            {s} ({allCases.filter((c) => c.estatus === s).length})
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Content */}
+            {isLoading ? (
+                <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : view === "kanban" ? (
+                <KanbanView
+                    cases={filteredCases}
+                    userRole={userRole}
+                    onEdit={setEditCase}
+                    onDelete={handleDelete}
+                    onStatusChange={(id, s) => handlePatch(id, { estatus: s })}
+                />
+            ) : (
+                <TableView
+                    cases={filteredCases}
+                    total={allCases.length}
+                    userRole={userRole}
+                    onEdit={setEditCase}
+                    onDelete={handleDelete}
+                    onStatusChange={(id, s) => handlePatch(id, { estatus: s })}
+                    onCertStatusChange={(id, s) => handlePatch(id, { estatus_certificado: s || null })}
+                />
+            )}
+
+            {/* Dialogs */}
+            <CreateCenniDialog
+                open={showCreate}
+                onOpenChange={setShowCreate}
+                onSuccess={() => { mutate(); setShowCreate(false); }}
+            />
+            <EditCenniDialog
+                case_={editCase}
+                onClose={() => setEditCase(null)}
+                onSuccess={() => { mutate(); setEditCase(null); }}
+            />
+            <CenniImportDialog
+                open={showImport}
+                onOpenChange={setShowImport}
+                onSuccess={() => { mutate(); setShowImport(false); }}
+            />
+        </div>
+    );
+}
+
+// ── Table View ────────────────────────────────────────────────────────────────
+function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, onCertStatusChange }: {
+    cases: CenniCase[];
+    total: number;
+    userRole: string;
+    onEdit: (c: CenniCase) => void;
+    onDelete: (id: string) => void;
+    onStatusChange: (id: string, s: string) => void;
+    onCertStatusChange: (id: string, s: string) => void;
+}) {
+    const canDelete = userRole === "admin" || userRole === "supervisor" || userRole === "coordinador";
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b bg-muted/50">
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Fecha</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Folio</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Cliente / Estudiante</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Correo</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Celular</th>
+                                <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Solicitud CENNI">Sol.</th>
+                                <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Acta o CURP">Acta</th>
+                                <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Identificación">ID</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Certificado</th>
+                                <th className="px-3 py-2.5 text-center font-medium">Estatus</th>
+                                <th className="px-3 py-2.5 text-center font-medium">Est. Certificado</th>
+                                <th className="px-3 py-2.5 text-center font-medium">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cases.map((c) => (
+                                <tr key={c.id} className="border-b transition-colors hover:bg-muted/40">
+                                    {/* Fecha */}
+                                    <td className="px-3 py-2 text-[10px] text-muted-foreground whitespace-nowrap font-mono">
+                                        {new Date(c.created_at).toLocaleDateString("es-MX")}
+                                    </td>
+                                    {/* Folio */}
+                                    <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap">
+                                        {c.folio_cenni}
+                                    </td>
+                                    {/* Cliente / Estudiante */}
+                                    <td className="px-3 py-2">
+                                        <div className="font-medium text-xs">{c.cliente_estudiante}</div>
+                                        {(c.datos_curp || c.cliente) && (
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                {[c.datos_curp, c.cliente].filter(Boolean).join(" · ")}
+                                            </div>
+                                        )}
+                                    </td>
+                                    {/* Correo — full, no truncate */}
+                                    <td className="px-3 py-2 text-xs text-muted-foreground min-w-[180px]">
+                                        {c.correo || "—"}
+                                    </td>
+                                    {/* Celular */}
+                                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                                        {c.celular || "—"}
+                                    </td>
+                                    {/* Doc indicators — read-only, edit via dialog */}
+                                    <td className="px-3 py-2 text-center">
+                                        <DocDisplay checked={c.solicitud_cenni} />
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                        <DocDisplay checked={c.acta_o_curp} />
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                        <DocDisplay checked={c.id_documento} />
+                                    </td>
+                                    {/* Certificado — plain text, not editable inline */}
+                                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                                        {c.certificado || "—"}
+                                    </td>
+                                    {/* Estatus */}
+                                    <td className="px-3 py-2 text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger className="focus:outline-none">
+                                                <Badge className={`cursor-pointer ${statusColors[c.estatus] || "bg-gray-100 text-gray-700"}`}>
+                                                    {c.estatus}
+                                                </Badge>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="center">
+                                                <DropdownMenuLabel>Cambiar Estatus</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                {STATUSES.map((s) => (
+                                                    <DropdownMenuItem key={s} onClick={() => onStatusChange(c.id, s)} className={c.estatus === s ? "font-bold" : ""}>
+                                                        {s}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
+                                    {/* Est. Certificado */}
+                                    <td className="px-3 py-2 text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger className="focus:outline-none">
+                                                <span className={`inline-flex text-[10px] font-medium px-2 py-0.5 rounded-full cursor-pointer ${c.estatus_certificado ? certColors[c.estatus_certificado] || "bg-muted text-muted-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                                                    {c.estatus_certificado || "Asignar"}
+                                                </span>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="center">
+                                                <DropdownMenuLabel>Certificado</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                {CERT_STATUSES.map((s) => (
+                                                    <DropdownMenuItem key={s} onClick={() => onCertStatusChange(c.id, s)} className={c.estatus_certificado === s ? "font-bold" : ""}>
+                                                        {s}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onCertStatusChange(c.id, "")} className="text-muted-foreground">
+                                                    Limpiar
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
+                                    {/* Acciones */}
+                                    <td className="px-3 py-2 text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => onEdit(c)}>
+                                                    <Pencil className="mr-2 h-4 w-4" /> Editar registro
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                {canDelete && (
+                                                    <DropdownMenuItem className="text-red-600 focus:text-red-700 dark:text-red-500" onClick={() => onDelete(c.id)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="px-4 py-2 border-t text-xs text-muted-foreground">
+                    {cases.length} de {total} registros
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// ── Kanban View Components ──────────────────────────────────────────────────────
+
+function DraggableKanbanCard({ c, userRole, onEdit, onDelete }: { c: CenniCase; userRole: string; onEdit: (c: CenniCase) => void; onDelete: (id: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: c.id,
+        data: { status: c.estatus, case: c }
+    });
+    const style = transform ? { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 50 : "auto", position: isDragging ? "relative" as const : "static" as const } : undefined;
+    const canDelete = userRole === "admin" || userRole === "supervisor" || userRole === "coordinador";
+
+    return (
+        <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="bg-background rounded-lg border shadow-sm p-3 space-y-2 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-2">
+                <div>
+                    <p className="font-semibold text-xs leading-tight">{c.cliente_estudiante}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{c.folio_cenni}</p>
+                </div>
+                <div className="flex gap-1 shrink-0 bg-background/80 rounded" onPointerDown={(e) => e.stopPropagation() /* prevent drag when clicking buttons */}>
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(c); }} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                        <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    {canDelete && (
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(c.id); }} className="p-1 rounded hover:bg-red-50 transition-colors text-muted-foreground hover:text-red-600">
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                </div>
+            </div>
+            {/* Contact */}
+            {(c.correo || c.celular) && (
+                <div className="text-[10px] text-muted-foreground space-y-0.5 break-all">
+                    {c.correo && <p>{c.correo}</p>}
+                    {c.celular && <p>{c.celular}</p>}
+                </div>
+            )}
+            {/* Docs */}
+            <div className="flex gap-2 items-center">
+                <span className="text-[9px] text-muted-foreground">Docs:</span>
+                <DocDisplay checked={c.solicitud_cenni} />
+                <DocDisplay checked={c.acta_o_curp} />
+                <DocDisplay checked={c.id_documento} />
+            </div>
+        </div>
+    );
+}
+
+function DroppableKanbanColumn({ status, cases, userRole, onEdit, onDelete }: { status: string; cases: CenniCase[]; userRole: string; onEdit: (c: CenniCase) => void; onDelete: (id: string) => void }) {
+    const { setNodeRef, isOver } = useDroppable({ id: status });
+    return (
+        <div className="flex-shrink-0 w-72 flex flex-col">
+            <div className={`rounded-xl border-t-4 border bg-card flex-1 ${kanbanColors[status]} ${isOver ? "ring-2 ring-primary ring-inset opacity-80" : ""}`}>
+                <div className="px-3 py-2.5 flex items-center justify-between border-b bg-card/50">
+                    <span className="text-xs font-bold uppercase tracking-wide">{status}</span>
+                    <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${statusColors[status]}`}>{cases.length}</span>
+                </div>
+                <div ref={setNodeRef} className="p-2 space-y-2 min-h-[150px] flex-1">
+                    {cases.map((c) => (
+                        <DraggableKanbanCard key={c.id} c={c} userRole={userRole} onEdit={onEdit} onDelete={onDelete} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function KanbanView({ cases, userRole, onEdit, onDelete, onStatusChange }: {
+    cases: CenniCase[];
+    userRole: string;
+    onEdit: (c: CenniCase) => void;
+    onDelete: (id: string) => void;
+    onStatusChange: (id: string, s: string) => void;
+}) {
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor)
+    );
+
+    const [activeCase, setActiveCase] = useState<CenniCase | null>(null);
+
+    const handleDragStart = (e: DragStartEvent) => {
+        setActiveCase(e.active.data.current?.case as CenniCase);
+    };
+
+    const handleDragEnd = (e: DragEndEvent) => {
+        setActiveCase(null);
+        const { active, over } = e;
+        if (!over) return;
+
+        const caseId = active.id as string;
+        const newStatus = over.id as string;
+        const currentStatus = active.data.current?.status;
+
+        if (currentStatus !== newStatus) {
+            onStatusChange(caseId, newStatus);
+        }
+    };
+
+    return (
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-4 items-stretch">
+                {STATUSES.map((status) => (
+                    <DroppableKanbanColumn
+                        key={status}
+                        status={status}
+                        cases={cases.filter(c => c.estatus === status)}
+                        userRole={userRole}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                    />
+                ))}
+            </div>
+            <DragOverlay dropAnimation={null}>
+                {activeCase ? (
+                    <div className="opacity-80 rotate-2 scale-105 shadow-xl">
+                        <DraggableKanbanCard c={activeCase} userRole={userRole} onEdit={() => { }} onDelete={() => { }} />
+                    </div>
+                ) : null}
+            </DragOverlay>
+        </DndContext>
+    );
+}
+
+// ── Edit Dialog ───────────────────────────────────────────────────────────────
+function EditCenniDialog({ case_, onClose, onSuccess }: {
+    case_: CenniCase | null;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const { t } = useI18n();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [solicitud, setSolicitud] = useState(case_?.solicitud_cenni ?? false);
+    const [acta, setActa] = useState(case_?.acta_o_curp ?? false);
+    const [idDoc, setIdDoc] = useState(case_?.id_documento ?? false);
+
+    // Reset checkboxes when a different case opens
+    const caseId = case_?.id;
+    if (case_ && (case_.solicitud_cenni !== solicitud || case_.acta_o_curp !== acta || case_.id_documento !== idDoc)) {
+        if (caseId !== undefined) { /* triggered by parent re-render, safe to ignore stale */ }
+    }
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!case_) return;
+        setIsSubmitting(true);
+        const fd = new FormData(e.currentTarget);
+        const patch: Record<string, unknown> = {
+            folio_cenni: fd.get("folio_cenni"),
+            cliente_estudiante: fd.get("cliente_estudiante"),
+            celular: fd.get("celular") || null,
+            correo: fd.get("correo") || null,
+            certificado: fd.get("certificado") || null,
+            datos_curp: fd.get("datos_curp") || null,
+            cliente: fd.get("cliente") || null,
+            notes: fd.get("notes") || null,
+            estatus: fd.get("estatus"),
+            estatus_certificado: (() => { const v = fd.get("estatus_certificado") as string; return (!v || v === "__none__") ? null : v; })(),
+            solicitud_cenni: solicitud,
+            acta_o_curp: acta,
+            id_documento: idDoc,
+        };
+        // The date parsing here isn't strictly necessary to format as ISO string,
+        // we could just send the string, but keeping it as is to preserve logic.
+        const dateVal = fd.get("created_at") as string;
+        if (dateVal) patch.created_at = new Date(dateVal).toISOString();
+
+        try {
+            const res = await fetch(`/api/v1/cenni/${case_.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(patch),
+            });
+            if (res.ok) { toast.success("Registro actualizado"); onSuccess(); }
+            else toast.error("Error al guardar");
+        } catch { toast.error("Error"); }
+        finally { setIsSubmitting(false); }
+    };
+
+    if (!case_) return null;
+
+    // format created_at for date input
+    const dateValue = case_.created_at
+        ? new Date(case_.created_at).toISOString().slice(0, 10)
+        : "";
+
+    return (
+        <Dialog open={!!case_} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Editar Registro — <span className="font-mono">{case_.folio_cenni}</span></DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="e_folio">Folio</Label>
+                            <Input id="e_folio" name="folio_cenni" defaultValue={case_.folio_cenni} required />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="e_date">Fecha de Registro</Label>
+                            <Input id="e_date" name="created_at" type="date" defaultValue={dateValue} />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="e_name">Cliente / Estudiante</Label>
+                        <Input id="e_name" name="cliente_estudiante" defaultValue={case_.cliente_estudiante} required />
+                    </div>
+                    {/* Document checkboxes */}
+                    <div className="flex gap-6 py-1">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={solicitud} onCheckedChange={(c) => setSolicitud(!!c)} /> Solicitud CENNI
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={acta} onCheckedChange={(c) => setActa(!!c)} /> Acta o CURP
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={idDoc} onCheckedChange={(c) => setIdDoc(!!c)} /> ID
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="e_cel">Celular</Label>
+                            <Input id="e_cel" name="celular" defaultValue={case_.celular || ""} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="e_email">Correo</Label>
+                            <Input id="e_email" name="correo" type="email" defaultValue={case_.correo || ""} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="e_cert">Certificado</Label>
+                            <Input id="e_cert" name="certificado" defaultValue={case_.certificado || ""} placeholder="LINGUASKILL, OOPT..." />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="e_cliente">Cliente</Label>
+                            <Input id="e_cliente" name="cliente" defaultValue={case_.cliente || ""} placeholder="ENSO, LEC, BC..." />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="e_curp">Datos CURP</Label>
+                        <Input id="e_curp" name="datos_curp" defaultValue={case_.datos_curp || ""} className="font-mono text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label>Estatus</Label>
+                            <Select name="estatus" defaultValue={case_.estatus}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Est. Certificado</Label>
+                            <Select name="estatus_certificado" defaultValue={case_.estatus_certificado || "__none__"}>
+                                <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">Sin asignar</SelectItem>
+                                    {CERT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="e_notes">Notas</Label>
+                        <Input id="e_notes" name="notes" defaultValue={case_.notes || ""} />
+                    </div>
+                    <DialogFooter className="pt-2">
+                        <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Guardar cambios
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// ── Create Dialog ─────────────────────────────────────────────────────────────
+function CreateCenniDialog({ open, onOpenChange, onSuccess }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    onSuccess: () => void;
+}) {
+    const { t } = useI18n();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [solicitud, setSolicitud] = useState(false);
+    const [acta, setActa] = useState(false);
+    const [idDoc, setIdDoc] = useState(false);
+
+    const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const fd = new FormData(e.currentTarget);
+        try {
+            const res = await fetch("/api/v1/cenni", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    folio_cenni: fd.get("folio_cenni"),
+                    cliente_estudiante: fd.get("cliente_estudiante"),
+                    celular: fd.get("celular") || null,
+                    correo: fd.get("correo") || null,
+                    solicitud_cenni: solicitud,
+                    acta_o_curp: acta,
+                    id_documento: idDoc,
+                    certificado: fd.get("certificado") || null,
+                    datos_curp: fd.get("datos_curp") || null,
+                    cliente: fd.get("cliente") || null,
+                }),
+            });
+            if (res.ok) {
+                toast.success("Registro CENNI creado");
+                onSuccess();
+                setSolicitud(false); setActa(false); setIdDoc(false);
+            } else { toast.error("Error al crear registro"); }
+        } catch { toast.error("Error"); }
+        finally { setIsSubmitting(false); }
+    }, [onSuccess, solicitud, acta, idDoc]);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Nuevo Registro CENNI</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="folio_cenni">Folio *</Label>
+                            <Input id="folio_cenni" name="folio_cenni" required autoFocus placeholder="322901" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="cliente_estudiante">Cliente / Estudiante *</Label>
+                            <Input id="cliente_estudiante" name="cliente_estudiante" required />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="celular">Celular</Label>
+                            <Input id="celular" name="celular" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="correo">Correo</Label>
+                            <Input id="correo" name="correo" type="email" />
+                        </div>
+                    </div>
+                    <div className="flex gap-6 py-2">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={solicitud} onCheckedChange={(c) => setSolicitud(!!c)} /> Solicitud CENNI
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={acta} onCheckedChange={(c) => setActa(!!c)} /> Acta o CURP
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={idDoc} onCheckedChange={(c) => setIdDoc(!!c)} /> ID
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="certificado">Certificado</Label>
+                            <Input id="certificado" name="certificado" placeholder="LINGUASKILL, OOPT..." />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="cliente">Cliente</Label>
+                            <Input id="cliente" name="cliente" placeholder="ENSO, LEC, BC, EXTERNO..." />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="datos_curp">Datos CURP</Label>
+                        <Input id="datos_curp" name="datos_curp" placeholder="LOFA851009MSRPLN07" className="font-mono text-sm" />
+                    </div>
+                    <DialogFooter className="pt-2">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t("common.create")}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
