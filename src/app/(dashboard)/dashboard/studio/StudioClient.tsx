@@ -131,7 +131,7 @@ function ConfirmDeleteDialog({
                         Eliminar módulo
                     </DialogTitle>
                     <DialogDescription>
-                        Estás a punto de eliminar <strong>"{module.name}"</strong>.
+                        Estás a punto de eliminar el módulo <strong>{module.name}</strong>.
                         Esta acción también eliminará todos sus campos y registros permanentemente.
                         No se puede deshacer.
                     </DialogDescription>
