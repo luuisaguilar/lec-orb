@@ -44,6 +44,20 @@ export async function GET(request: Request, { params }: RouteParams) {
             return NextResponse.json({ error: "Native modules use their own API routes" }, { status: 400 });
         }
 
+        // Permission check (admins always can view)
+        if (member.role !== "admin") {
+            const { data: perm } = await supabase
+                .from("module_permissions")
+                .select("can_view")
+                .eq("module_id", module.id)
+                .eq("role", member.role)
+                .single();
+
+            if (!perm?.can_view) {
+                return NextResponse.json({ error: "Insufficient permissions to view" }, { status: 403 });
+            }
+        }
+
         // Build query
         let query = supabase
             .from("module_records")

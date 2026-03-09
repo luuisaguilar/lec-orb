@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
         const { data: member } = await supabase
             .from("org_members")
-            .select("org_id")
+            .select("org_id, role")
             .eq("user_id", user.id)
             .single();
         if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
@@ -29,6 +29,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
             .eq("is_active", true)
             .single();
         if (!module) return NextResponse.json({ error: "Module not found" }, { status: 404 });
+
+        // Permission check (admins always can view)
+        if (member.role !== "admin") {
+            const { data: perm } = await supabase
+                .from("module_permissions")
+                .select("can_view")
+                .eq("module_id", module.id)
+                .eq("role", member.role)
+                .single();
+
+            if (!perm?.can_view) {
+                return NextResponse.json({ error: "Insufficient permissions to view" }, { status: 403 });
+            }
+        }
 
         const { data: record, error } = await supabase
             .from("module_records")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { createElement, useState, useCallback } from "react";
 import useSWR from "swr";
 import { Plus, Search, RefreshCw, Settings } from "lucide-react";
 import Link from "next/link";
@@ -128,7 +128,6 @@ export default function DynamicModule({ module, fields, orgId, userRole }: Dynam
         mutate();
     }, [mutate]);
 
-    const ModuleIcon = getIcon(module.icon);
 
     return (
         <div className="flex flex-col gap-6 p-6">
@@ -136,7 +135,7 @@ export default function DynamicModule({ module, fields, orgId, userRole }: Dynam
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <ModuleIcon className="h-5 w-5 text-primary" />
+                        {createElement(getIcon(module.icon), { className: "h-5 w-5 text-primary" })}
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">{module.name}</h1>
