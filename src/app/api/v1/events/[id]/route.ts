@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkServerPermission } from "@/lib/auth/permissions";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -9,6 +10,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
         if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
+
+        const canView = await checkServerPermission(supabase, user.id, "eventos", "view");
+        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
         // Await params in next 15
         const resolvedParams = await params;
@@ -21,7 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 school:schools(*),
                 sessions:event_sessions(*),
                 staff:event_staff(
-                    id, role, session_id,
+                    id, role, session_id, applicator_id,
                     applicator:applicators(*)
                 ),
                 slots:event_slots(*)

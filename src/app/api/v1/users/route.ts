@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkServerPermission } from "@/lib/auth/permissions";
 
 export async function GET() {
     const supabase = await createClient();
@@ -15,6 +16,9 @@ export async function GET() {
         .single();
 
     if (!membership) return NextResponse.json({ error: "No organization found" }, { status: 404 });
+
+    const canView = await checkServerPermission(supabase, user.id, "usuarios", "view");
+    if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
     // 2. Get all members of that org without joining profiles
     const { data: members, error } = await supabase

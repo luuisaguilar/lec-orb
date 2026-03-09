@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { checkServerPermission } from "@/lib/auth/permissions";
+import { logAudit } from "@/lib/audit/log";
 
 export async function GET() {
     try {
@@ -17,11 +18,25 @@ export async function GET() {
             return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
         }
 
-        const { data: quotes, error } = await supabase
+        // Get org_id for scoping (after migration, RLS does this too — defense-in-depth)
+        const { data: member } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("user_id", user.id)
+            .single();
+
+        let query = supabase
             .from("quotes")
             .select("*")
             .eq("is_active", true)
             .order("created_at", { ascending: false });
+
+        // Filter by org_id if available (requires migration 20240309_finance_org_scoping)
+        if (member?.org_id) {
+            query = query.eq("org_id", member.org_id);
+        }
+
+        const { data: quotes, error } = await query;
 
         if (error) throw error;
 
@@ -60,11 +75,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Insufficient permissions to create" }, { status: 403 });
         }
 
+        // Fetch org_id for multi-tenant scoping
+        const { data: orgMember } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("user_id", user.id)
+            .single();
+        if (!orgMember) return NextResponse.json({ error: "No organization" }, { status: 403 });
+
         const d = parsed.data;
 
         const { data: newQuote, error } = await supabase
             .from("quotes")
             .insert({
+                org_id: orgMember.org_id,
                 folio: d.folio,
                 provider: d.provider,
                 description: d.description,
@@ -79,6 +103,16 @@ export async function POST(request: Request) {
         if (error) {
             return NextResponse.json({ error: "Failed to create quote: " + error.message }, { status: 500 });
         }
+
+        // Audit log — non-fatal
+        await logAudit(supabase, {
+            org_id: orgMember.org_id,
+            table_name: "quotes",
+            record_id: newQuote.id,
+            action: "INSERT",
+            new_data: newQuote,
+            performed_by: user.id,
+        });
 
         return NextResponse.json({ quote: newQuote }, { status: 201 });
     } catch (error: any) {

@@ -39,6 +39,7 @@ export default function SessionPlannerPage() {
     // New UI states
     const [view, setView] = useState<'list' | 'allocation'>('list');
     const [applicatorFilter, setApplicatorFilter] = useState<'all' | 'presencial' | 'remoto'>('all');
+    const [hasUnsavedQuickAssign, setHasUnsavedQuickAssign] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -61,6 +62,7 @@ export default function SessionPlannerPage() {
                     const sessionSlots = (data.event.slots || []).filter((s: any) => s.session_id === sessionId);
                     setSlots(sessionSlots);
                     setOriginalSlots(JSON.parse(JSON.stringify(sessionSlots)));
+                    setHasUnsavedQuickAssign(false); // clear unsaved flag on fresh data
                 } else {
                     toast.error("Sesión no encontrada en este evento.");
                 }
@@ -211,6 +213,7 @@ export default function SessionPlannerPage() {
 
             if (response.ok) {
                 setDeletedSlotIds([]); // clear local deletes
+                setHasUnsavedQuickAssign(false); // clear unsaved flag
                 fetchData();
                 toast.success("Horario guardado exitosamente");
             } else {
@@ -291,6 +294,64 @@ export default function SessionPlannerPage() {
         document.body.removeChild(link);
     };
 
+    const handleQuickAssign = () => {
+        if (!sessionStaff || sessionStaff.length === 0) {
+            toast.error("No hay personal pre-asignado a esta sesión. Agrégalos en 'Parámetros' primero.");
+            return;
+        }
+
+        // Helper: get the real applicator UUID from a staff record
+        const getApplicatorId = (s: any): string | null =>
+            s.applicator_id ?? s.applicator?.id ?? null;
+
+        const evaluators = sessionStaff.filter((s: any) => s.role?.toUpperCase() === 'EVALUATOR');
+        const invigilators = sessionStaff.filter((s: any) => s.role?.toUpperCase() === 'INVIGILATOR');
+        const others = sessionStaff.filter((s: any) => !['EVALUATOR', 'INVIGILATOR'].includes(s.role?.toUpperCase()));
+
+        let assignedCount = 0;
+
+        setSlots((prev: any[]) => {
+            const newSlots = [...prev];
+            const poolIndices: Record<string, number> = { evals: 0, others: 0 };
+
+            newSlots.forEach((slot, idx) => {
+                if (slot.is_break) return;
+
+                const comp = (slot.component || 'speaking').toLowerCase();
+                let pool: any[] = [];
+
+                if (comp.includes('speaking')) {
+                    pool = evaluators.length > 0 ? evaluators : sessionStaff;
+                    const assigned = pool[poolIndices.evals % pool.length];
+                    const appId = getApplicatorId(assigned);
+                    if (appId) {
+                        newSlots[idx] = { ...slot, applicator_id: appId, status: 'CONFIRMED' };
+                        assignedCount++;
+                    }
+                    poolIndices.evals++;
+                } else {
+                    pool = (invigilators.length > 0 || others.length > 0) ? [...invigilators, ...others] : sessionStaff;
+                    const assigned = pool[poolIndices.others % pool.length];
+                    const appId = getApplicatorId(assigned);
+                    if (appId) {
+                        newSlots[idx] = { ...slot, applicator_id: appId, status: 'CONFIRMED' };
+                        assignedCount++;
+                    }
+                    poolIndices.others++;
+                }
+            });
+
+            return newSlots;
+        });
+
+        if (assignedCount > 0) {
+            setHasUnsavedQuickAssign(true);
+            toast.success(`${assignedCount} turno(s) asignados automáticamente. Recuerda guardar los cambios.`);
+        } else {
+            toast.warning("No se pudo asignar ningún turno. Verifica que el personal tenga IDs válidos.");
+        }
+    };
+
     if (isLoading) {
         return <div className="p-8 text-center text-muted-foreground animate-pulse">Cargando planner detallado...</div>;
     }
@@ -299,18 +360,24 @@ export default function SessionPlannerPage() {
         return <div className="p-8 text-center text-destructive">Sesión no encontrada.</div>;
     }
 
-    const certifiedApplicators = allApplicators.filter(a => isCertifiedForExam(a, session.exam_type));
     // Staff pre-assigned to this session during event creation
+    const certifiedApplicators = allApplicators.filter((a: any) => isCertifiedForExam(a, session.exam_type));
     const sessionStaff = (event.staff || []).filter((s: any) => s.session_id === sessionId);
     // Zone-based grouping
     const schoolZone = getCityZone(event.school?.city);
-    const presencialApplicators = schoolZone ? certifiedApplicators.filter(a => a.location_zone === schoolZone) : [];
-    const remotoApplicators = schoolZone ? certifiedApplicators.filter(a => a.location_zone !== schoolZone) : certifiedApplicators;
+    // Resolve applicator IDs safely (API may return them directly or via nested object)
+    const assignedIds = sessionStaff.map((s: any) => s.applicator_id ?? s.applicator?.id).filter(Boolean);
+    const presencialApplicators = (schoolZone && assignedIds.length > 0)
+        ? certifiedApplicators.filter(a => a.location_zone === schoolZone && assignedIds.includes(a.id))
+        : [];
+    const remotoApplicators = (assignedIds.length > 0)
+        ? certifiedApplicators.filter(a => (schoolZone ? a.location_zone !== schoolZone : true) && assignedIds.includes(a.id))
+        : [];
 
     // Build enriched session object for the edit dialog — includes pre-loaded staff
     const sessionWithStaff = {
         ...session,
-        staff: sessionStaff.map((s: any) => ({ applicator_id: s.applicator_id, role: s.role }))
+        staff: sessionStaff.map((s: any) => ({ applicator_id: s.applicator_id ?? s.applicator?.id, role: s.role }))
     };
 
     // Timetable date-split
@@ -355,11 +422,36 @@ export default function SessionPlannerPage() {
                     <Button variant="outline" onClick={handleDownloadCSV} className="gap-2">
                         <Download className="h-4 w-4" /> Exportar CSV
                     </Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleQuickAssign}
+                        className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-900"
+                    >
+                        <Play className="h-4 w-4" /> Asignación Rápida
+                    </Button>
                     <Button variant="default" onClick={handleSaveSchedule} disabled={isSaving} className="gap-2">
                         <Save className="h-4 w-4" /> {isSaving ? "Guardando..." : "Guardar Cambios"}
                     </Button>
                 </div>
             </div>
+
+            {/* Unsaved Quick-Assign Banner */}
+            {hasUnsavedQuickAssign && (
+                <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                    <span className="font-medium">Tienes asignaciones pendientes de guardar.</span>
+                    <span className="text-amber-700 dark:text-amber-400">Haz clic en <strong>Guardar Cambios</strong> para persistir la asignación rápida.</span>
+                    <Button
+                        size="sm"
+                        onClick={handleSaveSchedule}
+                        disabled={isSaving}
+                        className="ml-auto gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                    >
+                        <Save className="h-3.5 w-3.5" />
+                        {isSaving ? "Guardando..." : "Guardar ahora"}
+                    </Button>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-6 items-start">
 
@@ -548,6 +640,7 @@ export default function SessionPlannerPage() {
                                 certifiedApplicators={certifiedApplicators}
                                 presencialApplicators={presencialApplicators}
                                 remotoApplicators={remotoApplicators}
+                                sessionStaff={sessionStaff}
                             />
                         )}
                     </CardContent>
@@ -766,7 +859,8 @@ function SortableSlotRow({
 function AllocationView({
     session, slots, setSlots,
     applicatorFilter, setApplicatorFilter,
-    schoolZone, certifiedApplicators, presencialApplicators, remotoApplicators
+    schoolZone, certifiedApplicators, presencialApplicators, remotoApplicators,
+    sessionStaff
 }: any) {
 
     // Calculate components summary
@@ -807,9 +901,6 @@ function AllocationView({
                     <button onClick={() => setApplicatorFilter('all')} className={cn("px-3 py-1 rounded-sm transition-colors", applicatorFilter === 'all' && "bg-background shadow-sm font-medium")}>Todos</button>
                     <button onClick={() => setApplicatorFilter('presencial')} className={cn("px-3 py-1 rounded-sm transition-colors", applicatorFilter === 'presencial' && "bg-background shadow-sm font-medium tracking-tight text-emerald-600 dark:text-emerald-400")}>📍 Presencial</button>
                     <button onClick={() => setApplicatorFilter('remoto')} className={cn("px-3 py-1 rounded-sm transition-colors", applicatorFilter === 'remoto' && "bg-background shadow-sm font-medium text-blue-600 dark:text-blue-400")}>🖥️ Remoto</button>
-                </div>
-                <div className="text-sm text-muted-foreground mr-2">
-                    {filteredApplicators.length} aplicadores disponibles
                 </div>
             </div>
 
@@ -876,6 +967,19 @@ function AllocationView({
                                             <SelectContent>
                                                 <SelectItem value="none" className="text-muted-foreground italic">Desasignar todos (Sin Asignar)</SelectItem>
                                                 <SelectSeparator />
+
+                                                {/* Session pre-assigned staff group (Crucial fix: show what user chose originally) */}
+                                                {sessionStaff.length > 0 && (
+                                                    <SelectGroup>
+                                                        <SelectLabel className="bg-primary/10 text-primary text-xs">Personal de esta Sesión</SelectLabel>
+                                                        {sessionStaff.map((s: any) => (
+                                                            <SelectItem key={s.applicator?.id || s.applicator_id} value={s.applicator?.id || s.applicator_id}>
+                                                                {s.applicator?.name || s.applicator_id}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                )}
+                                                {sessionStaff.length > 0 && <SelectSeparator />}
 
                                                 {/* Filtered applicators list */}
                                                 {applicatorFilter !== 'remoto' && presencialApplicators.length > 0 && (

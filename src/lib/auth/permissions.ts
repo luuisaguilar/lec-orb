@@ -132,8 +132,36 @@ export function getReadableModules(role: Role): Module[] {
     );
 }
 
+
+// Maps the loose string module names used in API route calls to the typed Module enum.
+// This bridges the gap between checkServerPermission("eventos", ...) and Module = "events".
+const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Action; writeAction: Action; deleteAction: Action }> = {
+    // Finance
+    finanzas: { module: "inventory", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // Inventory
+    inventario: { module: "inventory", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // Events
+    eventos: { module: "events", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // Applicators
+    aplicadores: { module: "applicators", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // Schools / Colegios
+    colegios: { module: "schools", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // CENNI
+    cenni: { module: "cenni", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    // Exams
+    examenes: { module: "catalog", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+    // Users
+    usuarios: { module: "users", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+};
+
 /**
  * Server-side helper to check granular permissions.
+ *
+ * Lookup order:
+ * 1. Admin shortcut — always true
+ * 2. member_module_access table (granular per-member settings)
+ * 3. Static permissionsMap fallback (role-based default) — prevents supervisor lockout
+ *    when no row exists in member_module_access yet
  */
 export async function checkServerPermission(
     supabase: any,
@@ -149,9 +177,9 @@ export async function checkServerPermission(
         .single();
 
     if (!member) return false;
-    if (member.role === 'admin') return true;
+    if (member.role === 'admin') return true; // Admin always has access
 
-    // 2. Check granular access
+    // 2. Check granular access table
     const { data: access } = await supabase
         .from('member_module_access')
         .select('can_view, can_edit, can_delete')
@@ -159,15 +187,27 @@ export async function checkServerPermission(
         .eq('module', module)
         .single();
 
-    if (!access) {
-        // Default behavior: if no row exists, we might want to allow view but not edit/delete for supervisors?
-        // Let's be strict: no row = no access unless admin.
+    if (access) {
+        // Granular row exists — use it
+        if (action === "view") return access.can_view;
+        if (action === "edit") return access.can_edit;
+        if (action === "delete") return access.can_delete;
         return false;
     }
 
-    if (action === "view") return access.can_view;
-    if (action === "edit") return access.can_edit;
-    if (action === "delete") return access.can_delete;
+    // 3. No granular row — fall back to the static RBAC permissionsMap
+    //    This prevents users from losing access when a new module is protected
+    //    but their member_module_access rows haven't been configured yet.
+    const alias = MODULE_ALIAS_MAP[module];
+    if (alias) {
+        const staticAction: Action = action === "view"
+            ? alias.readAction
+            : action === "edit"
+                ? alias.writeAction
+                : alias.deleteAction;
+        return hasPermission(member.role as Role, alias.module, staticAction);
+    }
 
+    // Unknown module — deny by default
     return false;
 }

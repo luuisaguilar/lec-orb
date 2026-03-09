@@ -23,6 +23,7 @@ import { AddEventDialog } from "@/components/events/add-event-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 
 // ── Exam colors for calendar chips ─────────────────────────────────────────
 const EXAM_COLORS: Record<string, string> = {
@@ -235,19 +236,31 @@ export default function EventosPage() {
     const [editingEvent, setEditingEvent] = useState<any>(null);
     const [view, setView] = useState<"list" | "calendar" | "kanban">("list");
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleDelete = async (id: string, title: string) => {
-        if (!confirm(`¿Estás seguro de que deseas eliminar la planeación: ${title}?`)) return;
+    const handleDelete = (id: string, title: string) => {
+        setEventToDelete({ id, title });
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!eventToDelete) return;
+        setIsDeleting(true);
         try {
-            const res = await fetch(`/api/v1/events/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/v1/events/${eventToDelete.id}`, { method: "DELETE" });
             if (res.ok) {
                 toast.success("Planeación eliminada");
                 fetchEvents();
+                setDeleteConfirmOpen(false);
             } else {
                 toast.error("Error al eliminar");
             }
         } catch {
             toast.error("Error de conexión");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -478,6 +491,15 @@ export default function EventosPage() {
                 onOpenChange={(v) => !v && setEditingEvent(null)}
                 initialData={editingEvent}
                 onEventAdded={() => { fetchEvents(); setEditingEvent(null); }}
+            />
+
+            <ConfirmDeleteDialog
+                open={deleteConfirmOpen}
+                onOpenChange={setDeleteConfirmOpen}
+                onConfirm={confirmDelete}
+                isLoading={isDeleting}
+                title="¿Eliminar planeación?"
+                description={`Estás a punto de eliminar "${eventToDelete?.title}". Esta acción borrará todos los horarios y asignaciones de staff asociados.`}
             />
         </div>
     );

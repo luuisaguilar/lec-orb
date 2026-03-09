@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { DEMO_MODE } from "@/lib/demo/config";
 import { mockSchools } from "@/lib/demo/data";
+import { checkServerPermission } from "@/lib/auth/permissions";
 
 export async function GET() {
     if (DEMO_MODE) {
@@ -19,6 +20,9 @@ export async function GET() {
 
         const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
         if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
+
+        const canView = await checkServerPermission(supabase, user.id, "colegios", "view");
+        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
         const { data: schools, error } = await supabase
             .from("schools")

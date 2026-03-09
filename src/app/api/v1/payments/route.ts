@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { checkServerPermission } from "@/lib/auth/permissions";
+import { logAudit } from "@/lib/audit/log";
 
 export async function GET() {
     try {
@@ -125,6 +126,23 @@ export async function POST(request: Request) {
 
         if (error) {
             return NextResponse.json({ error: "Failed to create payment: " + error.message }, { status: 500 });
+        }
+
+        // Audit log — non-fatal, member.org_id from the org_members query above
+        const { data: orgMember } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("user_id", user.id)
+            .single();
+        if (orgMember) {
+            await logAudit(supabase, {
+                org_id: orgMember.org_id,
+                table_name: "payments",
+                record_id: newPayment.id,
+                action: "INSERT",
+                new_data: newPayment,
+                performed_by: user.id,
+            });
         }
 
         return NextResponse.json({ payment: newPayment }, { status: 201 });

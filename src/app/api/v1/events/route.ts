@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkServerPermission } from "@/lib/auth/permissions";
+import { logAudit } from "@/lib/audit/log";
 
 export async function GET(request: Request) {
     try {
@@ -10,6 +12,9 @@ export async function GET(request: Request) {
 
         const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
         if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
+
+        const canView = await checkServerPermission(supabase, user.id, "eventos", "view");
+        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
         const url = new URL(request.url);
         const status = url.searchParams.get("status");
@@ -103,7 +108,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Error al crear el Evento Base" }, { status: 500 });
         }
 
-        // Helper to get component order by exam
+        // Audit log — non-fatal
+        await logAudit(supabase, {
+            org_id: member.org_id,
+            table_name: "events",
+            record_id: newEvent.id,
+            action: "INSERT",
+            new_data: newEvent,
+            performed_by: user.id,
+        });
+
         const getComponentOrderByExam = (exam: string) => {
             if (exam === "starters" || exam === "movers" || exam === "flyers" || exam === "ket") {
                 return [{ id: "reading_writing" }, { id: "listening" }, { id: "speaking" }];
@@ -155,8 +169,7 @@ export async function POST(request: Request) {
                         event_id: newEvent.id,
                         session_id: savedSession.id,
                         applicator_id: staffMember.applicator_id,
-                        role: staffMember.role,
-                        assigned_at: new Date().toISOString()
+                        role: staffMember.role
                     });
                 });
             }

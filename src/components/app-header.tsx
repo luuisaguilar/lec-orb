@@ -3,6 +3,7 @@
 import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SettingsDropdown } from "@/components/settings-dropdown";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useI18n } from "@/lib/i18n";
@@ -50,6 +51,7 @@ export function AppHeader({ variant }: AppHeaderProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-1">
+                <NotificationBell />
                 <SettingsDropdown />
                 <Button
                     variant="ghost"

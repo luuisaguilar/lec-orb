@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { checkServerPermission } from "@/lib/auth/permissions";
+import { logAudit } from "@/lib/audit/log";
 
 export async function GET() {
     try {
@@ -16,6 +17,13 @@ export async function GET() {
         if (!canView) {
             return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
         }
+
+        // Get org_id for scoping
+        const { data: member } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("user_id", user.id)
+            .single();
 
         const { data: orders, error } = await supabase
             .from("purchase_orders")
@@ -61,11 +69,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Insufficient permissions to create" }, { status: 403 });
         }
 
+        // Fetch org_id for multi-tenant scoping
+        const { data: member } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("user_id", user.id)
+            .single();
+        if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
+
         const d = parsed.data;
 
         const { data: newOrder, error } = await supabase
             .from("purchase_orders")
             .insert({
+                org_id: member.org_id,
                 folio: d.folio,
                 quote_id: d.quote_id,
                 provider: d.provider,
@@ -81,6 +98,15 @@ export async function POST(request: Request) {
         if (error) {
             return NextResponse.json({ error: "Failed to create order: " + error.message }, { status: 500 });
         }
+
+        await logAudit(supabase, {
+            org_id: member.org_id,
+            table_name: "purchase_orders",
+            record_id: newOrder.id,
+            action: "INSERT",
+            new_data: newOrder,
+            performed_by: user.id,
+        });
 
         return NextResponse.json({ order: newOrder }, { status: 201 });
     } catch (error: any) {

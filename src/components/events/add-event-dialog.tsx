@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectLabel, SelectSeparator, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 
 
 const ROLES = [
@@ -62,14 +63,18 @@ function SessionItem({
     index,
     removeSession,
     applicators,
-    schoolZone
+    schoolZone,
+    schoolId
 }: {
     form: UseFormReturn<FormValues>;
     index: number;
     removeSession: (idx: number) => void;
     applicators: any[];
     schoolZone: string | null;
+    schoolId: string | null;
 }) {
+    const [busyStaffIds, setBusyStaffIds] = useState<string[]>([]);
+    const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
     const { fields: staffFields, append: appendStaff, remove: removeStaff } = useFieldArray({
         control: form.control,
         name: `sessions.${index}.staff`
@@ -88,6 +93,39 @@ function SessionItem({
     const remotoApplicators = schoolZone
         ? certifiedApplicators.filter(a => a.location_zone !== schoolZone)
         : certifiedApplicators;
+
+    const classrooms = form.watch(`sessions.${index}.classrooms`) || [];
+    const totalCandidates = classrooms.reduce((sum: number, c: any) => sum + (Number(c.capacity) || 0), 0);
+    const suggestedInvigilators = Math.ceil(totalCandidates / 25);
+
+    const watchDate = form.watch(`sessions.${index}.date`);
+    const watchSpeakingDate = form.watch(`sessions.${index}.speaking_date`);
+
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            if (!watchDate) return;
+            setIsFetchingAvailability(true);
+            try {
+                const dates = [format(watchDate, "yyyy-MM-dd")];
+                if (watchSpeakingDate) dates.push(format(watchSpeakingDate, "yyyy-MM-dd"));
+
+                const results = await Promise.all(dates.map(d =>
+                    fetch(`/api/v1/events/staff-availability?date=${d}`).then(res => res.json())
+                ));
+
+                const allBusy = results.reduce((acc, curr) => [...acc, ...(curr.busyStaffIds || [])], []);
+                setBusyStaffIds(Array.from(new Set(allBusy)) as string[]);
+            } catch (err) {
+                console.error("Error checking availability:", err);
+            } finally {
+                setIsFetchingAvailability(false);
+            }
+        };
+
+        fetchAvailability();
+    }, [watchDate, watchSpeakingDate]);
+
+    const isLocked = !schoolId || !watchExamType;
 
     return (
         <div className="p-4 bg-muted/20 border rounded-lg relative space-y-6">
@@ -307,18 +345,48 @@ function SessionItem({
             {/* STAFF / APLICADORES */}
             <div className="bg-background/50 p-3 rounded-md border border-dashed space-y-3">
                 <div className="flex items-center justify-between border-b pb-2">
-                    <div>
-                        <h5 className="font-medium text-xs text-foreground">Personal Asignado</h5>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                            <h5 className="font-medium text-xs text-foreground">Personal Asignado</h5>
+                            {totalCandidates > 0 && (
+                                <Badge variant="secondary" className="text-[10px] h-5 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200">
+                                    Requerido: {suggestedInvigilators} Invigilator{suggestedInvigilators !== 1 ? 's' : ''} (1:25)
+                                </Badge>
+                            )}
+                        </div>
                         <p className="text-[10px] text-muted-foreground">Asigna aplicadores para esta sesión.</p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => appendStaff({ applicator_id: "", role: "INVIGILATOR" })}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={isLocked}
+                        onClick={() => appendStaff({ applicator_id: "", role: "INVIGILATOR" })}
+                    >
                         <Plus className="h-3 w-3 mr-1" /> Personal
                     </Button>
                 </div>
 
+                {isLocked && (
+                    <div className="bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-900 flex items-center gap-2">
+                        <AlertTriangle className="h-3 w-3 text-amber-600" />
+                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                            Selecciona Sede y Examen para habilitar la asignación de personal.
+                        </span>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                     {staffFields.map((field, sIndex) => {
-                        const showWarning = false;
+                        const selectedAppId = form.watch(`sessions.${index}.staff.${sIndex}.applicator_id`);
+                        const selectedRole = form.watch(`sessions.${index}.staff.${sIndex}.role`);
+                        const applicator = applicators.find(a => a.id === selectedAppId);
+
+                        const isNotCertified = watchExamType && applicator && !isCertifiedForExam(applicator, watchExamType);
+                        const isBusy = selectedAppId && busyStaffIds.includes(selectedAppId);
+
+                        const showWarning = isNotCertified || isBusy;
 
                         return (
                             <div key={field.id} className="flex flex-col bg-muted/30 p-2 rounded gap-1 border border-background">
@@ -383,9 +451,19 @@ function SessionItem({
                                     </Button>
                                 </div>
                                 {showWarning && (
-                                    <div className="text-[10px] font-medium text-amber-600 dark:text-amber-500 flex items-center gap-1 mt-0.5">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        ⚠️ Advertencia: Evaluador no certificado para este nivel.
+                                    <div className="text-[10px] font-medium text-amber-600 dark:text-amber-500 flex flex-col gap-0.5 mt-0.5">
+                                        {isNotCertified && (
+                                            <div className="flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" />
+                                                ⚠️ Certificación: No autorizado para {watchExamType?.toUpperCase()}
+                                            </div>
+                                        )}
+                                        {isBusy && (
+                                            <div className="flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" />
+                                                ⚠️ Conflicto: Ya tiene otro evento en esta fecha
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -557,7 +635,7 @@ export function AddEventDialog({ onEventAdded, initialData, open: controlledOpen
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            {!initialData && (
+            {!initialData && controlledOpen === undefined && (
                 <DialogTrigger asChild>
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />
@@ -666,6 +744,7 @@ export function AddEventDialog({ onEventAdded, initialData, open: controlledOpen
                                                 removeSession={removeSession}
                                                 applicators={applicators}
                                                 schoolZone={schoolZone}
+                                                schoolId={watchedSchoolId}
                                             />
                                         ))}
                                     </div>

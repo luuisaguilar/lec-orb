@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkServerPermission } from "@/lib/auth/permissions";
 
 const updateSlotSchema = z.object({
     updates: z.array(z.object({
@@ -32,6 +33,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
         const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
         if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
+
+        const canEdit = await checkServerPermission(supabase, user.id, "eventos", "edit");
+        if (!canEdit) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
         const body = await request.json();
         const parsed = updateSlotSchema.safeParse(body);

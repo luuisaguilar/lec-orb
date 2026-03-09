@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkServerPermission } from "@/lib/auth/permissions";
 
 const updateSessionSchema = z.object({
     exam_type: z.string().min(1).optional(),
@@ -39,6 +40,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+        const canEdit = await checkServerPermission(supabase, user.id, "eventos", "edit");
+        if (!canEdit) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
         const { staff, classrooms, ...sessionData } = parsed.data;
 
