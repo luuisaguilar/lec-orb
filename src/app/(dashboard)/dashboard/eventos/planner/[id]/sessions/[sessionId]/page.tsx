@@ -362,17 +362,23 @@ export default function SessionPlannerPage() {
 
     // Staff pre-assigned to this session during event creation
     const certifiedApplicators = allApplicators.filter((a: any) => isCertifiedForExam(a, session.exam_type));
-    const sessionStaff = (event.staff || []).filter((s: any) => s.session_id === sessionId);
+    const sessionStaff = (event.staff || [])
+        .filter((s: any) => s.session_id === sessionId)
+        .reduce((acc: any[], current: any) => {
+            const appId = current.applicator_id ?? current.applicator?.id;
+            if (appId && !acc.find(item => (item.applicator_id ?? item.applicator?.id) === appId)) {
+                acc.push(current);
+            }
+            return acc;
+        }, []);
     // Zone-based grouping
     const schoolZone = getCityZone(event.school?.city);
     // Resolve applicator IDs safely (API may return them directly or via nested object)
     const assignedIds = sessionStaff.map((s: any) => s.applicator_id ?? s.applicator?.id).filter(Boolean);
-    const presencialApplicators = (schoolZone && assignedIds.length > 0)
-        ? certifiedApplicators.filter(a => a.location_zone === schoolZone && assignedIds.includes(a.id))
+    const presencialApplicators = schoolZone
+        ? certifiedApplicators.filter(a => a.location_zone === schoolZone && !assignedIds.includes(a.id))
         : [];
-    const remotoApplicators = (assignedIds.length > 0)
-        ? certifiedApplicators.filter(a => (schoolZone ? a.location_zone !== schoolZone : true) && assignedIds.includes(a.id))
-        : [];
+    const remotoApplicators = certifiedApplicators.filter(a => a.location_zone !== schoolZone && !assignedIds.includes(a.id));
 
     // Build enriched session object for the edit dialog — includes pre-loaded staff
     const sessionWithStaff = {

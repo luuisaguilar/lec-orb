@@ -75,6 +75,8 @@ function SessionItem({
 }) {
     const [busyStaffIds, setBusyStaffIds] = useState<string[]>([]);
     const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+    const [speakingPopoverOpen, setSpeakingPopoverOpen] = useState(false);
     const { fields: staffFields, append: appendStaff, remove: removeStaff } = useFieldArray({
         control: form.control,
         name: `sessions.${index}.staff`
@@ -170,7 +172,7 @@ function SessionItem({
                     render={({ field: fProps }) => (
                         <FormItem className="w-[180px] flex flex-col justify-end">
                             <FormLabel className="text-xs font-semibold">Fecha Escrito</FormLabel>
-                            <Popover>
+                            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                 <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button variant="outline" className={cn("h-9 pl-3 text-left font-normal bg-background", !fProps.value && "text-muted-foreground")}>
@@ -183,7 +185,10 @@ function SessionItem({
                                     <Calendar
                                         mode="single"
                                         selected={fProps.value}
-                                        onSelect={fProps.onChange}
+                                        onSelect={(val) => {
+                                            fProps.onChange(val);
+                                            if (val) setDatePopoverOpen(false);
+                                        }}
                                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                         initialFocus
                                     />
@@ -200,7 +205,7 @@ function SessionItem({
                     render={({ field: fProps }) => (
                         <FormItem className="w-[180px] flex flex-col justify-end">
                             <FormLabel className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Fecha Speaking</FormLabel>
-                            <Popover>
+                            <Popover open={speakingPopoverOpen} onOpenChange={setSpeakingPopoverOpen}>
                                 <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button variant="outline" className={cn("h-9 pl-3 text-left font-normal bg-background border-emerald-200 dark:border-emerald-900", !fProps.value && "text-muted-foreground")}>
@@ -213,7 +218,10 @@ function SessionItem({
                                     <Calendar
                                         mode="single"
                                         selected={fProps.value || undefined}
-                                        onSelect={fProps.onChange}
+                                        onSelect={(val) => {
+                                            fProps.onChange(val);
+                                            if (val) setSpeakingPopoverOpen(false);
+                                        }}
                                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                         initialFocus
                                     />
@@ -724,15 +732,6 @@ export function AddEventDialog({ onEventAdded, initialData, open: controlledOpen
                                             <h4 className="font-medium text-sm">Sesiones / Exámenes</h4>
                                             <p className="text-xs text-muted-foreground">Configura los exámenes, salones y personal certificado que asistirá.</p>
                                         </div>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendSession({
-                                            exam_type: "",
-                                            date: new Date(),
-                                            parameters: { start_time: "09:00", examiners: 1, break_duration: 10 },
-                                            classrooms: [{ name: "Salón Principal", capacity: 15 }],
-                                            staff: []
-                                        })}>
-                                            <Plus className="h-4 w-4 mr-2" /> Examen Nuevo
-                                        </Button>
                                     </div>
 
                                     <div className="space-y-6">
@@ -748,6 +747,21 @@ export function AddEventDialog({ onEventAdded, initialData, open: controlledOpen
                                             />
                                         ))}
                                     </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full h-14 border-dashed border-2 hover:bg-muted/50 hover:text-primary transition-colors text-muted-foreground mt-4 font-medium tracking-wide"
+                                        onClick={() => appendSession({
+                                            exam_type: "",
+                                            date: new Date(),
+                                            parameters: { start_time: "09:00", examiners: 1, break_duration: 10 },
+                                            classrooms: [{ name: "Salón Principal", capacity: 15 }],
+                                            staff: []
+                                        })}
+                                    >
+                                        <Plus className="h-5 w-5 mr-2" /> Agregar Nueva Sesión / Examen
+                                    </Button>
                                 </div>
                             )}
 

@@ -1,34 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET() {
-    const supabase = await createClient();
-
-    // 1. Get current user's org
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { data: membership } = await supabase
-        .from('org_members')
-        .select('org_id')
-        .eq('user_id', user.id)
-        .single();
-
-    if (!membership) return NextResponse.json({ error: "No organization found" }, { status: 404 });
-
-    const canView = await checkServerPermission(supabase, user.id, "usuarios", "view");
-    if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-
+export const GET = withAuth(async (req, { supabase, member }) => {
     // 2. Get all members of that org without joining profiles
     const { data: members, error } = await supabase
         .from('org_members')
-        .select(`
-            *
-        `)
-        .eq('org_id', membership.org_id);
+        .select(`*`)
+        .eq('org_id', member.org_id);
 
-    if (error || !members) return NextResponse.json({ error: error?.message || "No members found" }, { status: 500 });
+    if (error || !members) throw error || new Error("No members found");
 
     // 3. Get profiles separately
     const userIds = members.map(m => m.user_id);
@@ -48,7 +28,6 @@ export async function GET() {
         }
     }
 
-    // Flatten the result for easier UI consumption
     const formattedMembers = members.map(m => {
         const profile = profilesMap.get(m.user_id) as any;
         return {
@@ -59,38 +38,23 @@ export async function GET() {
             location: m.location || null,
             job_title: m.job_title || null,
             full_name: profile?.full_name || 'Sin nombre',
-            email: emailsMap.get(m.user_id) || 'Sin correo' // Loaded securely via RPC
+            email: emailsMap.get(m.user_id) || 'Sin correo'
         };
     });
 
     return NextResponse.json({ members: formattedMembers });
-}
+}, { module: "users", action: "view" });
 
-export async function DELETE(request: Request) {
-    const { searchParams } = new URL(request.url);
+export const DELETE = withAuth(async (req, { supabase }) => {
+    const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
-
-    const supabase = await createClient();
-
-    // Verify admin role first
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: caller } = await supabase
-        .from('org_members')
-        .select('role')
-        .eq('user_id', user?.id)
-        .single();
-
-    if (caller?.role !== 'admin') {
-        return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
-    }
 
     const { error } = await supabase
         .from('org_members')
         .delete()
         .eq('id', id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
+    if (error) throw error;
     return NextResponse.json({ success: true });
-}
+}, { module: "users", action: "delete" });

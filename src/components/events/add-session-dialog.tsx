@@ -86,6 +86,7 @@ const createSessionSchema = z.object({
         role: z.enum(['EVALUATOR', 'INVIGILATOR', 'SUPERVISOR', 'ADMIN', 'REMOTE'])
     })),
     speaking_date: z.date().optional().nullable(),
+    delivery_mode: z.enum(['PAPER', 'DIGITAL']),
     component_order: z.array(z.object({
         id: z.string(),
         date: z.string().optional()
@@ -145,6 +146,8 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
 
     const [applicators, setApplicators] = useState<any[]>([]);
     const [components, setComponents] = useState<any[]>(DEFAULT_COMPONENTS);
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+    const [speakingPopoverOpen, setSpeakingPopoverOpen] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -174,6 +177,7 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
             },
             staff: initialData?.staff || [],
             speaking_date: initialData?.speaking_date ? new Date(initialData.speaking_date + 'T12:00:00') : null,
+            delivery_mode: initialData?.delivery_mode || 'PAPER',
             component_order: initialData?.component_order?.map((item: any) => ({
                 id: typeof item === 'string' ? item : item.id,
                 date: typeof item === 'string' ? undefined : item.date
@@ -224,6 +228,7 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
                 },
                 staff: initialData?.staff || [],
                 speaking_date: initialData?.speaking_date ? new Date(initialData.speaking_date + 'T12:00:00') : null,
+                delivery_mode: initialData?.delivery_mode || "PAPER",
                 component_order: initialData?.component_order?.map((item: any) => ({
                     id: typeof item === 'string' ? item : item.id,
                     date: typeof item === 'string' ? undefined : item.date
@@ -359,7 +364,7 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col mt-[9px]">
                                         <FormLabel>Fecha Examen Escrito</FormLabel>
-                                        <Popover>
+                                        <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                     <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -372,7 +377,10 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
                                                 <Calendar
                                                     mode="single"
                                                     selected={field.value}
-                                                    onSelect={field.onChange}
+                                                    onSelect={(val) => {
+                                                        field.onChange(val);
+                                                        if (val) setDatePopoverOpen(false);
+                                                    }}
                                                     initialFocus
                                                 />
                                             </PopoverContent>
@@ -388,7 +396,7 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col mt-[9px]">
                                         <FormLabel className="text-emerald-700 dark:text-emerald-400">Fecha Speaking (Opcional)</FormLabel>
-                                        <Popover>
+                                        <Popover open={speakingPopoverOpen} onOpenChange={setSpeakingPopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                     <Button variant="outline" className={cn("w-full pl-3 text-left font-normal border-emerald-200 dark:border-emerald-900", !field.value && "text-muted-foreground")}>
@@ -401,12 +409,37 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
                                                 <Calendar
                                                     mode="single"
                                                     selected={field.value || undefined}
-                                                    onSelect={field.onChange}
+                                                    onSelect={(val) => {
+                                                        field.onChange(val);
+                                                        if (val) setSpeakingPopoverOpen(false);
+                                                    }}
                                                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                                     initialFocus
                                                 />
                                             </PopoverContent>
                                         </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="delivery_mode"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Modo de Aplicación</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className={cn(field.value === 'DIGITAL' ? "border-blue-500 bg-blue-50/50" : "")}>
+                                                    <SelectValue placeholder="Seleccionar Modo" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="PAPER">Examen en Papel</SelectItem>
+                                                <SelectItem value="DIGITAL">Examen Digital</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, FileText, Clock, Users, MapPin, Calculator, Mail, Download, Pencil, ChevronDown, ChevronUp, Info, AlertTriangle } from "lucide-react";
+import { ArrowLeft, FileText, Clock, Users, MapPin, Calculator, Mail, Download, Pencil, ChevronDown, ChevronUp, Info, AlertTriangle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { AddEventSessionDialog } from "@/components/events/add-session-dialog";
+import { EventCOEReport } from "@/components/events/event-coe-report";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // ── Helpers shared with calculator ──────────────────────────────────────────
 function fmtMins(mins: number): string {
@@ -294,6 +296,7 @@ export default function EventShellPlannerPage() {
 
     const [event, setEvent] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCOEOpen, setIsCOEOpen] = useState(false);
 
     const fetchEventData = useCallback(async () => {
         setIsLoading(true);
@@ -311,7 +314,27 @@ export default function EventShellPlannerPage() {
         }
     }, [eventId]);
 
+    const isReadyToPublish = ((event?.sessions?.length > 0) && event.sessions.every((session: any) => {
+        const sessionStaff = event.staff?.filter((s: any) => s.session_id === session.id) || [];
+        const sessionSlots = event.slots?.filter((s: any) => s.session_id === session.id) || [];
+
+        // 1. Must have staff assigned to the session record
+        if (sessionStaff.length === 0) return false;
+
+        // 2. Must have slots generated
+        if (sessionSlots.length === 0) return false;
+
+        // 3. Every slot that is NOT a break must have an applicator assigned
+        const unassignedSlots = sessionSlots.filter((s: any) => !s.is_break && (!s.applicator_id || s.applicator_id === 'none'));
+
+        return unassignedSlots.length === 0;
+    })) ?? false;
+
     const handlePublishEvent = async () => {
+        if (!isReadyToPublish) {
+            toast.error("No se puede publicar el evento. Asegúrate de que todas las sesiones tengan personal asignado.");
+            return;
+        }
         try {
             const res = await fetch(`/api/v1/events/${eventId}`, {
                 method: "PATCH",
@@ -321,6 +344,7 @@ export default function EventShellPlannerPage() {
             if (!res.ok) throw new Error("Error al publicar evento");
             toast.success("Evento publicado exitosamente. El staff ha sido notificado.");
             fetchEventData();
+            setIsCOEOpen(true);
         } catch (error) {
             console.error(error);
             toast.error("Hubo un error al intentar publicar el evento.");
@@ -450,6 +474,17 @@ export default function EventShellPlannerPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
+                    <Dialog open={isCOEOpen} onOpenChange={setIsCOEOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="gap-2 border-primary/20 text-primary hover:bg-primary/5">
+                                <FileText className="h-4 w-4" /> Ver Vista General (COE)
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[98vw] w-full h-[95vh] overflow-y-auto p-0">
+                            <DialogTitle className="sr-only">Reporte Confirmation of Entry (COE)</DialogTitle>
+                            <EventCOEReport event={event} />
+                        </DialogContent>
+                    </Dialog>
                     <Button variant="outline" onClick={handleExportConsolidado} className="gap-2 border-primary/20 text-primary hover:bg-primary/5">
                         <Download className="h-4 w-4" /> Exportar Consolidado
                     </Button>
@@ -650,11 +685,33 @@ export default function EventShellPlannerPage() {
                 )}
             </div>
 
-            <div className="mt-8 flex justify-end">
-                <Button size="lg" className="w-full sm:w-auto gap-2" onClick={handlePublishEvent}>
-                    <Mail className="h-5 w-5" />
-                    Publicar Evento y Notificar Staff
-                </Button>
+            <div className="mt-12 flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl bg-muted/5">
+                <p className="text-sm text-muted-foreground mb-4 font-medium">¿Necesitas agregar más niveles a este evento?</p>
+                <AddEventSessionDialog 
+                    eventId={eventId} 
+                    onSessionAdded={fetchEventData} 
+                    schoolHours={event?.school?.operating_hours} 
+                />
+            </div>
+
+            <div className="mt-8 flex flex-col items-end gap-3">
+                {!isReadyToPublish && (
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-sm font-medium bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <AlertTriangle className="h-4 w-4" />
+                        Todas las sesiones deben tener personal asignado para poder publicar.
+                    </div>
+                )}
+                {(isReadyToPublish || event.status === 'PUBLISHED') && (
+                    <Button 
+                        size="lg" 
+                        className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20" 
+                        onClick={handlePublishEvent}
+                        disabled={event.status === 'PUBLISHED'}
+                    >
+                        <Send className="h-5 w-5" />
+                        {event.status === 'PUBLISHED' ? "Publicado" : "Publicar Evento y Notificar Staff"}
+                    </Button>
+                )}
             </div>
         </div>
     );

@@ -1,27 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export const PATCH = withAuth(async (req, { supabase, member: membership }, { params }) => {
     const { id } = await params;
-    const body = await request.json();
-    const supabase = await createClient();
+    const body = await req.json();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    // Verify admin
-    const { data: membership } = await supabase
-        .from('org_members')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-    if (membership?.role !== 'admin') {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (membership?.role !== 'admin') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { data: invitation, error } = await supabase
         .from('org_invitations')
@@ -30,7 +14,6 @@ export async function PATCH(
         .select()
         .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
+    if (error) throw error;
     return NextResponse.json({ invitation });
-}
+}, { module: "users", action: "edit" });

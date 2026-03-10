@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { withAuth } from "@/lib/auth/with-handler";
 
 const updateCenniSchema = z.object({
     folio_cenni: z.string().min(1).optional(),
@@ -24,102 +24,44 @@ const updateCenniSchema = z.object({
     ]).optional(),
     estatus_certificado: z.enum(["APROBADO", "RECHAZADO", "EN PROCESO DE DICTAMINACION"]).nullable().optional(),
     notes: z.string().nullable().optional(),
-    created_at: z.string().datetime({ offset: true }).optional(), // editable registration date
+    created_at: z.string().datetime({ offset: true }).optional(),
 });
 
-// PATCH /api/v1/cenni/[id] — Update a case
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const body = await request.json();
-        const parsed = updateCenniSchema.safeParse(body);
+export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
+    const { id } = await params;
+    const body = await req.json();
+    const parsed = updateCenniSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: "Validation failed", details: parsed.error }, { status: 400 });
 
-        if (!parsed.success) {
-            return NextResponse.json({ error: "Validation failed", details: parsed.error }, { status: 400 });
-        }
-
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const { data: member } = await supabase
-            .from("org_members")
-            .select("org_id, role")
-            .eq("user_id", user.id)
-            .single();
-
-        if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
-
-        const d = parsed.data;
-        // Don't include undefined fields in update payload
-        const updates: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(d)) {
-            if (value !== undefined) {
-                updates[key] = value;
-            }
-        }
-
-        if (Object.keys(updates).length === 0) {
-            return NextResponse.json({ error: "No fields to update" }, { status: 400 });
-        }
-
-        const { data: updatedCase, error } = await supabase
-            .from("cenni_cases")
-            .update(updates)
-            .eq("id", id)
-            .eq("org_id", member.org_id)
-            .is("deleted_at", null)
-            .select()
-            .single();
-
-        if (error || !updatedCase) {
-            return NextResponse.json({ error: error?.message || "Case not found" }, { status: 404 });
-        }
-
-        return NextResponse.json({ case: updatedCase });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const updates: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parsed.data)) {
+        if (value !== undefined) updates[key] = value;
     }
-}
 
-// DELETE /api/v1/cenni/[id] — Soft-delete a case
-export async function DELETE(
-    _request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+    if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No fields to update" }, { status: 400 });
 
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: updatedCase, error } = await supabase
+        .from("cenni_cases")
+        .update(updates)
+        .eq("id", id)
+        .eq("org_id", member.org_id)
+        .is("deleted_at", null)
+        .select()
+        .single();
 
-        const { data: member } = await supabase
-            .from("org_members")
-            .select("org_id, role")
-            .eq("user_id", user.id)
-            .single();
+    if (error || !updatedCase) return NextResponse.json({ error: error?.message || "Case not found" }, { status: 404 });
+    return NextResponse.json({ case: updatedCase });
+}, { module: "cenni", action: "edit" });
 
-        if (!member || !["admin", "supervisor"].includes(member.role)) {
-            return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-        }
+export const DELETE = withAuth(async (req, { supabase, member }, { params }) => {
+    const { id } = await params;
 
-        const { error } = await supabase
-            .from("cenni_cases")
-            .update({ deleted_at: new Date().toISOString() })
-            .eq("id", id)
-            .eq("org_id", member.org_id);
+    const { error } = await supabase
+        .from("cenni_cases")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("org_id", member.org_id);
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+}, { module: "cenni", action: "delete" });

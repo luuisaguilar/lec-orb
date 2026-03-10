@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import {
     Dialog,
     DialogContent,
@@ -26,15 +26,6 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const AVAILABLE_MODULES = [
-    { id: "cenni", label: "CENNI" },
-    { id: "finanzas", label: "Finanzas" },
-    { id: "examenes", label: "Exámenes" },
-    { id: "inventario", label: "Inventario" },
-    { id: "escuelas", label: "Escuelas" },
-    { id: "eventos", label: "Eventos" },
-];
-
 const LOCATIONS = [
     "Hermosillo",
     "Obregón",
@@ -53,12 +44,15 @@ interface EditUserDialogProps {
 
 export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: EditUserDialogProps) {
     const { data, isLoading } = useSWR(memberId ? `/api/v1/users/${memberId}` : null, fetcher);
+    const { data: modulesData, isLoading: loadingModules } = useSWR("/api/v1/modules", fetcher);
 
     const [role, setRole] = useState<string>("operador");
     const [location, setLocation] = useState<string>("none"); // 'none' translates to null
     const [jobTitle, setJobTitle] = useState<string>("");
     const [permissions, setPermissions] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
+    const availableModules = modulesData?.modules || [];
 
     useEffect(() => {
         if (data?.member) {
@@ -77,6 +71,20 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                 return prev.map(p => p.module === moduleId ? updatedRow : p);
             } else {
                 return [...prev, { module: moduleId, can_view: type === 'can_view', can_edit: type === 'can_edit', can_delete: type === 'can_delete' }];
+            }
+        });
+    };
+
+    const toggleAllForModule = (moduleId: string) => {
+        setPermissions(prev => {
+            const existing = prev.find(p => p.module === moduleId);
+            const allChecked = existing?.can_view && existing?.can_edit && existing?.can_delete;
+            
+            if (existing) {
+                const updatedRow = { ...existing, can_view: !allChecked, can_edit: !allChecked, can_delete: !allChecked };
+                return prev.map(p => p.module === moduleId ? updatedRow : p);
+            } else {
+                return [...prev, { module: moduleId, can_view: true, can_edit: true, can_delete: true }];
             }
         });
     };
@@ -111,9 +119,17 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
         return permissions.find(p => p.module === moduleId)?.[type] || false;
     };
 
+    // Group modules by category
+    const modulesByCategory = availableModules.reduce((acc: any, mod: any) => {
+        const cat = mod.category || "Otros";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(mod);
+        return acc;
+    }, {});
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-[#002e5d]">
                         <Shield className="h-5 w-5" />
@@ -124,7 +140,7 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                     </DialogDescription>
                 </DialogHeader>
 
-                {isLoading ? (
+                {isLoading || loadingModules ? (
                     <div className="flex h-32 items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
@@ -191,34 +207,54 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                                             <th className="text-center p-3 font-semibold">Ver</th>
                                             <th className="text-center p-3 font-semibold">Editar</th>
                                             <th className="text-center p-3 font-semibold">Eliminar</th>
+                                            <th className="text-center p-3 font-semibold">Todo</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {AVAILABLE_MODULES.map((mod) => (
-                                            <tr key={mod.id} className="hover:bg-muted/20 transition-colors">
-                                                <td className="p-3 font-medium text-[#002e5d]">{mod.label}</td>
-                                                <td className="p-3 text-center">
-                                                    <Checkbox
-                                                        checked={getPermission(mod.id, 'can_view')}
-                                                        onCheckedChange={() => togglePermission(mod.id, 'can_view')}
-                                                        className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
-                                                    />
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    <Checkbox
-                                                        checked={getPermission(mod.id, 'can_edit')}
-                                                        onCheckedChange={() => togglePermission(mod.id, 'can_edit')}
-                                                        className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
-                                                    />
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    <Checkbox
-                                                        checked={getPermission(mod.id, 'can_delete')}
-                                                        onCheckedChange={() => togglePermission(mod.id, 'can_delete')}
-                                                        className="data-[state=checked]:bg-red-500 border-muted-foreground"
-                                                    />
-                                                </td>
-                                            </tr>
+                                        {Object.keys(modulesByCategory).map((category) => (
+                                            <Fragment key={category}>
+                                                <tr className="bg-slate-50">
+                                                    <td colSpan={5} className="p-2 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-left">
+                                                        {category}
+                                                    </td>
+                                                </tr>
+                                                {modulesByCategory[category].map((mod: any) => (
+                                                    <tr key={mod.slug} className="hover:bg-muted/20 transition-colors">
+                                                        <td className="p-2 p-3 font-medium text-[#002e5d] text-left">{mod.name}</td>
+                                                        <td className="p-3 text-center">
+                                                            <Checkbox
+                                                                checked={getPermission(mod.slug, 'can_view')}
+                                                                onCheckedChange={() => togglePermission(mod.slug, 'can_view')}
+                                                                className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 text-center">
+                                                            <Checkbox
+                                                                checked={getPermission(mod.slug, 'can_edit')}
+                                                                onCheckedChange={() => togglePermission(mod.slug, 'can_edit')}
+                                                                className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 text-center">
+                                                            <Checkbox
+                                                                checked={getPermission(mod.slug, 'can_delete')}
+                                                                onCheckedChange={() => togglePermission(mod.slug, 'can_delete')}
+                                                                className="data-[state=checked]:bg-red-500 border-muted-foreground"
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 text-center">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 px-2 text-[10px] uppercase font-bold"
+                                                                onClick={() => toggleAllForModule(mod.slug)}
+                                                            >
+                                                                {getPermission(mod.slug, 'can_view') && getPermission(mod.slug, 'can_edit') && getPermission(mod.slug, 'can_delete') ? 'Ninguno' : 'Todos'}
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </Fragment>
                                         ))}
                                     </tbody>
                                 </table>

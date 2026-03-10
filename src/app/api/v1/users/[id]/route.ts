@@ -1,32 +1,23 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const supabase = await createClient();
+export const GET = withAuth(async (req, { supabase }, { params }) => {
     const { id } = await params;
 
-    // 1. Get member details
     const { data: member, error: memberError } = await supabase
         .from('org_members')
         .select('*')
         .eq('id', id)
         .single();
 
-    if (memberError || !member) {
-        return NextResponse.json({ error: "Member not found", details: memberError?.message }, { status: 404 });
-    }
+    if (memberError || !member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
-    // 1.5 Get profile manually because foreign key links to auth.users, not profiles
     const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', member.user_id)
         .single();
 
-    // 2. Get module access
     const { data: access } = await supabase
         .from('member_module_access')
         .select('*')
@@ -39,52 +30,29 @@ export async function GET(
         },
         access: access || []
     });
-}
+}, { module: "users", action: "view" });
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const body = await request.json();
-    const supabase = await createClient();
+export const PATCH = withAuth(async (req, { supabase, member: caller }, { params }) => {
     const { id } = await params;
+    const body = await req.json();
 
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: caller } = await supabase
-        .from('org_members')
-        .select('role, org_id')
-        .eq('user_id', user?.id)
-        .single();
+    if (caller?.role !== 'admin') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (caller?.role !== 'admin') {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // 1. Update Role, Location & Job Title
     const updates: any = {};
     if (body.role) updates.role = body.role;
-    if (body.location !== undefined) updates.location = body.location; // allowed to be null
-    if (body.job_title !== undefined) updates.job_title = body.job_title; // allowed to be null
+    if (body.location !== undefined) updates.location = body.location;
+    if (body.job_title !== undefined) updates.job_title = body.job_title;
 
     if (Object.keys(updates).length > 0) {
         const { error: updateError } = await supabase
             .from('org_members')
             .update(updates)
             .eq('id', id);
-
-        if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+        if (updateError) throw updateError;
     }
 
-    // 2. Update Permissions (Matrix)
     if (body.permissions && Array.isArray(body.permissions)) {
-        // Simple strategy: delete and re-insert for the member
-        // In a real high-traffic app we might do upserts or diffs
-        await supabase
-            .from('member_module_access')
-            .delete()
-            .eq('member_id', id);
-
+        await supabase.from('member_module_access').delete().eq('member_id', id);
         if (body.permissions.length > 0) {
             const inserts = body.permissions.map((p: any) => ({
                 org_id: caller.org_id,
@@ -94,14 +62,10 @@ export async function PATCH(
                 can_edit: p.can_edit ?? false,
                 can_delete: p.can_delete ?? false
             }));
-
-            const { error: insError } = await supabase
-                .from('member_module_access')
-                .insert(inserts);
-
-            if (insError) return NextResponse.json({ error: insError.message }, { status: 500 });
+            const { error: insError } = await supabase.from('member_module_access').insert(inserts);
+            if (insError) throw insError;
         }
     }
 
     return NextResponse.json({ success: true });
-}
+}, { module: "users", action: "edit" });

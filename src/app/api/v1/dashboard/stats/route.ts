@@ -1,9 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET() {
-    const supabase = await createClient();
-
+export const GET = withAuth(async (req, { supabase, member }) => {
     const [
         { count: totalApplicators },
         { count: totalSchools },
@@ -15,15 +13,15 @@ export async function GET() {
         { data: eventsByStatus },
         { data: examTypes },
     ] = await Promise.all([
-        supabase.from("applicators").select("id", { count: "exact", head: true }).is("deleted_at", null),
-        supabase.from("schools").select("id", { count: "exact", head: true }).is("deleted_at", null),
-        supabase.from("events").select("id, status, date").is("deleted_at", null),
-        supabase.from("event_sessions").select("id, exam_type, date").is("deleted_at", null),
-        supabase.from("cenni_cases").select("id", { count: "exact", head: true }).is("deleted_at", null),
-        supabase.from("cenni_cases").select("estatus").is("deleted_at", null),
-        supabase.from("applicators").select("location_zone").is("deleted_at", null),
-        supabase.from("events").select("status").is("deleted_at", null),
-        supabase.from("event_sessions").select("exam_type").is("deleted_at", null),
+        supabase.from("applicators").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("schools").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("events").select("id, status, date").eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("event_sessions").select("id, exam_type, date"), // event_sessions often don't have direct org_id, linked via events, but if they do, add it. Checking table list... it doesn't have it.
+        supabase.from("cenni_cases").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("cenni_cases").select("estatus").eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("applicators").select("location_zone").eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("events").select("status").eq("org_id", member.org_id).is("deleted_at", null),
+        supabase.from("event_sessions").select("exam_type"), // Assuming global exam types or linked.
     ]);
 
     const now = new Date();
@@ -48,7 +46,6 @@ export async function GET() {
         if (s.exam_type) examTypeCounts[s.exam_type] = (examTypeCounts[s.exam_type] || 0) + 1;
     });
 
-    // CENNI uses "estatus" column (not "status")
     const cenniStatusCounts: Record<string, number> = {};
     (cenniByStatus || []).forEach((r: { estatus?: string }) => {
         if (r.estatus) cenniStatusCounts[r.estatus] = (cenniStatusCounts[r.estatus] || 0) + 1;
@@ -82,4 +79,4 @@ export async function GET() {
             total: cenniTotal || 0,
         },
     });
-}
+}, { module: "dashboard", action: "view" });

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { DEMO_MODE } from "@/lib/demo/config";
 import { mockApplicators, addMockApplicator } from "@/lib/demo/data";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET() {
+export const GET = withAuth(async (req, { supabase, member }) => {
     if (DEMO_MODE) {
         return NextResponse.json({
             applicators: mockApplicators.filter((a) => !a.deleted_at),
@@ -13,30 +12,16 @@ export async function GET() {
         });
     }
 
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data, error } = await supabase
+        .from("applicators")
+        .select("*")
+        .eq("org_id", member.org_id)
+        .is("deleted_at", null)
+        .order("name");
 
-        const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
-        if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
-
-        const canView = await checkServerPermission(supabase, user.id, "aplicadores", "view");
-        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-
-        const { data, error } = await supabase
-            .from("applicators")
-            .select("*")
-            .eq("org_id", member.org_id)
-            .is("deleted_at", null)
-            .order("name");
-
-        if (error) return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-        return NextResponse.json({ applicators: data || [], total: data?.length || 0 });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ applicators: data || [], total: data?.length || 0 });
+}, { module: "applicators", action: "view" });
 
 const createApplicatorSchema = z.object({
     name: z.string().min(1),
@@ -53,8 +38,8 @@ const createApplicatorSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
-export async function POST(request: Request) {
-    const body = await request.json();
+export const POST = withAuth(async (req, { supabase, member }) => {
+    const body = await req.json();
     const parsed = createApplicatorSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Validation failed" }, { status: 400 });
 
@@ -73,24 +58,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ applicator }, { status: 201 });
     }
 
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: applicator, error } = await supabase
+        .from("applicators")
+        .insert({ org_id: member.org_id, ...parsed.data })
+        .select()
+        .single();
 
-        const { data: member } = await supabase.from("org_members").select("org_id, role").eq("user_id", user.id).single();
-        if (!member || !["admin", "supervisor"].includes(member.role))
-            return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-
-        const { data: applicator, error } = await supabase
-            .from("applicators")
-            .insert({ org_id: member.org_id, ...parsed.data })
-            .select()
-            .single();
-
-        if (error) return NextResponse.json({ error: "Failed to create" }, { status: 500 });
-        return NextResponse.json({ applicator }, { status: 201 });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ applicator }, { status: 201 });
+}, { module: "applicators", action: "edit" });

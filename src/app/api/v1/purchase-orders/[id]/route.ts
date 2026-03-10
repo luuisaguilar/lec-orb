@@ -1,77 +1,35 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const body = await request.json();
+export const PATCH = withAuth(async (req, { supabase, user, member }, { params }) => {
+    const { id } = await params;
+    const body = await req.json();
 
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+    const { data: updatedOrder, error } = await supabase
+        .from("purchase_orders")
+        .update({
+            ...body,
+            updated_by: user.id,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("org_id", member.org_id)
+        .select()
+        .single();
 
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    if (error) throw error;
+    return NextResponse.json({ order: updatedOrder });
+}, { module: "purchase-orders", action: "edit" });
 
-        const canEdit = await checkServerPermission(supabase, user.id, "finanzas", "edit");
-        if (!canEdit) {
-            return NextResponse.json({ error: "Insufficient permissions to edit" }, { status: 403 });
-        }
+export const DELETE = withAuth(async (req, { supabase, user, member }, { params }) => {
+    const { id } = await params;
 
-        const { data: updatedOrder, error } = await supabase
-            .from("purchase_orders")
-            .update({
-                ...body,
-                updated_by: user.id,
-                updated_at: new Date().toISOString(),
-            })
-            .eq("id", id)
-            .select()
-            .single();
+    const { error } = await supabase
+        .from("purchase_orders")
+        .update({ is_active: false, updated_by: user.id })
+        .eq("id", id)
+        .eq("org_id", member.org_id);
 
-        if (error) {
-            return NextResponse.json({ error: "Failed to update order: " + error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ order: updatedOrder });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
-    }
-}
-
-export async function DELETE(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const canDelete = await checkServerPermission(supabase, user.id, "finanzas", "delete");
-        if (!canDelete) {
-            return NextResponse.json({ error: "Insufficient permissions to delete" }, { status: 403 });
-        }
-
-        const { error } = await supabase
-            .from("purchase_orders")
-            .update({ is_active: false, updated_by: user.id })
-            .eq("id", id);
-
-        if (error) {
-            return NextResponse.json({ error: "Failed to delete order: " + error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ message: "Order deleted successfully" });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ message: "Order deleted successfully" });
+}, { module: "purchase-orders", action: "delete" });

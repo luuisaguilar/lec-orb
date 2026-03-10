@@ -1,82 +1,37 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const body = await request.json();
+export const PATCH = withAuth(async (req, { supabase }, { params }) => {
+    const { id } = await params;
+    const body = await req.json();
 
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const canEdit = await checkServerPermission(supabase, user.id, "examenes", "edit");
-        if (!canEdit) {
-            return NextResponse.json({ error: "Insufficient permissions to edit" }, { status: 403 });
-        }
-
-        // Map start_date -> test_date if it exists
-        if (body.start_date) {
-            body.test_date = body.start_date;
-            delete body.start_date;
-        }
-
-        const { data: updatedAdmin, error } = await supabase
-            .from("toefl_administrations")
-            .update({
-                ...body,
-                updated_at: new Date().toISOString(),
-            })
-            .eq("id", id)
-            .select()
-            .single();
-
-        if (error) {
-            return NextResponse.json({ error: "Failed to update: " + error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ administration: updatedAdmin });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    if (body.start_date) {
+        body.test_date = body.start_date;
+        delete body.start_date;
     }
-}
 
-export async function DELETE(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+    const { data: updatedAdmin, error } = await supabase
+        .from("toefl_administrations")
+        .update({
+            ...body,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
 
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    if (error) throw error;
+    return NextResponse.json({ administration: updatedAdmin });
+}, { module: "examenes", action: "edit" });
 
-        const canDelete = await checkServerPermission(supabase, user.id, "examenes", "delete");
-        if (!canDelete) {
-            return NextResponse.json({ error: "Insufficient permissions to delete" }, { status: 403 });
-        }
+export const DELETE = withAuth(async (req, { supabase }, { params }) => {
+    const { id } = await params;
 
-        const { error } = await supabase
-            .from("toefl_administrations")
-            .update({ is_active: false })
-            .eq("id", id);
+    const { error } = await supabase
+        .from("toefl_administrations")
+        .update({ is_active: false })
+        .eq("id", id);
 
-        if (error) {
-            return NextResponse.json({ error: "Failed to delete: " + error.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ message: "Deleted successfully" });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ message: "Deleted successfully" });
+}, { module: "examenes", action: "delete" });

@@ -1,119 +1,61 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (req, { supabase, member }, { params }) => {
+    const { id } = await params;
 
-        const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
-        if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
+    const { data: event, error } = await supabase
+        .from("events")
+        .select(`
+            *,
+            school:schools(*),
+            sessions:event_sessions(*),
+            staff:event_staff(
+                id, role, session_id, applicator_id,
+                applicator:applicators(*)
+            ),
+            slots:event_slots(*)
+        `)
+        .eq("id", id)
+        .eq("org_id", member.org_id)
+        .single();
 
-        const canView = await checkServerPermission(supabase, user.id, "eventos", "view");
-        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    if (error || !event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-        // Await params in next 15
-        const resolvedParams = await params;
-        const id = resolvedParams.id;
-
-        const { data: event, error } = await supabase
-            .from("events")
-            .select(`
-                *,
-                school:schools(*),
-                sessions:event_sessions(*),
-                staff:event_staff(
-                    id, role, session_id, applicator_id,
-                    applicator:applicators(*)
-                ),
-                slots:event_slots(*)
-            `)
-            .eq("id", id)
-            .eq("org_id", member.org_id)
-            .single();
-
-        if (error || !event) {
-            console.error("Event fetch error:", error);
-            return NextResponse.json({ error: "Event not found" }, { status: 404 });
-        }
-
-        // Sort slots by slot_number
-        if (event.slots) {
-            event.slots.sort((a: any, b: any) => a.slot_number - b.slot_number);
-        }
-
-        return NextResponse.json({ event });
-    } catch (err: any) {
-        console.error("Event server error:", err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (event.slots) {
+        event.slots.sort((a: any, b: any) => a.slot_number - b.slot_number);
     }
-}
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ event });
+}, { module: "events", action: "view" });
 
-        const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
-        if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
+export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
+    const { id } = await params;
+    const body = await req.json();
 
-        const resolvedParams = await params;
-        const id = resolvedParams.id;
-        const body = await request.json();
+    const updateData = { ...body };
+    delete updateData.id;
+    delete updateData.org_id;
 
-        // Update event details
-        // Keep status update capability but allow other fields
-        const updateData = { ...body };
-        delete updateData.id;
-        delete updateData.org_id;
+    const { error } = await supabase
+        .from("events")
+        .update(updateData)
+        .eq("id", id)
+        .eq("org_id", member.org_id);
 
-        const { error } = await supabase
-            .from("events")
-            .update(updateData)
-            .eq("id", id)
-            .eq("org_id", member.org_id);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+}, { module: "events", action: "edit" });
 
-        if (error) {
-            console.error("Event update error:", error);
-            return NextResponse.json({ error: "Failed to update event" }, { status: 500 });
-        }
+export const DELETE = withAuth(async (req, { supabase, member }, { params }) => {
+    const { id } = await params;
 
-        return NextResponse.json({ success: true });
-    } catch (err: any) {
-        console.error("Event patch error:", err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id)
+        .eq("org_id", member.org_id);
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
-        if (!member) return NextResponse.json({ error: "No organization found" }, { status: 403 });
-
-        const resolvedParams = await params;
-        const id = resolvedParams.id;
-
-        const { error } = await supabase
-            .from("events")
-            .delete()
-            .eq("id", id)
-            .eq("org_id", member.org_id);
-
-        if (error) {
-            console.error("Delete error:", error);
-            return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true });
-    } catch (err: any) {
-        console.error("Error:", err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+}, { module: "events", action: "delete" });

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { DEMO_MODE } from "@/lib/demo/config";
 import { mockSchools } from "@/lib/demo/data";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET() {
+export const GET = withAuth(async (req, { supabase, member }) => {
     if (DEMO_MODE) {
         return NextResponse.json({
             schools: mockSchools.filter((s) => !s.deleted_at),
@@ -13,30 +12,17 @@ export async function GET() {
         });
     }
 
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: schools, error } = await supabase
+        .from("schools")
+        .select("*")
+        .eq("org_id", member.org_id)
+        .is("deleted_at", null)
+        .order("name");
 
-        const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", user.id).single();
-        if (!member) return NextResponse.json({ error: "No organization" }, { status: 403 });
-
-        const canView = await checkServerPermission(supabase, user.id, "colegios", "view");
-        if (!canView) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-
-        const { data: schools, error } = await supabase
-            .from("schools")
-            .select("*")
-            .eq("org_id", member.org_id)
-            .is("deleted_at", null)
-            .order("name");
-
-        if (error) return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
-        return NextResponse.json({ schools: schools || [], total: schools?.length || 0 });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    
+    return NextResponse.json({ schools: schools || [], total: schools?.length || 0 });
+}, { module: "schools", action: "view" });
 
 const createSchoolSchema = z.object({
     name: z.string().min(1),
@@ -53,39 +39,24 @@ const createSchoolSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
-export async function POST(request: Request) {
-    const body = await request.json();
+export const POST = withAuth(async (req, { supabase, member }) => {
+    const body = await req.json();
     const parsed = createSchoolSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Validation failed" }, { status: 400 });
 
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: school, error } = await supabase
+        .from("schools")
+        .insert({
+            org_id: member.org_id,
+            ...parsed.data,
+            operating_hours: parsed.data.operating_hours
+                ? JSON.stringify(parsed.data.operating_hours)
+                : null,
+        })
+        .select()
+        .single();
 
-        const { data: member } = await supabase.from("org_members").select("org_id, role").eq("user_id", user.id).single();
-        if (!member || !["admin", "supervisor"].includes(member.role))
-            return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-
-        const { data: school, error } = await supabase
-            .from("schools")
-            .insert({
-                org_id: member.org_id,
-                ...parsed.data,
-                operating_hours: parsed.data.operating_hours
-                    ? JSON.stringify(parsed.data.operating_hours)
-                    : null,
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Schools insert error stack:", error);
-            return NextResponse.json({ error: `Database error: ${error.message} (Detail: ${error.details})` }, { status: 500 });
-        }
-        return NextResponse.json({ school }, { status: 201 });
-    } catch (err: any) {
-        console.error("Schools server error:", err);
-        return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
-    }
-}
+    if (error) throw error;
+    
+    return NextResponse.json({ school }, { status: 201 });
+}, { module: "schools", action: "edit" });

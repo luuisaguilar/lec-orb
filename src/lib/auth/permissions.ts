@@ -14,7 +14,18 @@ export type Module =
     | "calculator"
     | "metrics"
     | "users"
-    | "venues";
+    | "venues"
+    | "toefl"
+    | "toefl-codes"
+    | "suppliers"
+    | "quotes"
+    | "purchase-orders"
+    | "payments"
+    | "exam-codes"
+    | "documents"
+    | "notifications"
+    | "studio"
+    | "audit-log";
 
 export type Action =
     | "read"
@@ -88,6 +99,65 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
         update: ["admin", "supervisor"],
         delete: ["admin"],
     },
+    toefl: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    "toefl-codes": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    suppliers: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    quotes: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    "purchase-orders": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    payments: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    "exam-codes": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    documents: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    notifications: {
+        read: ["admin", "supervisor", "operador"],
+        manage: ["admin", "supervisor"],
+    },
+    studio: {
+        read: ["admin"],
+        manage: ["admin"],
+    },
+    "audit-log": {
+        read: ["admin", "supervisor"],
+    },
 };
 
 /**
@@ -137,21 +207,37 @@ export function getReadableModules(role: Role): Module[] {
 // This bridges the gap between checkServerPermission("eventos", ...) and Module = "events".
 const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Action; writeAction: Action; deleteAction: Action }> = {
     // Finance
-    finanzas: { module: "inventory", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    finanzas: { module: "payments", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    cotizaciones: { module: "quotes", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    ordenes: { module: "purchase-orders", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    payments: { module: "payments", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    nomina: { module: "payroll", readAction: "read", writeAction: "calculate", deleteAction: "manage" },
+    
     // Inventory
     inventario: { module: "inventory", readAction: "read", writeAction: "create", deleteAction: "delete" },
-    // Events
+    inventory: { module: "inventory", readAction: "read", writeAction: "create", deleteAction: "delete" },
+
+    // Events / Institutional
     eventos: { module: "events", readAction: "read", writeAction: "create", deleteAction: "delete" },
-    // Applicators
     aplicadores: { module: "applicators", readAction: "read", writeAction: "create", deleteAction: "delete" },
-    // Schools / Colegios
     colegios: { module: "schools", readAction: "read", writeAction: "create", deleteAction: "delete" },
-    // CENNI
-    cenni: { module: "cenni", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    venues: { module: "venues", readAction: "read", writeAction: "create", deleteAction: "delete" },
+
     // Exams
-    examenes: { module: "catalog", readAction: "read", writeAction: "manage", deleteAction: "manage" },
-    // Users
+    toefl: { module: "toefl", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    "toefl-codes": { module: "toefl-codes", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    cenni: { module: "cenni", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    examenes: { module: "exam-codes", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    "exam-codes": { module: "exam-codes", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    
+    // Tools / Admin
     usuarios: { module: "users", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+    users: { module: "users", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+    documentos: { module: "documents", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    documents: { module: "documents", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    notifications: { module: "notifications", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+    "audit-log": { module: "audit-log", readAction: "read", writeAction: "read", deleteAction: "read" },
+    studio: { module: "studio", readAction: "read", writeAction: "manage", deleteAction: "manage" },
 };
 
 /**
@@ -195,19 +281,7 @@ export async function checkServerPermission(
         return false;
     }
 
-    // 3. No granular row — fall back to the static RBAC permissionsMap
-    //    This prevents users from losing access when a new module is protected
-    //    but their member_module_access rows haven't been configured yet.
-    const alias = MODULE_ALIAS_MAP[module];
-    if (alias) {
-        const staticAction: Action = action === "view"
-            ? alias.readAction
-            : action === "edit"
-                ? alias.writeAction
-                : alias.deleteAction;
-        return hasPermission(member.role as Role, alias.module, staticAction);
-    }
-
-    // Unknown module — deny by default
+    // 3. Fail-closed: if no granular row exists, access is denied.
+    // Our Phase 2 migration ensures all existing members have these rows.
     return false;
 }

@@ -1,52 +1,28 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET(request: Request) {
-    try {
-        const url = new URL(request.url);
-        const date = url.searchParams.get("date");
+export const GET = withAuth(async (req, { supabase }) => {
+    const url = new URL(req.url);
+    const date = url.searchParams.get("date");
+    if (!date) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
-        if (!date) {
-            return NextResponse.json({ error: "Date is required" }, { status: 400 });
-        }
+    const { data: activeSessions, error: sessionError } = await supabase
+        .from("event_sessions")
+        .select("id")
+        .or(`date.eq.${date},speaking_date.eq.${date}`);
 
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (sessionError) throw sessionError;
 
-        // Get session IDs that have this date (as main or speaking)
-        const { data: activeSessions, error: sessionError } = await supabase
-            .from("event_sessions")
-            .select("id")
-            .or(`date.eq.${date},speaking_date.eq.${date}`);
+    const sessionIds = activeSessions?.map(s => s.id) || [];
+    if (sessionIds.length === 0) return NextResponse.json({ busyStaffIds: [] });
 
-        if (sessionError) {
-            console.error("Error fetching sessions:", sessionError);
-            return NextResponse.json({ error: "Failed to fetch session data" }, { status: 500 });
-        }
+    const { data: busyStaff, error: staffError } = await supabase
+        .from("event_staff")
+        .select("applicator_id")
+        .in("session_id", sessionIds);
 
-        const sessionIds = activeSessions?.map(s => s.id) || [];
+    if (staffError) throw staffError;
 
-        if (sessionIds.length === 0) {
-            return NextResponse.json({ busyStaffIds: [] });
-        }
-
-        // Get staff assigned to those sessions
-        const { data: busyStaff, error: staffError } = await supabase
-            .from("event_staff")
-            .select("applicator_id")
-            .in("session_id", sessionIds);
-
-        if (staffError) {
-            console.error("Error fetching busy staff:", staffError);
-            return NextResponse.json({ error: "Failed to fetch busy staff" }, { status: 500 });
-        }
-
-        const busyIds = Array.from(new Set(busyStaff.map(s => s.applicator_id)));
-
-        return NextResponse.json({ busyStaffIds: busyIds });
-    } catch (err: any) {
-        console.error("Staff availability error:", err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-}
+    const busyIds = Array.from(new Set(busyStaff.map(s => s.applicator_id)));
+    return NextResponse.json({ busyStaffIds: busyIds });
+}, { module: "events", action: "view" });

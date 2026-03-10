@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { DEMO_MODE } from "@/lib/demo/config";
-import {
-    mockPayrollPeriods,
-    mockPayrollEntries,
-} from "@/lib/demo/data";
+import { mockPayrollPeriods, mockPayrollEntries } from "@/lib/demo/data";
+import { withAuth } from "@/lib/auth/with-handler";
 
-// GET /api/v1/payroll — List payroll periods with entries
-export async function GET(request: Request) {
-    const url = new URL(request.url);
+export const GET = withAuth(async (req, { supabase, member }) => {
+    const url = new URL(req.url);
     const periodId = url.searchParams.get("periodId");
 
     if (DEMO_MODE) {
@@ -29,5 +26,33 @@ export async function GET(request: Request) {
         return NextResponse.json({ periods, total: periods.length });
     }
 
-    return NextResponse.json({ error: "Not implemented" }, { status: 501 });
-}
+    // REAL MODE
+    if (periodId) {
+        const { data: period, error: pError } = await supabase
+            .from("payroll_periods")
+            .select("*")
+            .eq("id", periodId)
+            .eq("org_id", member.org_id)
+            .single();
+
+        if (pError) throw pError;
+        if (!period) return NextResponse.json({ error: "Period not found" }, { status: 404 });
+
+        const { data: entries, error: eError } = await supabase
+            .from("payroll_entries")
+            .select("*")
+            .eq("period_id", periodId);
+
+        if (eError) throw eError;
+        return NextResponse.json({ period, entries });
+    }
+
+    const { data: periods, error } = await supabase
+        .from("payroll_periods")
+        .select("*")
+        .eq("org_id", member.org_id)
+        .order("start_date", { ascending: false });
+
+    if (error) throw error;
+    return NextResponse.json({ periods, total: periods.length });
+}, { module: "payroll", action: "view" });

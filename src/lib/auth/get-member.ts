@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 
 export type MemberResult =
-    | { ok: true; user: { id: string; email?: string }; member: { id: string; org_id: string; role: string } }
+    | { ok: true; user: { id: string; email?: string }; member: { id: string; org_id: string; role: string; location: string | null } }
     | { ok: false; response: NextResponse };
 
 /**
@@ -42,7 +42,7 @@ export async function getAuthenticatedMember(supabase: any): Promise<MemberResul
     // 2. Fetch org membership
     const { data: member, error: memberError } = await supabase
         .from("org_members")
-        .select("id, org_id, role")
+        .select("id, org_id, role, location")
         .eq("user_id", user.id)
         .single();
 

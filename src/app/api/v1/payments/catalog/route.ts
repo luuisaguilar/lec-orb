@@ -1,31 +1,41 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { checkServerPermission } from "@/lib/auth/permissions";
+import { z } from "zod";
+import { withAuth } from "@/lib/auth/with-handler";
 
-export async function GET() {
-    try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+const conceptSchema = z.object({
+    description: z.string().min(1).max(200),
+    concept_key: z.string().min(1).max(50).regex(/^[A-Z0-9_]+$/, "Key must be uppercase alphanumeric with underscores"),
+    cost: z.number().positive(),
+    currency: z.string().length(3).default("MXN"),
+    expiration_date: z.string().optional().nullable(),
+});
 
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+export const GET = withAuth(async (req, { supabase }) => {
+    const { data: concepts, error } = await supabase
+        .from("payment_concepts")
+        .select("*")
+        .eq("is_active", true)
+        .order("description", { ascending: true });
 
-        const canView = await checkServerPermission(supabase, user.id, "finanzas", "view");
-        if (!canView) {
-            return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-        }
+    if (error) throw error;
+    return NextResponse.json({ concepts });
+}, { module: "finanzas", action: "view" });
 
-        const { data: concepts, error } = await supabase
-            .from("payment_concepts")
-            .select("*")
-            .eq("is_active", true)
-            .order("description", { ascending: true });
+export const POST = withAuth(async (req, { supabase, member }) => {
+    const body = await req.json();
+    const parsed = conceptSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
 
-        if (error) throw error;
+    if (!["admin", "supervisor"].includes(member.role)) return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
 
-        return NextResponse.json({ concepts });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    const { data, error } = await supabase
+        .from("payment_concepts")
+        .insert({ ...parsed.data })
+        .select().single();
+
+    if (error) {
+        if (error.code === "23505") return NextResponse.json({ error: "Ya existe un concepto con ese código" }, { status: 409 });
+        throw error;
     }
-}
+    return NextResponse.json({ concept: data }, { status: 201 });
+}, { module: "finanzas", action: "edit" });
