@@ -90,7 +90,7 @@ export const POST = withAuth(async (req, { supabase, user, member }, { params })
     }
     if (validationErrors.length > 0) return NextResponse.json({ error: "Campos requeridos faltantes", details: validationErrors }, { status: 422 });
 
-    const allowedFieldNames = new Set((fields ?? []).map(f => f.name));
+    const allowedFieldNames = new Set((fields ?? []).map((f: any) => f.name));
     const sanitizedData: Record<string, any> = {};
     for (const key of Object.keys(incomingData)) {
         if (allowedFieldNames.has(key)) sanitizedData[key] = incomingData[key];
