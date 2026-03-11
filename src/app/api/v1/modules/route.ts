@@ -23,7 +23,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         .eq("role", member.role)
         .eq("can_view", true);
 
-    const allowedCustomIds = new Set(permRows?.map((p) => p.module_id) ?? []);
+    const allowedCustomIds = new Set(permRows?.map((p: any) => p.module_id) ?? []);
     const filtered = modules.filter((m: any) => m.is_native || allowedCustomIds.has(m.id));
 
     return NextResponse.json({ modules: filtered, role: member.role });
