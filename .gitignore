@@ -40,13 +40,14 @@ validation_report*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+!next-env.d.ts
 
 # build reports and logs
 eslint_report.json
@@ -54,8 +55,9 @@ lint-log.txt
 lint-out.json
 lint_summary_clean.txt
 out.log
+lint_output.txt
+lint_parsed.txt
 
-# documentation (keep local, exclude from GitHub)
-docs/
+# documentation and local notes
 CLAUDE.md
 AUDIT_CAMBIOS_*.md
