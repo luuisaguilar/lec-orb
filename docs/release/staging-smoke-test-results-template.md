@@ -49,8 +49,9 @@
 | STG-07 | Non-Admin Access With `member_module_access` |  |  |  |
 | STG-08 | Document Upload |  |  |  |
 | STG-09 | Document Download |  |  |  |
-| STG-10 | Cross-Tenant Document Denial |  |  |  |
-| STG-11 | Audit Log Listing |  |  |  |
+| STG-10 | Document Delete |  |  |  |
+| STG-11 | Cross-Tenant Document Denial |  |  |  |
+| STG-12 | Audit Log Listing |  |  |  |
 
 ## Per-Test Detail
 
@@ -130,7 +131,16 @@
 - evidence links:
 - defects opened:
 
-### STG-10 Cross-Tenant Document Denial
+### STG-10 Document Delete
+
+- status:
+- preconditions met:
+- observed behavior:
+- DB/storage evidence:
+- evidence links:
+- defects opened:
+
+### STG-11 Cross-Tenant Document Denial
 
 - status:
 - preconditions met:
@@ -138,7 +148,7 @@
 - evidence links:
 - defects opened:
 
-### STG-11 Audit Log Listing
+### STG-12 Audit Log Listing
 
 - status:
 - preconditions met:

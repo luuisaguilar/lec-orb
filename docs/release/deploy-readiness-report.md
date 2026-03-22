@@ -47,6 +47,12 @@
 
 ## remaining warnings
 
+- There is now a dedicated staging validation report, and it still records no executed Preview + Supabase staging evidence.
+  Evidence:
+  - [docs/release/staging-validation-report.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/release/staging-validation-report.md)
+  Risk:
+  - Until that report contains a real staging run with evidence, this release cannot move from `conditionally ready` to `ready`.
+
 - There is still no executed staging evidence in the repository showing that the Preview deployment passed runtime smoke tests against a real Supabase environment.
   Risk:
   - Without that evidence, this cannot be promoted to `ready`.

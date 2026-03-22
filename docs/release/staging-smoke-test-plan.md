@@ -22,6 +22,7 @@ The smoke suite covers:
 - invitation acceptance
 - document upload
 - document download
+- document delete
 - audit log listing
 - non-admin access using `member_module_access`
 
@@ -343,7 +344,34 @@ Evidence to capture:
 - network trace showing redirect
 - screenshot of downloaded file or browser download confirmation
 
-### STG-10 Cross-Tenant Document Denial
+### STG-10 Document Delete
+
+Preconditions:
+
+- document from STG-08 exists
+- authenticated user has documents delete permission
+
+Steps:
+
+1. Call `DELETE /api/v1/documents?id=<document_id>` while authenticated as the same org user that uploaded the file.
+2. Verify the API response.
+3. Confirm the corresponding `documents` row is gone.
+4. Confirm the storage object was removed from `org-documents`.
+
+Expected result:
+
+- request returns `200`
+- response body includes `success: true`
+- the `documents` row no longer exists for that `id`
+- the storage object is removed
+
+Evidence to capture:
+
+- API response body
+- DB query showing the row is gone
+- storage evidence showing the object was removed
+
+### STG-11 Cross-Tenant Document Denial
 
 Preconditions:
 
@@ -364,7 +392,7 @@ Evidence to capture:
 - network capture showing `403`
 - path used in the denied request
 
-### STG-11 Audit Log Listing
+### STG-12 Audit Log Listing
 
 Preconditions:
 
@@ -404,8 +432,9 @@ Run in this order to maximize signal and reuse created data:
 7. STG-07 Non-Admin Access With `member_module_access`
 8. STG-08 Document Upload
 9. STG-09 Document Download
-10. STG-10 Cross-Tenant Document Denial
-11. STG-11 Audit Log Listing
+10. STG-10 Document Delete
+11. STG-11 Cross-Tenant Document Denial
+12. STG-12 Audit Log Listing
 
 ## Exit Criteria
 
@@ -420,6 +449,7 @@ The staging smoke suite passes only if:
   - STG-09
   - STG-10
   - STG-11
+  - STG-12
 - no cross-tenant leakage is observed
 - no config fallback to demo mode is observed
 - all required evidence is attached
