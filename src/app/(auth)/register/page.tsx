@@ -29,6 +29,14 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
+function getRegistrationErrorMessage(message: string) {
+    if (message.toLowerCase().includes("database")) {
+        return "No se pudo inicializar tu organización. Intenta de nuevo o contacta a soporte.";
+    }
+
+    return message;
+}
+
 export default function RegisterPage() {
     const router = useRouter();
     const { t } = useI18n();
@@ -46,8 +54,8 @@ export default function RegisterPage() {
         setError(null);
         const supabase = createClient();
 
-        // 1. Sign up the user via Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // User/profile/org bootstrap now lives in the database trigger chain.
+        const { error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
             options: {
@@ -58,48 +66,8 @@ export default function RegisterPage() {
         });
 
         if (authError) {
-            setError(authError.message);
+            setError(getRegistrationErrorMessage(authError.message));
             return;
-        }
-
-        if (authData.user) {
-            // 2. Create a profile record for the user
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: authData.user.id,
-                    full_name: data.fullName,
-                });
-
-            if (profileError) {
-                console.error("Profile creation failed: ", profileError);
-            }
-
-            // 3. Auto-create an Organization for this user
-            // (The first user to register becomes the admin of their own org)
-            const orgName = `${data.fullName.split(' ')[0]}'s Organization`;
-            const { data: newOrg, error: orgError } = await supabase
-                .from('organizations')
-                .insert({ name: orgName })
-                .select()
-                .single();
-
-            if (orgError) {
-                console.error("Organization creation failed: ", orgError);
-            } else if (newOrg) {
-                // 4. Link the user to the org as an admin
-                const { error: memberError } = await supabase
-                    .from('org_members')
-                    .insert({
-                        user_id: authData.user.id,
-                        org_id: newOrg.id,
-                        role: 'admin',
-                    });
-
-                if (memberError) {
-                    console.error("Org member link failed: ", memberError);
-                }
-            }
         }
 
         toast.success("¡Cuenta creada! Por favor verifica tu correo e inicia sesión.");
