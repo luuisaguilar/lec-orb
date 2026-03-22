@@ -1,11 +1,24 @@
 const PLACEHOLDER_SUPABASE_URL = "https://placeholder.supabase.co";
 
-function readRequiredEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY"): string {
-    const value = process.env[name]?.trim();
+function readRequiredSupabaseUrl(): string {
+    const value = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 
     if (!value) {
         throw new Error(
-            `[config] Missing required Supabase environment variable ${name}. ` +
+            "[config] Missing required Supabase environment variable NEXT_PUBLIC_SUPABASE_URL. " +
+            "Configure the real Supabase project values for this environment."
+        );
+    }
+
+    return value;
+}
+
+function readRequiredSupabaseAnonKey(): string {
+    const value = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+    if (!value) {
+        throw new Error(
+            "[config] Missing required Supabase environment variable NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
             "Configure the real Supabase project values for this environment."
         );
     }
@@ -14,8 +27,8 @@ function readRequiredEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABAS
 }
 
 export function getSupabasePublicEnv() {
-    const url = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-    const anonKey = readRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    const url = readRequiredSupabaseUrl();
+    const anonKey = readRequiredSupabaseAnonKey();
 
     if (url === PLACEHOLDER_SUPABASE_URL) {
         throw new Error(

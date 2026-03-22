@@ -20,6 +20,9 @@ assert.doesNotMatch(demoConfig, /placeholder\.supabase\.co/, "demo mode must not
 assert.match(supabaseEnv, /Missing required Supabase environment variable/);
 assert.match(supabaseEnv, /placeholder\.supabase\.co/);
 assert.match(supabaseEnv, /must be a real Supabase project URL/i);
+assert.match(supabaseEnv, /process\.env\.NEXT_PUBLIC_SUPABASE_URL/);
+assert.match(supabaseEnv, /process\.env\.NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+assert.doesNotMatch(supabaseEnv, /process\.env\[name\]/, "public Supabase env vars must not use dynamic lookup in browser-shared code");
 
 assert.match(envExample, /NEXT_PUBLIC_DEMO_MODE=false/);
 assert.match(envDocs, /only for local development/i);
