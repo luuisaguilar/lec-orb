@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+.env.test
 
 # next.js
 /.next/
@@ -30,6 +33,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# custom logs
+*.log
+validation_report*
+
+
 # env files (can opt-in for committing if needed)
 .env*
 
@@ -39,3 +47,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# build reports and logs
+eslint_report.json
+lint-log.txt
+lint-out.json
+lint_summary_clean.txt
+out.log
+
+# documentation (keep local, exclude from GitHub)
+docs/
+CLAUDE.md
+AUDIT_CAMBIOS_*.md
