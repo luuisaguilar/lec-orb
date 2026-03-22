@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
+import {
+    normalizeAuditLogForFeed,
+    type AuditFeedEntry,
+    type AuditLogRow,
+    type AuditProfile,
+} from "@/lib/audit/feed";
 
-export const GET = withAuth(async (req, { supabase }) => {
+export const GET = withAuth(async (req, { supabase, member }) => {
     const { searchParams } = new URL(req.url);
     const limitStr = searchParams.get("limit") || "100";
     const offsetStr = searchParams.get("offset") || "0";
@@ -15,34 +21,35 @@ export const GET = withAuth(async (req, { supabase }) => {
     let query = supabase
         .from("audit_log")
         .select("*", { count: "exact" })
-        .order("changed_at", { ascending: false })
+        .eq("org_id", member.org_id)
+        .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (tableFilter) query = query.eq("table_name", tableFilter);
-    if (actionFilter) query = query.eq("operation", actionFilter.toUpperCase());
-    if (userFilter) query = query.eq("changed_by", userFilter);
+    if (actionFilter) query = query.eq("action", actionFilter.toUpperCase());
+    if (userFilter) query = query.eq("performed_by", userFilter);
 
     const { data: logs, count, error } = await query;
     if (error) throw error;
 
-    const changedByIds = Array.from(new Set(logs?.map((l: any) => l.changed_by).filter(Boolean) || []));
-    let profilesMap = new Map();
+    const auditLogs = (logs ?? []) as AuditLogRow[];
+    const performedByIds = Array.from(new Set(auditLogs.map((log) => log.performed_by).filter(Boolean))) as string[];
+    let profilesMap = new Map<string, AuditProfile>();
 
-    if (changedByIds.length > 0) {
+    if (performedByIds.length > 0) {
         const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .in('id', changedByIds);
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", performedByIds);
 
         if (profiles) {
-            profilesMap = new Map((profiles as any[]).map(p => [p.id, p]));
+            profilesMap = new Map((profiles as AuditProfile[]).map((profile) => [profile.id, profile]));
         }
     }
 
-    const formattedLogs = (logs || []).map((log: any) => ({
-        ...log,
-        profiles: profilesMap.get(log.changed_by) || null
-    }));
+    const formattedLogs: AuditFeedEntry[] = auditLogs.map((log) =>
+        normalizeAuditLogForFeed(log, log.performed_by ? (profilesMap.get(log.performed_by) ?? null) : null)
+    );
 
     return NextResponse.json({
         logs: formattedLogs,

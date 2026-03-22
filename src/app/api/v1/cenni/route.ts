@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
+import { normalizeCenniCaseInput } from "@/lib/cenni/normalize";
+import { logAudit } from "@/lib/audit/log";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
     const { data: cases, error } = await supabase
@@ -39,7 +41,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "Validation failed" }, { status: 400 });
     }
 
-    const d = parsed.data;
+    const d = normalizeCenniCaseInput(parsed.data, { defaultStatus: "EN OFICINA" });
 
     const { data: newCase, error } = await supabase
         .from("cenni_cases")
@@ -47,24 +49,24 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             org_id: member.org_id,
             folio_cenni: d.folio_cenni,
             cliente_estudiante: d.cliente_estudiante,
-            celular: d.celular || null,
-            correo: d.correo || null,
+            celular: d.celular,
+            correo: d.correo,
             solicitud_cenni: d.solicitud_cenni,
             acta_o_curp: d.acta_o_curp,
             id_documento: d.id_documento,
-            certificado: d.certificado || null,
-            datos_curp: d.datos_curp || null,
-            cliente: d.cliente || null,
-            estatus: d.estatus || "SOLICITADO",
-            estatus_certificado: d.estatus_certificado || null,
-            notes: d.notes || null,
+            certificado: d.certificado,
+            datos_curp: d.datos_curp,
+            cliente: d.cliente,
+            estatus: d.estatus,
+            estatus_certificado: d.estatus_certificado,
+            notes: d.notes,
         })
         .select()
         .single();
 
     if (error) throw error;
 
-    await supabase.from("audit_log").insert({
+    await logAudit(supabase, {
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: newCase.id,

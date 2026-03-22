@@ -1,3 +1,5 @@
+import type { AuditAction } from "./feed";
+
 /**
  * logAudit
  * --------
@@ -5,19 +7,9 @@
  * Wraps the insert in a silent try/catch so an audit logging failure
  * NEVER blocks the main API response.
  *
- * Usage:
- *   // After a successful INSERT/UPDATE/DELETE:
- *   await logAudit(supabase, {
- *       org_id: member.org_id,
- *       table_name: "payments",
- *       record_id: newPayment.id,
- *       action: "INSERT",
- *       new_data: newPayment,
- *       performed_by: user.id,
- *   });
+ * Canonical audit_log contract:
+ *   org_id, table_name, record_id, action, old_data, new_data, performed_by, created_at
  */
-
-export type AuditAction = "INSERT" | "UPDATE" | "DELETE";
 
 export interface AuditEntry {
     org_id: string;
