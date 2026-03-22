@@ -23,6 +23,10 @@ The new policy is explicit and fail-closed:
 
 - [src/lib/supabase/env.ts](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/src/lib/supabase/env.ts)
   Centralized validation for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  The browser-safe loader now reads those variables via direct references:
+  - `process.env.NEXT_PUBLIC_SUPABASE_URL`
+  - `process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  This avoids the Next.js client-bundle issue where dynamic lookups like `process.env[name]` are not inlined.
 
 - [src/lib/supabase/client.ts](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/src/lib/supabase/client.ts)
 - [src/lib/supabase/server.ts](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/src/lib/supabase/server.ts)
@@ -52,6 +56,7 @@ In those environments, bad Supabase configuration must fail explicitly so the pr
 ## Why This Is Safer
 
 - removes heuristic behavior based on placeholder values
+- avoids a client-side configuration bug where configured public env vars could appear missing in the browser bundle
 - prevents silent fallback to mock data in deployed environments
 - makes configuration errors visible early through explicit runtime failures
 - keeps demo behavior intentional instead of accidental

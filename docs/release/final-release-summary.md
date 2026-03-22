@@ -15,6 +15,7 @@ This branch bundles the hardening required to promote the repo from build-ready 
 1. TypeScript/build stabilization for Next.js production builds
 2. Validation workflow hardening through `typecheck`, `lint`, `build`, and `check`
 3. Environment configuration hardening and fail-fast Supabase env validation
+   - including browser-safe direct loading of `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 4. Database-owned organization slug generation for signup/bootstrap
 5. Versioned `org-documents` storage provisioning and tenant isolation policies
 6. Canonical multi-tenant audit log contract alignment
@@ -41,6 +42,7 @@ Observed results:
 - `npm run lint`: passed with 39 warnings and 0 errors
 - `npm run build`: passed
 - `npm run check`: the underlying `typecheck`, `lint`, and `build` steps passed, but the combined command hit `spawn EPERM` in this local environment after starting the build step
+- follow-up fix: browser-shared Supabase env loading was corrected to avoid dynamic `process.env[name]` access for `NEXT_PUBLIC_*` values
 
 ## Suggested Commit Sequence
 

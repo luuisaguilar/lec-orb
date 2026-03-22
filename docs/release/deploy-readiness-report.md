@@ -32,6 +32,12 @@
   Outcome:
   - Misconfigured deploys fail fast instead of silently degrading to demo behavior.
 
+- Supabase public env loading is now safe for the browser bundle.
+  Evidence:
+  - [src/lib/supabase/env.ts](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/src/lib/supabase/env.ts) reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` via direct `process.env.NEXT_PUBLIC_*` access instead of dynamic lookup.
+  Outcome:
+  - Browser clients no longer risk seeing configured Vercel env vars as missing due to non-inlined dynamic access.
+
 - Release validation now has an explicit runtime smoke path.
   Evidence:
   - [docs/release/staging-smoke-test-plan.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/release/staging-smoke-test-plan.md)
@@ -86,6 +92,9 @@
 - Environment example exists in [`.env.example`](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/.env.example).
 - Environment documentation exists in [docs/deployment/environment-variables.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/deployment/environment-variables.md).
 - Demo mode hardening is documented in [docs/fixes/demo-mode-hardening.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/fixes/demo-mode-hardening.md).
+- Browser-safe loading of public Supabase env vars is documented in:
+  - [docs/deployment/environment-variables.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/deployment/environment-variables.md)
+  - [docs/fixes/demo-mode-hardening.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/fixes/demo-mode-hardening.md)
 - CI workflow exists in [`.github/workflows/ci.yml`](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/.github/workflows/ci.yml).
 - Supabase release documentation exists in [docs/deployment/supabase-release-checklist.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/deployment/supabase-release-checklist.md).
 - Registration slug alignment is documented in [docs/fixes/registration-slug-alignment.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/fixes/registration-slug-alignment.md).

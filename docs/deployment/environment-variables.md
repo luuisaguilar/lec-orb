@@ -9,6 +9,12 @@ This project currently uses a small environment surface area:
 
 The app uses the Supabase URL and anon key on both server and client, so both are intentionally public `NEXT_PUBLIC_*` variables. Demo mode is also public because both client and server code read the same flag.
 
+Important implementation note:
+
+- browser-shared code must read public env vars through direct property access such as `process.env.NEXT_PUBLIC_SUPABASE_URL`
+- do not use dynamic lookup like `process.env[name]` for `NEXT_PUBLIC_*` values consumed by the client bundle
+- Next.js only inlines the direct form reliably for browser code
+
 ## Source Inventory
 
 Environment variables are consumed in:
@@ -73,9 +79,11 @@ Expected in production:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
   This must be public because the browser Supabase client needs the project URL.
+  In browser-shared code, read it only as `process.env.NEXT_PUBLIC_SUPABASE_URL`.
 
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   This must be public because the browser Supabase client needs the anon key. This is acceptable only because it is the anon key, not the service role key.
+  In browser-shared code, read it only as `process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 - `NEXT_PUBLIC_DEMO_MODE`
   This is intentionally public because both client and server code read the same flag.
@@ -103,6 +111,7 @@ Demo mode is only for local development.
 - Never leave `NEXT_PUBLIC_SUPABASE_URL` as a placeholder.
 - Use a real Supabase project URL in every deployed Vercel environment.
 - If Supabase env vars are missing or left as placeholders, the app now fails explicitly instead of degrading to demo behavior.
+- If browser code switches back to dynamic env lookup, configured Vercel values can appear missing even when they are present.
 - After editing env vars in Vercel, redeploy so the new values are applied consistently.
 
 ## Local Usage
