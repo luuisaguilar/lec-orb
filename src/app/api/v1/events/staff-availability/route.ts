@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 
+type EventSessionIdRow = {
+    id: string;
+};
+
+type EventStaffRow = {
+    applicator_id: string | null;
+};
+
 export const GET = withAuth(async (req, { supabase }) => {
     const url = new URL(req.url);
     const date = url.searchParams.get("date");
@@ -13,7 +21,7 @@ export const GET = withAuth(async (req, { supabase }) => {
 
     if (sessionError) throw sessionError;
 
-    const sessionIds = activeSessions?.map(s => s.id) || [];
+    const sessionIds = ((activeSessions ?? []) as EventSessionIdRow[]).map((session) => session.id);
     if (sessionIds.length === 0) return NextResponse.json({ busyStaffIds: [] });
 
     const { data: busyStaff, error: staffError } = await supabase
@@ -23,6 +31,10 @@ export const GET = withAuth(async (req, { supabase }) => {
 
     if (staffError) throw staffError;
 
-    const busyIds = Array.from(new Set(busyStaff.map(s => s.applicator_id)));
+    const busyIds = Array.from(new Set(
+        ((busyStaff ?? []) as EventStaffRow[])
+            .map((staff) => staff.applicator_id)
+            .filter((applicatorId): applicatorId is string => applicatorId !== null)
+    ));
     return NextResponse.json({ busyStaffIds: busyIds });
 }, { module: "events", action: "view" });

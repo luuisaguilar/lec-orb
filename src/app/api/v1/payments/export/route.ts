@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 import * as xlsx from "xlsx";
 
+type PaymentConceptRow = {
+    concept_key: string;
+    description: string | null;
+};
+
+type PaymentExportRow = {
+    folio: string;
+    status: string;
+    first_name: string | null;
+    last_name: string | null;
+    person_name: string | null;
+    payment_concepts: PaymentConceptRow | null;
+    custom_concept: string | null;
+    created_at: string;
+    amount: number;
+    payment_method: string | null;
+    location: string | null;
+};
+
 function mapStatusToExcel(status: string) {
     switch (status) {
         case "PENDING": return "STPE";
@@ -22,16 +41,16 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     if (error) throw error;
 
-    const excelData = (payments || []).map(p => ({
-        "ID": p.folio,
-        "ST.": mapStatusToExcel(p.status),
-        "NOMBRE COMPLETO": p.first_name ? `${p.first_name} ${p.last_name || ''}`.trim() : p.person_name,
-        "REFERENCIA": p.folio,
-        "CONCEPTO": p.payment_concepts?.description || p.custom_concept || "Desconocido",
-        "FECHA GEN.": new Date(p.created_at).toLocaleDateString("es-MX", { year: 'numeric', month: '2-digit', day: '2-digit' }),
-        "TOTAL": p.amount,
-        "PAGO EN": p.payment_method || "N/A",
-        "SEDE": p.location || "N/A"
+    const excelData = ((payments ?? []) as PaymentExportRow[]).map((payment) => ({
+        "ID": payment.folio,
+        "ST.": mapStatusToExcel(payment.status),
+        "NOMBRE COMPLETO": payment.first_name ? `${payment.first_name} ${payment.last_name || ""}`.trim() : payment.person_name,
+        "REFERENCIA": payment.folio,
+        "CONCEPTO": payment.payment_concepts?.description || payment.custom_concept || "Desconocido",
+        "FECHA GEN.": new Date(payment.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "2-digit", day: "2-digit" }),
+        "TOTAL": payment.amount,
+        "PAGO EN": payment.payment_method || "N/A",
+        "SEDE": payment.location || "N/A"
     }));
 
     const worksheet = xlsx.utils.json_to_sheet(excelData);

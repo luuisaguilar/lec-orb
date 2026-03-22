@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { DEMO_MODE } from "@/lib/demo/config";
 import { withAuth } from "@/lib/auth/with-handler";
+import { normalizeCenniCaseInput } from "@/lib/cenni/normalize";
 
 const cenniBulkSchema = z.object({
     cases: z.array(z.object({
@@ -27,10 +28,7 @@ export const POST = withAuth(async (req, { supabase, member }) => {
 
     if (DEMO_MODE) {
         const { addBulkMockCenni } = await import("@/lib/demo/data");
-        const newCases = parsed.data.cases.map(c => ({
-            ...c,
-            notes: null,
-        }));
+        const newCases = parsed.data.cases.map((currentCase) => normalizeCenniCaseInput(currentCase));
         addBulkMockCenni(newCases);
         return NextResponse.json({ count: newCases.length, success: true }, { status: 201 });
     }
@@ -39,9 +37,9 @@ export const POST = withAuth(async (req, { supabase, member }) => {
         return NextResponse.json({ error: "Permisos insuficientes para carga masiva" }, { status: 403 });
     }
 
-    const payload = parsed.data.cases.map(c => ({
-        ...c,
+    const payload = parsed.data.cases.map((currentCase) => ({
         org_id: member.org_id,
+        ...normalizeCenniCaseInput(currentCase),
     }));
 
     const { error } = await supabase.from("cenni_cases").insert(payload);

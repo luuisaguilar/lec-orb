@@ -19,7 +19,7 @@ export const GET = withAuth(async (req, { supabase, user, member }) => {
             email: user.email,
             full_name: profile?.full_name,
         },
-        organization: member.organizations,
+        organization: { id: member.org_id },
         role: member.role,
         permissions: access || []
     });
