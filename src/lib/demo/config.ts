@@ -1,10 +1,10 @@
 // Demo mode configuration
-// When NEXT_PUBLIC_DEMO_MODE=true, the app bypasses Supabase auth
-// and uses mock data for all operations.
+// Demo mode is restricted to explicit local development only.
+// It never auto-activates from placeholder config or production-like runtimes.
 
 export const DEMO_MODE =
-    process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL === "https://placeholder.supabase.co";
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true" &&
+    process.env.NODE_ENV === "development";
 
 export const DEMO_USER = {
     id: "demo-user-001",
