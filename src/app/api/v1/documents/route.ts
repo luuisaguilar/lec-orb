@@ -32,8 +32,6 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "file and module_slug are required" }, { status: 400 });
     }
 
-    const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
-
     const ext = file.name.split(".").pop() ?? "bin";
     const storagePath = `${member.org_id}/${moduleSlug}/${recordId ?? "general"}/${Date.now()}.${ext}`;
 
