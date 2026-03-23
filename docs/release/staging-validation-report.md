@@ -4,7 +4,7 @@
 
 - date: `2026-03-22`
 - branch: `fix/staging-release-candidate-hardening`
-- commit SHA validated locally: `279ac02e1c8f3eb4c3e3a5a08f9b45ec148fcbf3`
+- commit SHA validated locally: `3c90364725380541dd0682ff07e26a0a7bd53bdb`
 - repository: `luuisaguilar/lec-orb`
 - validation scope:
   - local release-candidate verification
@@ -62,6 +62,7 @@ Findings:
 Current workspace evidence does **not** prove staging execution:
 
 - no checked-in `.vercel/` linkage metadata was found
+- no local evidence links commit `3c90364725380541dd0682ff07e26a0a7bd53bdb` to a concrete Vercel Preview deployment
 - no local evidence of a completed staging smoke run was found in `docs/release/`
 - no local evidence was available proving the three candidate migrations have already been applied to the remote staging database
 - the repository documentation explicitly treats remote migration state as something that must be checked with:
@@ -100,7 +101,7 @@ Environment note:
 
 Before a real staging validation can pass, staging should be aligned as follows:
 
-- Vercel Preview uses commit `279ac02e1c8f3eb4c3e3a5a08f9b45ec148fcbf3` or a newer explicitly approved candidate
+- Vercel Preview uses commit `3c90364725380541dd0682ff07e26a0a7bd53bdb` or a newer explicitly approved candidate
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in Vercel
 - `NEXT_PUBLIC_DEMO_MODE` is unset or `false`
 - staging Supabase has applied:
