@@ -55,7 +55,13 @@
 
 - The release now has partial staging evidence, but not enough to prove the full runtime contract.
   Risk:
-  - Login and dashboard access are evidenced, but missing smoke coverage for signup, invitations, `/api/v1/users/me`, documents, audit logs, and cross-tenant denial still blocks `ready`.
+  - Login, dashboard access, and `/api/v1/users/me` are evidenced, but invitation delivery is currently failing and missing smoke coverage for signup, documents, audit logs, and cross-tenant denial still blocks `ready`.
+
+- Invitation flow is not yet release-safe.
+  Evidence:
+  - User-provided staging evidence shows invitation rows can be created and remain `Pendiente`, but the email is not being received.
+  Risk:
+  - Until invitation delivery and acceptance are validated end-to-end, the users/invitations flow remains an open runtime defect.
 
 - Supabase migration history is still not safe to treat as a clean bootstrap path for a brand-new environment.
   Evidence:

@@ -25,8 +25,10 @@ The codebase and release documentation are aligned for a staging rollout:
 - the three candidate runtime migrations exist and are documented
 - the staging smoke suite now explicitly covers document delete in addition to upload/download and cross-tenant denial
 - user-provided staging evidence shows the login page is reachable and the authenticated dashboard loads successfully
+- user-provided staging evidence shows `/api/v1/users/me` returning authenticated user, organization, role, and permissions data
 - user confirmed that the required Vercel env vars are correct in the deployed environment
 - user confirmed that the candidate Supabase migrations are already applied in staging
+- user-provided staging evidence shows invitation creation persisting in the UI, but email delivery is not confirmed and currently appears broken
 
 However, this report still lacks a complete smoke run and does **not** independently prove which exact Vercel deployment SHA is serving the validated environment. Because that evidence remains incomplete, the staging validation result is recorded as **`fail`** for completion status and the overall release state remains **`conditionally ready`**.
 
@@ -85,6 +87,8 @@ Additional user-provided evidence now available:
 - screenshots show:
   - `/login` reachable at `orb.luisaguilaraguila.com/login`
   - authenticated access to `/dashboard`
+  - `GET /api/v1/users/me` returning valid authenticated JSON with organization, role, and permissions
+  - invitation row visible as `Pendiente` in the UI, without confirmed email delivery
 
 ## Validations Run
 
@@ -129,6 +133,8 @@ User-reported staging state on `2026-03-22`:
 - Vercel env vars: correct
 - login page: reachable
 - authenticated dashboard: reachable
+- `/api/v1/users/me`: returns authenticated user context correctly
+- invitation creation: persists pending row in UI, but mail delivery not verified and currently treated as failing acceptance flow
 
 ## Smoke Test Status
 
@@ -143,10 +149,10 @@ Source of truth:
 | --- | --- | --- | --- |
 | STG-01 | Login | pass | User-provided evidence shows successful entry to the platform and authenticated session reaching `/dashboard` |
 | STG-02 | Dashboard Load | pass | User-provided screenshot shows protected dashboard content rendering successfully |
-| STG-03 | `/api/v1/users/me` | not executed | No authenticated staging API capture available |
+| STG-03 | `/api/v1/users/me` | pass | User-provided evidence shows authenticated JSON with user, organization, role, and permissions |
 | STG-04 | Signup / org bootstrap | not executed | Candidate migration reviewed, but no runtime staging execution evidence |
 | STG-05 | Organization Read Consistency | not executed | Depends on executed signup test |
-| STG-06 | Invitation Acceptance | not executed | No staging invitation evidence |
+| STG-06 | Invitation Acceptance | fail | Invitation row is created and visible as pending, but the email was not received and end-to-end acceptance is not validated |
 | STG-07 | Non-admin access / `member_module_access` | not executed | No staging role-based runtime evidence |
 | STG-08 | Document Upload | not executed | Storage migration reviewed; no staging upload evidence |
 | STG-09 | Document Download | not executed | No signed URL/download evidence |
@@ -158,9 +164,10 @@ Source of truth:
 
 1. Partial staging evidence now exists, but the smoke suite is still incomplete.
 2. No local repository evidence proves which exact Vercel deployment SHA is serving the validated environment.
-3. `/api/v1/users/me`, signup/bootstrap, invitations, documents, audit logs, and cross-tenant denial still lack recorded staging evidence.
-4. The local sandbox still produces `spawn EPERM` during `next build`, but the same build succeeds outside the sandbox.
-5. The smoke plan previously omitted explicit document delete validation; this report corrects that gap in the release documentation.
+3. Invitation delivery/acceptance is currently not validated end-to-end and is treated as an active staging issue.
+4. Signup/bootstrap, documents, audit logs, and cross-tenant denial still lack recorded staging evidence.
+5. The local sandbox still produces `spawn EPERM` during `next build`, but the same build succeeds outside the sandbox.
+6. The smoke plan previously omitted explicit document delete validation; this report corrects that gap in the release documentation.
 
 ## Final Decision
 
@@ -171,16 +178,16 @@ Rationale:
 
 - the branch is locally healthy enough to serve as a staging release candidate
 - the code and documentation are aligned with the intended runtime contracts
-- partial staging evidence now exists for env effectiveness, login, and dashboard access
+- partial staging evidence now exists for env effectiveness, login, dashboard access, and `/api/v1/users/me`
+- invitation creation is visible in the product, but invitation delivery/acceptance remains a runtime issue to resolve
 - but the required smoke coverage and deployment-to-SHA traceability are still incomplete, so this cannot be promoted to `ready`
 
 ## What Must Happen Next
 
 1. Record the exact Vercel deployment/Preview metadata that maps the validated environment to commit `daadb63c8ed2b4212f11e2ced6a51a8d45138b99` or a newer explicitly approved SHA.
 2. Execute the remaining smoke tests in staging:
-   - `/api/v1/users/me`
    - signup / org bootstrap
-   - invitations
+   - invitations after resolving delivery / acceptance path
    - document upload / download / delete
    - audit log listing
    - cross-tenant denial
