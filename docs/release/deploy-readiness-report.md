@@ -47,15 +47,15 @@
 
 ## remaining warnings
 
-- There is now a dedicated staging validation report, and it still records no executed Preview + Supabase staging evidence.
+- There is now a dedicated staging validation report with partial runtime evidence, but the smoke suite is still incomplete.
   Evidence:
   - [docs/release/staging-validation-report.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/release/staging-validation-report.md)
   Risk:
-  - Until that report contains a real staging run with evidence, this release cannot move from `conditionally ready` to `ready`.
+  - Until that report contains the remaining staging smoke evidence and deployment-to-SHA traceability, this release cannot move from `conditionally ready` to `ready`.
 
-- There is still no executed staging evidence in the repository showing that the Preview deployment passed runtime smoke tests against a real Supabase environment.
+- The release now has partial staging evidence, but not enough to prove the full runtime contract.
   Risk:
-  - Without that evidence, this cannot be promoted to `ready`.
+  - Login and dashboard access are evidenced, but missing smoke coverage for signup, invitations, `/api/v1/users/me`, documents, audit logs, and cross-tenant denial still blocks `ready`.
 
 - Supabase migration history is still not safe to treat as a clean bootstrap path for a brand-new environment.
   Evidence:
@@ -128,12 +128,11 @@ Observed results:
 
 ## manual steps still required in Vercel
 
-- Add `NEXT_PUBLIC_SUPABASE_URL` for Development, Preview, and Production.
-- Add `NEXT_PUBLIC_SUPABASE_ANON_KEY` for Development, Preview, and Production.
+- Confirm which Vercel deployment/Preview corresponds to the environment being validated.
+- Capture evidence that the validated deployment maps to the candidate SHA.
 - Keep `NEXT_PUBLIC_DEMO_MODE` unset or `false` in Preview and Production.
 - Confirm Vercel uses Node 20 to match `package.json` and CI.
-- Pull the configured vars locally with `vercel env pull .env.local` before the staging smoke run.
-- Create or refresh the Preview deployment for the release candidate commit.
+- Pull the configured vars locally with `vercel env pull .env.local` if local reproduction of staging is needed.
 
 ## manual steps still required in Supabase
 
@@ -145,8 +144,8 @@ supabase link --project-ref <project-ref>
 supabase migration list
 ```
 
-- Rehearse the exact migration set against staging before touching production.
-- Apply the candidate runtime migrations required for this release, including:
+- Rehearse the exact migration set against staging before touching production if that has not already been done.
+- Confirm and record that the candidate runtime migrations required for this release are applied in staging, including:
   - `20260322_organizations_slug_alignment.sql`
   - `20260322_org_documents_storage.sql`
   - `20260322_audit_log_schema_alignment.sql`

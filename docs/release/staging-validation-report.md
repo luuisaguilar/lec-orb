@@ -4,14 +4,15 @@
 
 - date: `2026-03-22`
 - branch: `fix/staging-release-candidate-hardening`
-- commit SHA validated locally: `3c90364725380541dd0682ff07e26a0a7bd53bdb`
+- commit SHA validated locally: `daadb63c8ed2b4212f11e2ced6a51a8d45138b99`
 - repository: `luuisaguilar/lec-orb`
 - validation scope:
   - local release-candidate verification
   - staging runtime verification readiness review
 - environment validated:
   - local workspace: executed
-  - Vercel Preview + Supabase staging: not executed from this workspace
+  - deployed environment reported by release owner: `orb.luisaguilaraguila.com`
+  - Vercel Preview + Supabase staging: partially evidenced by user-provided screenshots and operator confirmation, not independently queried from this workspace
 
 ## Executive Summary
 
@@ -23,8 +24,11 @@ The codebase and release documentation are aligned for a staging rollout:
 - `typecheck`, `lint`, `build`, and `check` pass when run outside the local sandbox restriction
 - the three candidate runtime migrations exist and are documented
 - the staging smoke suite now explicitly covers document delete in addition to upload/download and cross-tenant denial
+- user-provided staging evidence shows the login page is reachable and the authenticated dashboard loads successfully
+- user confirmed that the required Vercel env vars are correct in the deployed environment
+- user confirmed that the candidate Supabase migrations are already applied in staging
 
-However, this report does **not** contain executed staging evidence against a real Supabase staging project and a real Vercel Preview deployment. Because that evidence is still missing, the staging validation result is recorded as **`fail`** for execution status and the overall release state remains **`conditionally ready`**.
+However, this report still lacks a complete smoke run and does **not** independently prove which exact Vercel deployment SHA is serving the validated environment. Because that evidence remains incomplete, the staging validation result is recorded as **`fail`** for completion status and the overall release state remains **`conditionally ready`**.
 
 ## Code State Verified
 
@@ -59,18 +63,28 @@ Findings:
 
 ### Staging linkage evidence available locally
 
-Current workspace evidence does **not** prove staging execution:
+Current workspace evidence does **not** fully prove staging execution:
 
 - no checked-in `.vercel/` linkage metadata was found
-- no local evidence links commit `3c90364725380541dd0682ff07e26a0a7bd53bdb` to a concrete Vercel Preview deployment
+- no local evidence links commit `daadb63c8ed2b4212f11e2ced6a51a8d45138b99` to a concrete Vercel Preview deployment
 - no local evidence of a completed staging smoke run was found in `docs/release/`
-- no local evidence was available proving the three candidate migrations have already been applied to the remote staging database
 - the repository documentation explicitly treats remote migration state as something that must be checked with:
 
 ```bash
 supabase link --project-ref <project-ref>
 supabase migration list
 ```
+
+Additional user-provided evidence now available:
+
+- operator confirmed that staging Supabase already has:
+  - `20260322_organizations_slug_alignment.sql`
+  - `20260322_org_documents_storage.sql`
+  - `20260322_audit_log_schema_alignment.sql`
+- operator confirmed that Vercel env vars are correct for the deployed environment
+- screenshots show:
+  - `/login` reachable at `orb.luisaguilaraguila.com/login`
+  - authenticated access to `/dashboard`
 
 ## Validations Run
 
@@ -101,13 +115,20 @@ Environment note:
 
 Before a real staging validation can pass, staging should be aligned as follows:
 
-- Vercel Preview uses commit `3c90364725380541dd0682ff07e26a0a7bd53bdb` or a newer explicitly approved candidate
+- Vercel Preview uses commit `daadb63c8ed2b4212f11e2ced6a51a8d45138b99` or a newer explicitly approved candidate
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in Vercel
 - `NEXT_PUBLIC_DEMO_MODE` is unset or `false`
 - staging Supabase has applied:
   - `20260322_organizations_slug_alignment.sql`
   - `20260322_org_documents_storage.sql`
   - `20260322_audit_log_schema_alignment.sql`
+
+User-reported staging state on `2026-03-22`:
+
+- required migrations: applied
+- Vercel env vars: correct
+- login page: reachable
+- authenticated dashboard: reachable
 
 ## Smoke Test Status
 
@@ -120,8 +141,8 @@ Source of truth:
 
 | test ID | area | status | notes |
 | --- | --- | --- | --- |
-| STG-01 | Login | not executed | No real Preview + staging Supabase run captured from this workspace |
-| STG-02 | Dashboard Load | not executed | No staging session evidence available |
+| STG-01 | Login | pass | User-provided evidence shows successful entry to the platform and authenticated session reaching `/dashboard` |
+| STG-02 | Dashboard Load | pass | User-provided screenshot shows protected dashboard content rendering successfully |
 | STG-03 | `/api/v1/users/me` | not executed | No authenticated staging API capture available |
 | STG-04 | Signup / org bootstrap | not executed | Candidate migration reviewed, but no runtime staging execution evidence |
 | STG-05 | Organization Read Consistency | not executed | Depends on executed signup test |
@@ -135,10 +156,11 @@ Source of truth:
 
 ## Incidents / Findings
 
-1. No executed staging validation evidence is currently available in the repository.
-2. No local repository evidence proves that the candidate migrations are already applied to staging.
-3. The local sandbox still produces `spawn EPERM` during `next build`, but the same build succeeds outside the sandbox.
-4. The smoke plan previously omitted explicit document delete validation; this report corrects that gap in the release documentation.
+1. Partial staging evidence now exists, but the smoke suite is still incomplete.
+2. No local repository evidence proves which exact Vercel deployment SHA is serving the validated environment.
+3. `/api/v1/users/me`, signup/bootstrap, invitations, documents, audit logs, and cross-tenant denial still lack recorded staging evidence.
+4. The local sandbox still produces `spawn EPERM` during `next build`, but the same build succeeds outside the sandbox.
+5. The smoke plan previously omitted explicit document delete validation; this report corrects that gap in the release documentation.
 
 ## Final Decision
 
@@ -149,13 +171,19 @@ Rationale:
 
 - the branch is locally healthy enough to serve as a staging release candidate
 - the code and documentation are aligned with the intended runtime contracts
-- but the required staging evidence does not yet exist, so this cannot be promoted to `ready`
+- partial staging evidence now exists for env effectiveness, login, and dashboard access
+- but the required smoke coverage and deployment-to-SHA traceability are still incomplete, so this cannot be promoted to `ready`
 
 ## What Must Happen Next
 
-1. Link to the actual staging Supabase project and inspect remote migration state.
-2. Confirm whether the three candidate migrations are already applied or still pending.
-3. Point the Vercel Preview deployment at the same candidate commit.
-4. Execute the smoke suite in staging.
-5. Record evidence in the results template.
-6. Update [docs/release/deploy-readiness-report.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/release/deploy-readiness-report.md) only if the executed evidence justifies a status change.
+1. Record the exact Vercel deployment/Preview metadata that maps the validated environment to commit `daadb63c8ed2b4212f11e2ced6a51a8d45138b99` or a newer explicitly approved SHA.
+2. Execute the remaining smoke tests in staging:
+   - `/api/v1/users/me`
+   - signup / org bootstrap
+   - invitations
+   - document upload / download / delete
+   - audit log listing
+   - cross-tenant denial
+   - session persistence beyond the initial dashboard landing
+3. Record evidence in the results template.
+4. Update [docs/release/deploy-readiness-report.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/release/deploy-readiness-report.md) only if the executed evidence justifies a status change.
