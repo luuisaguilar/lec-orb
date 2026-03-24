@@ -45,6 +45,17 @@
   Outcome:
   - There is now a reproducible path to validate runtime readiness before production promotion.
 
+- Invitation email delivery is now implemented and functional.
+  Evidence:
+  - [src/lib/email/resend.ts](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/src/lib/email/resend.ts) integrates Resend as email provider.
+  - `POST /api/v1/invitations` now dispatches email when `sendEmail: true` (default) and always returns `joinUrl`.
+  - A link-only mode (`sendEmail: false`) generates the `/join/[token]` URL for manual sharing.
+  - `POST /api/v1/invitations/[id]/resend` allows re-sending pending invitations.
+  - [docs/fixes/invitation-email-fix.md](/c:/Users/Usuario/Desktop/proyectos/orb-lec/lec-orb/docs/fixes/invitation-email-fix.md) documents the root cause and fix.
+  Outcome:
+  - The prior runtime defect where invitations were created but emails were never sent is resolved.
+  - End-to-end validation in staging is still required (actual email delivery and `/join/[token]` acceptance).
+
 ## remaining warnings
 
 - There is now a dedicated staging validation report with partial runtime evidence, but the smoke suite is still incomplete.
@@ -57,11 +68,11 @@
   Risk:
   - Login, dashboard access, and `/api/v1/users/me` are evidenced, but invitation delivery is currently failing and missing smoke coverage for signup, documents, audit logs, and cross-tenant denial still blocks `ready`.
 
-- Invitation flow is not yet release-safe.
+- Invitation flow requires staging validation.
   Evidence:
-  - User-provided staging evidence shows invitation rows can be created and remain `Pendiente`, but the email is not being received.
+  - Email delivery is now implemented via Resend (`src/lib/email/resend.ts`).
   Risk:
-  - Until invitation delivery and acceptance are validated end-to-end, the users/invitations flow remains an open runtime defect.
+  - End-to-end staging evidence (send → receive → accept via `/join/[token]`) is still missing. Until that evidence is recorded, the flow is not confirmed release-safe.
 
 - Supabase migration history is still not safe to treat as a clean bootstrap path for a brand-new environment.
   Evidence:

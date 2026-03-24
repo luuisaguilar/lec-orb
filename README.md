@@ -36,6 +36,7 @@ En el estado documentado más reciente:
 - `npm run typecheck` pasa
 - `npm run lint` pasa con warnings heredados
 - `npm run build` pasa
+- flujo de invitaciones con entrega de email implementado (Resend) con modo link-only
 - sigue siendo obligatorio validar staging con Supabase real y un Preview deployment antes de promover a producción
 
 ## Estructura Del Repositorio
@@ -108,6 +109,8 @@ Variables principales:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_DEMO_MODE` solo para desarrollo local controlado
+- `RESEND_API_KEY` para entrega de emails de invitación
+- `NEXT_PUBLIC_APP_URL` para construir links `/join/[token]`
 
 Referencias:
 
@@ -119,6 +122,7 @@ Importante:
 
 - Preview y Production no deben entrar en demo mode
 - si la configuración de Supabase falta o usa placeholders, la app ahora falla explícitamente en vez de degradarse a demo
+- `RESEND_API_KEY` es privada — nunca ponerla en una variable `NEXT_PUBLIC_*`
 
 ## Comandos Importantes
 
@@ -230,6 +234,7 @@ Referencia:
 - [docs/fixes/audit-log-schema-alignment.md](docs/fixes/audit-log-schema-alignment.md)
 - [docs/fixes/demo-mode-hardening.md](docs/fixes/demo-mode-hardening.md)
 - [docs/fixes/supabase-migration-bootstrap-strategy.md](docs/fixes/supabase-migration-bootstrap-strategy.md)
+- [docs/fixes/invitation-email-fix.md](docs/fixes/invitation-email-fix.md)
 
 ### Mantenimiento del repositorio
 

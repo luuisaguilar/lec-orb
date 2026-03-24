@@ -5,6 +5,8 @@ This project currently uses a small environment surface area:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_DEMO_MODE`
+- `RESEND_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
 - `NODE_ENV` as a derived runtime variable from Next.js/Vercel
 
 The app uses the Supabase URL and anon key on both server and client, so both are intentionally public `NEXT_PUBLIC_*` variables. Demo mode is also public because both client and server code read the same flag.
@@ -34,6 +36,8 @@ Environment variables are consumed in:
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Public | development, preview, production | `https://your-project-ref.supabase.co` | Base URL for the Supabase project used by browser, server, middleware, and local helper scripts. | Auth, middleware session refresh, API routes, and browser data access fail. Placeholder values now raise an explicit configuration error. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Public | development, preview, production | `your-supabase-anon-key` | Supabase anon key used by browser, server, middleware, and local helper scripts. | Supabase clients cannot initialize, so login and data access fail. |
 | `NEXT_PUBLIC_DEMO_MODE` | No, optional | Public | optional in local development only | `false` | Explicit switch for demo mode. Demo mode is only honored when `NODE_ENV=development`. | No effect in Preview or Production. In local development it changes auth/data behavior intentionally. |
+| `RESEND_API_KEY` | Yes (for email delivery) | Private | development, preview, production | `re_xxxxxxxxxxxx` | API key for [Resend](https://resend.com). Used by `src/lib/email/resend.ts` to send invitation emails. If missing, invitation emails are silently skipped — invitations are still created and the `joinUrl` is returned for manual sharing. |
+| `NEXT_PUBLIC_APP_URL` | Yes | Public | development, preview, production | `https://lec-platform.vercel.app` | Full base URL of the app. Used to build `/join/[token]` links in invitation emails and the link-only invite mode. | Invitation links will be malformed or fall back to `http://localhost:3000`. |
 | `NODE_ENV` | Derived | Private/runtime | development, preview, production | `development` or `production` | Set by Next.js/Vercel runtime. Used only to hide demo login UI in production. | Usually none if platform-managed. Do not override manually; manual overrides can create inconsistent behavior. |
 
 ## Required By Environment
@@ -43,6 +47,11 @@ Environment variables are consumed in:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+Recommended in development:
+
+- `RESEND_API_KEY` (invitation emails)
+- `NEXT_PUBLIC_APP_URL` (invitation links, defaults to `http://localhost:3000`)
+
 Optional in development:
 
 - `NEXT_PUBLIC_DEMO_MODE`
@@ -51,6 +60,8 @@ Optional in development:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `RESEND_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
 
 Expected in preview:
 
@@ -60,6 +71,8 @@ Expected in preview:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `RESEND_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
 
 Expected in production:
 
@@ -176,5 +189,8 @@ After pulling variables, restart the Next.js dev server so the updated values ar
 
 ## Notes
 
-- There is no evidence in the application code of a required server-only secret such as `SUPABASE_SERVICE_ROLE_KEY`.
+- `RESEND_API_KEY` is a private server-side key. Never expose it in a `NEXT_PUBLIC_*` variable.
+- In Resend's free tier, emails only deliver to the account owner's verified address. Verify a custom domain before sending to arbitrary recipients in production.
+- The `from` address in invitation emails is currently `onboarding@resend.dev` (Resend shared domain). Update to a verified domain address before production.
+- There is no evidence in the application code of a required server-only secret such as `SUPABASE_SERVICE_ROLE_KEY` beyond what is documented for test tooling.
 - If the project later adds admin/server jobs, re-run this inventory before deploying new environment assumptions.
