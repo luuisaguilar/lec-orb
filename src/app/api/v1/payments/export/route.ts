@@ -22,7 +22,19 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     if (error) throw error;
 
-    const excelData = (payments || []).map(p => ({
+    const excelData = (payments || []).map((p: {
+        folio: string;
+        status: string;
+        first_name?: string | null;
+        last_name?: string | null;
+        person_name?: string | null;
+        payment_concepts?: { description?: string | null } | null;
+        custom_concept?: string | null;
+        created_at: string;
+        amount: number;
+        payment_method?: string | null;
+        location?: string | null;
+    }) => ({
         "ID": p.folio,
         "ST.": mapStatusToExcel(p.status),
         "NOMBRE COMPLETO": p.first_name ? `${p.first_name} ${p.last_name || ''}`.trim() : p.person_name,

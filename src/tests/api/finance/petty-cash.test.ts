@@ -51,7 +51,7 @@ describe("Petty Cash API Route", () => {
             mockSupabase.data = [{ id: "mov1", concept: "Test", petty_cash_categories: { name: "Cat1" } }];
             mockSupabase.count = 1;
 
-            const response = await GET(req, { supabase: mockSupabase, user: mockUser, member: mockMember } as any, {});
+            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember }, {});
             
             // In Vitest/Next.js integration, response might be a Response object
             const body = await response.json();
@@ -78,7 +78,7 @@ describe("Petty Cash API Route", () => {
 
             mockSupabase.data = { ...payload, id: "new-id" };
 
-            const response = await POST(req, { supabase: mockSupabase, user: mockUser, member: mockMember } as any, {});
+            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember }, {});
             const body = await response.json();
 
             expect(response.status).toBe(201); // Based on implementation (returned 201)

@@ -97,7 +97,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
     const existingFolios = new Set();
     for (let i = 0; i < incomingFolios.length; i += 100) {
         const { data } = await supabase.from("payments").select("folio").in("folio", incomingFolios.slice(i, i + 100)).eq("org_id", member.org_id);
-        if (data) data.forEach(p => existingFolios.add(p.folio));
+        if (data) data.forEach((p: { folio: string }) => existingFolios.add(p.folio));
     }
 
     const finalRows = validRowsToInsert.filter(r => {

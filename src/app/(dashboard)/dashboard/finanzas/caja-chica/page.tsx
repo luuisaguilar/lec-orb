@@ -70,9 +70,11 @@ const movementSchema = z.object({
     amount: z.coerce.number().positive("Monto debe ser mayor a 0"),
     partial_amount: z.coerce.number().optional().nullable(),
     notes: z.string().optional().nullable(),
+    receipt_url: z.string().optional().nullable(),
 });
 
-type MovementFormValues = z.infer<typeof movementSchema>;
+type MovementFormInput = z.input<typeof movementSchema>;
+type MovementFormValues = z.output<typeof movementSchema>;
 
 // --- Components ---
 
@@ -149,7 +151,7 @@ export default function CajaChicaPage() {
     }, [loadData]);
 
     // Form
-    const form = useForm<MovementFormValues>({
+    const form = useForm<MovementFormInput, undefined, MovementFormValues>({
         resolver: zodResolver(movementSchema),
         defaultValues: {
             type: "EXPENSE",

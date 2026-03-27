@@ -42,7 +42,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
     }
 
-    const entries = isArray ? parsed.data : [parsed.data];
+    const entries = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
     
     const { data: upsertedBudgets, error } = await supabase
         .from("budgets")
@@ -60,7 +60,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         org_id: member.org_id,
         table_name: "budgets",
         record_id: "batch",
-        action: "UPSERT",
+        action: "UPDATE",
         new_data: upsertedBudgets,
         performed_by: user.id,
     });

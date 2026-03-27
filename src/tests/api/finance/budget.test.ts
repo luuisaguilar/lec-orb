@@ -40,7 +40,7 @@ describe("Budget API Route", () => {
             const req = new NextRequest("http://localhost/api/v1/finance/budget?month=3&year=2024");
             mockSupabase.data = [{ category_id: "c1", amount: 1000 }];
 
-            const response = await GET(req, { supabase: mockSupabase, user: mockUser, member: mockMember } as any, {});
+            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember }, {});
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -64,7 +64,7 @@ describe("Budget API Route", () => {
 
             mockSupabase.data = payload;
 
-            const response = await POST(req, { supabase: mockSupabase, user: mockUser, member: mockMember } as any, {});
+            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember }, {});
             const body = await response.json();
 
             expect(response.status).toBe(200);

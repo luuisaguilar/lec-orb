@@ -39,9 +39,11 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     if (expError) throw expError;
 
     // 4. Join and calculate
-    const comparative = categories.map(cat => {
-        const budget = budgets?.find(b => b.category_id === cat.id)?.amount || 0;
-        const actual = expenses?.filter(e => e.category_id === cat.id).reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+    const comparative = (categories ?? []).map((cat: { id: string; name: string; slug: string | null }) => {
+        const budget = (budgets ?? []).find((b: { category_id: string; amount: number }) => b.category_id === cat.id)?.amount || 0;
+        const actual = (expenses ?? [])
+            .filter((e: { category_id: string; amount: number | string }) => e.category_id === cat.id)
+            .reduce((sum: number, e: { amount: number | string }) => sum + Number(e.amount), 0);
         const variation = budget - actual;
         const variation_pct = budget > 0 ? (variation / budget) * 100 : 0;
 

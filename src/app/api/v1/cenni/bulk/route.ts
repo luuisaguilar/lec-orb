@@ -29,6 +29,12 @@ export const POST = withAuth(async (req, { supabase, member }) => {
         const { addBulkMockCenni } = await import("@/lib/demo/data");
         const newCases = parsed.data.cases.map(c => ({
             ...c,
+            celular: c.celular ?? null,
+            correo: c.correo ?? null,
+            certificado: c.certificado ?? null,
+            datos_curp: c.datos_curp ?? null,
+            cliente: c.cliente ?? null,
+            estatus_certificado: c.estatus_certificado ?? null,
             notes: null,
         }));
         addBulkMockCenni(newCases);
