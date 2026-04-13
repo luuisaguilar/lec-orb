@@ -13,7 +13,7 @@ export const GET = withAuth(async (req, { supabase }) => {
 
     if (sessionError) throw sessionError;
 
-    const sessionIds = activeSessions?.map(s => s.id) || [];
+    const sessionIds = (activeSessions ?? []).map((session: { id: string }) => session.id);
     if (sessionIds.length === 0) return NextResponse.json({ busyStaffIds: [] });
 
     const { data: busyStaff, error: staffError } = await supabase
@@ -23,6 +23,12 @@ export const GET = withAuth(async (req, { supabase }) => {
 
     if (staffError) throw staffError;
 
-    const busyIds = Array.from(new Set(busyStaff.map(s => s.applicator_id)));
+    const busyIds = Array.from(
+        new Set(
+            (busyStaff ?? [])
+                .map((staff: { applicator_id: string | null }) => staff.applicator_id)
+                .filter((staffId: string | null): staffId is string => Boolean(staffId))
+        )
+    );
     return NextResponse.json({ busyStaffIds: busyIds });
 }, { module: "events", action: "view" });

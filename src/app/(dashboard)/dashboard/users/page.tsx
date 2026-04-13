@@ -57,6 +57,7 @@ export default function UsersPage() {
 
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
 
     const members: OrgMember[] = membersData?.members || [];
     const invitations: OrgInvitation[] = invitationsData?.invitations || [];
@@ -77,6 +78,47 @@ export default function UsersPage() {
             mutateInvites();
         } catch {
             toast.error("No se pudo revocar la invitación");
+        }
+    };
+
+    const handleResendInvite = async (id: string, email: string) => {
+        setResendingInviteId(id);
+
+        try {
+            const res = await fetch(`/api/v1/invitations/${id}/resend`, {
+                method: "POST",
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data.error || "No se pudo reenviar la invitacion.");
+            }
+
+            if (data.emailSent) {
+                toast.success("Invitacion reenviada", {
+                    description: `Se envio un nuevo correo a ${email}.`,
+                });
+            } else if (data.joinUrl) {
+                try {
+                    await navigator.clipboard.writeText(data.joinUrl);
+                    toast.warning("No se pudo enviar el email", {
+                        description: "El enlace activo se copio al portapapeles para compartirlo manualmente.",
+                    });
+                } catch {
+                    toast.warning("No se pudo enviar el email", {
+                        description: "La invitacion sigue activa, pero deberas compartir el enlace manualmente.",
+                    });
+                }
+            } else {
+                toast.warning("No se pudo enviar el email");
+            }
+        } catch (error: unknown) {
+            toast.error("No se pudo reenviar la invitacion", {
+                description: error instanceof Error ? error.message : undefined,
+            });
+        } finally {
+            setResendingInviteId(null);
         }
     };
 
@@ -296,15 +338,31 @@ export default function UsersPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     {inv.status === "pending" && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-bold px-3"
-                                                            onClick={() => handleRevokeInvite(inv.id, inv.email)}
-                                                        >
-                                                            <ShieldAlert className="h-4 w-4 mr-2" />
-                                                            Revocar
-                                                        </Button>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="px-3 font-bold text-[#002e5d] hover:bg-slate-100"
+                                                                disabled={resendingInviteId === inv.id}
+                                                                onClick={() => handleResendInvite(inv.id, inv.email)}
+                                                            >
+                                                                {resendingInviteId === inv.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Mail className="h-4 w-4" />
+                                                                )}
+                                                                Reenviar
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-bold px-3"
+                                                                onClick={() => handleRevokeInvite(inv.id, inv.email)}
+                                                            >
+                                                                <ShieldAlert className="h-4 w-4 mr-2" />
+                                                                Revocar
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </TableCell>
                                             </TableRow>

@@ -11,13 +11,20 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     if (error || !members) throw error || new Error("No members found");
 
     // 3. Get profiles separately
-    const userIds = members.map(m => m.user_id);
+    const userIds = members.map((m: {
+        id: string;
+        user_id: string;
+        role: string;
+        created_at: string;
+        location: string | null;
+        job_title: string | null;
+    }) => m.user_id);
     const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', userIds);
 
-    const profilesMap = new Map((profiles || []).map(p => [p.id, p]));
+    const profilesMap = new Map((profiles || []).map((p: { id: string; full_name: string | null }) => [p.id, p]));
 
     // 4. Get Emails securely using database RPC
     let emailsMap = new Map();
@@ -28,7 +35,14 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         }
     }
 
-    const formattedMembers = members.map(m => {
+    const formattedMembers = members.map((m: {
+        id: string;
+        user_id: string;
+        role: string;
+        created_at: string;
+        location: string | null;
+        job_title: string | null;
+    }) => {
         const profile = profilesMap.get(m.user_id) as any;
         return {
             id: m.id,

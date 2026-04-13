@@ -55,7 +55,4 @@ lint-out.json
 lint_summary_clean.txt
 out.log
 
-# documentation (keep local, exclude from GitHub)
-docs/
-CLAUDE.md
-AUDIT_CAMBIOS_*.md
+.codex-review/

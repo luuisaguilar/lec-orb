@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
+import { logAudit } from "@/lib/audit/log";
 
 export const GET = withAuth(async (req, { supabase, member }, { params }) => {
     const { slug, recordId } = await params;
@@ -43,7 +44,7 @@ export const GET = withAuth(async (req, { supabase, member }, { params }) => {
 
 const updateRecordSchema = z.object({ data: z.record(z.string(), z.any()) });
 
-export const PATCH = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
+export const PATCH = withAuth(async (req, { supabase, user, member }, { params }) => {
     const { slug, recordId } = await params;
     const body = await req.json();
     const parsed = updateRecordSchema.safeParse(body);
@@ -67,18 +68,19 @@ export const PATCH = withAuth(async (req, { supabase, user, member, enrichAudit 
 
     if (error) throw error;
     
-    enrichAudit({
+    await logAudit(supabase, {
         org_id: member.org_id,
-        table_name: 'module_records',
+        table_name: "module_records",
         record_id: recordId,
-        operation: 'UPDATE',
-        new_data: parsed.data.data,
-        changed_by: user.id
+        action: "UPDATE",
+        old_data: existing.data,
+        new_data: updated,
+        performed_by: user.id,
     });
     return NextResponse.json({ record: updated });
 }, { module: "studio", action: "edit" });
 
-export const DELETE = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
+export const DELETE = withAuth(async (req, { supabase, user, member }, { params }) => {
     const { slug, recordId } = await params;
     const { data: module } = await supabase.from("module_registry").select("id").eq("slug", slug).or(`org_id.is.null,org_id.eq.${member.org_id}`).single();
     if (!module) return NextResponse.json({ error: "Module not found" }, { status: 404 });
@@ -91,12 +93,13 @@ export const DELETE = withAuth(async (req, { supabase, user, member, enrichAudit
     const { error } = await supabase.from("module_records").update({ is_active: false }).eq("id", recordId).eq("module_id", module.id).eq("org_id", member.org_id);
     if (error) throw error;
     
-    enrichAudit({
+    await logAudit(supabase, {
         org_id: member.org_id,
-        table_name: 'module_records',
+        table_name: "module_records",
         record_id: recordId,
-        operation: 'DELETE',
-        changed_by: user.id
+        action: "DELETE",
+        new_data: { is_active: false },
+        performed_by: user.id,
     });
     return NextResponse.json({ success: true });
 }, { module: "studio", action: "delete" });

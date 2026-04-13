@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthenticatedMember } from "./get-member";
 import { checkServerPermission } from "./permissions";
+import { logAudit } from "@/lib/audit/log";
 
 export type AuthContext = {
     supabase: any;
@@ -11,13 +12,24 @@ export type AuthContext = {
         org_id: string;
         role: string;
         location: string | null;
+        organizations: { name: string; slug: string } | null;
     };
+    enrichAudit: (entry: {
+        org_id: string;
+        table_name: string;
+        record_id: string;
+        operation: "INSERT" | "UPDATE" | "DELETE";
+        new_data?: any;
+        old_data?: any;
+        changed_by: string;
+    }) => void;
 };
 
 type Handler = (
     req: NextRequest,
     ctx: AuthContext,
-    nextCtx: any
+    nextCtx: any,
+    ...args: any[]
 ) => Promise<NextResponse>;
 
 type WithAuthOptions = {
@@ -36,7 +48,7 @@ type WithAuthOptions = {
  * 4. Optional: Granular module permission check (403).
  */
 export function withAuth(handler: Handler, options?: WithAuthOptions) {
-    return async (req: NextRequest, nextCtx: any) => {
+    return async (req: NextRequest, nextCtx: any, ...args: any[]) => {
         try {
             const supabase = await createClient();
             
@@ -46,6 +58,19 @@ export function withAuth(handler: Handler, options?: WithAuthOptions) {
 
             const { user, member } = auth;
 
+            // Define enrichAudit helper for handlers
+            const enrichAudit = (data: any) => {
+                logAudit(supabase, {
+                    org_id: data.org_id,
+                    table_name: data.table_name,
+                    record_id: data.record_id,
+                    action: data.operation,
+                    new_data: data.new_data,
+                    old_data: data.old_data,
+                    performed_by: data.changed_by,
+                });
+            };
+            
             // 2. Optional: Permission Check
             if (options?.module && options?.action) {
                 const hasPerm = await checkServerPermission(
@@ -63,7 +88,12 @@ export function withAuth(handler: Handler, options?: WithAuthOptions) {
             }
 
             // 3. Execute Handler
-            return await handler(req, { supabase, user, member }, nextCtx);
+            return await handler(
+                req,
+                { supabase, user, member, enrichAudit },
+                nextCtx,
+                ...args
+            );
         } catch (error: any) {
             console.error("API Error:", error);
             return NextResponse.json(
