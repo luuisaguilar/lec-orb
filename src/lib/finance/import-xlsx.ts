@@ -6,8 +6,8 @@ import * as XLSX from "xlsx";
  * @param orgs Map of organization names to IDs
  * @param categories Map of category names to IDs
  */
-export async function parseLegacyExcel(file: File, orgs: Record<string, string>, categories: Record<string, string>) {
-    return new Promise((resolve, reject) => {
+export async function parseLegacyExcel(file: File, orgs: Record<string, string>, categories: Record<string, string>): Promise<any[]> {
+    return new Promise<any[]>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
