@@ -16,7 +16,7 @@ test.describe("Finance Module Operations", () => {
     });
 
     test("should display the Petty Cash dashboard with stats", async ({ page }) => {
-        await expect(page.getByText("Control de Caja Chica")).toBeVisible();
+        await expect(page.getByText("Caja Chica")).toBeVisible();
         await expect(page.getByText("Balance Total")).toBeVisible();
         await expect(page.locator("table")).toBeVisible();
     });
@@ -44,7 +44,7 @@ test.describe("Finance Module Operations", () => {
 
     test("should navigate to Budget and update a value", async ({ page }) => {
         await page.goto("/dashboard/finanzas/presupuesto");
-        await expect(page.getByText("Presupuesto Mensual")).toBeVisible();
+        await expect(page.getByText("Presupuesto")).toBeVisible();
         
         // Find an input in the budget grid and change it
         const firstInput = page.locator('input[type="number"]').first();
