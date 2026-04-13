@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
+import useSWR from "swr";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,16 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function PresupuestoPage() {
+    const { data: userData, error: userError, isLoading: userLoading } = useSWR("/api/v1/users/me", fetcher);
+    const orgId = userData?.organization?.id || userData?.member?.org_id;
+
     const [currentDate, setCurrentDate] = useState(new Date());
     const [categories, setCategories] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
@@ -43,11 +51,12 @@ export default function PresupuestoPage() {
 
     // Load Data
     const loadData = useCallback(async () => {
+        if (!orgId) return;
         try {
             setIsLoading(true);
             const [catRes, budRes, compRes] = await Promise.all([
                 fetch("/api/v1/finance/petty-cash/categories"),
-                fetch(`/api/v1/finance/budget?month=${month}&year=${year}`),
+                fetch(`/api/v1/finance/budget?org_id=${orgId}&month=${month}&year=${year}`), // Explicit org scoping
                 fetch(`/api/v1/finance/budget/comparative?month=${month}&year=${year}`)
             ]);
 
@@ -73,20 +82,28 @@ export default function PresupuestoPage() {
             }
         } catch (err) {
             console.error("Error loading budget data", err);
+            toast.error("Error al cargar datos del presupuesto");
         } finally {
             setIsLoading(false);
         }
-    }, [month, year]);
+    }, [month, year, orgId]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (orgId) {
+            loadData();
+        }
+    }, [loadData, orgId]);
 
     const handleSave = async () => {
+        if (!orgId) {
+            toast.error("Contexto de organización no disponible");
+            return;
+        }
+
         try {
             setIsSaving(true);
             const entries = Object.entries(editedBudgets).map(([category_id, amount]) => ({
-                org_id: "81fbc964-8d7e-4bea-8879-66b516a66a30", // Placeholder, would use context
+                org_id: orgId,
                 category_id,
                 month,
                 year,
@@ -95,18 +112,38 @@ export default function PresupuestoPage() {
 
             const res = await fetch("/api/v1/finance/budget", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(entries),
             });
 
             if (res.ok) {
+                toast.success("Presupuesto guardado correctamente");
                 loadData();
+            } else {
+                const error = await res.json();
+                toast.error(error.error || "Error al guardar");
             }
         } catch (err) {
             console.error("Error saving budget", err);
+            toast.error("Error al guardar presupuesto");
         } finally {
             setIsSaving(false);
         }
     };
+
+    if (userError) {
+        return (
+            <div className="p-6">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error de Conexión</AlertTitle>
+                    <AlertDescription>
+                        No se pudo cargar el contexto de la organización. Por favor, intente de nuevo más tarde.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

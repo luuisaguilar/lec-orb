@@ -42,12 +42,13 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
     }
 
-    const entries = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
+    const entries = isArray ? (parsed.data as any[]) : [parsed.data as any];
     
     const { data: upsertedBudgets, error } = await supabase
         .from("budgets")
         .upsert(entries.map(e => ({
             ...e,
+            org_id: member.org_id, // Security: Override with authenticated tenant
             updated_at: new Date().toISOString(),
             updated_by: user.id,
         })), { onConflict: "org_id, category_id, month, year" })

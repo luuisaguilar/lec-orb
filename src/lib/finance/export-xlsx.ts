@@ -10,7 +10,7 @@ export function exportToXLSX(data: any[], fileName: string = "caja-chica-report"
     const worksheetData = data.map((m, index) => ({
         "#": index + 1,
         "Fecha": m.date,
-        "Empresa": m.org_id === "81fbc964-8d7e-4bea-8879-66b516a66a30" ? "LEC" : m.org_id, 
+        "Empresa": m.organizations?.name || m.organizations?.slug || m.org_id, 
         "Concepto": m.concept,
         "Categoría": m.petty_cash_categories?.name || "Sin categoría",
         "Notas": m.notes || "",

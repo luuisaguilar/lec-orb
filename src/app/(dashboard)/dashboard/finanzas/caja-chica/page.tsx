@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useForm, SubmitHandler, UseFormReturn } from "react-hook-form";
 import { 
     Wallet, 
     Plus, 
@@ -10,13 +11,16 @@ import {
     ArrowUpRight, 
     ArrowDownLeft,
     Download,
-    Calendar as CalendarIcon
+    Calendar as CalendarIcon,
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import useSWR from "swr";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,12 +56,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { exportToXLSX } from "@/lib/finance/export-xlsx";
 import { parseLegacyExcel } from "@/lib/finance/import-xlsx";
 import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 // --- Types & Schemas ---
 
@@ -73,16 +79,17 @@ const movementSchema = z.object({
     receipt_url: z.string().optional().nullable(),
 });
 
-type MovementFormInput = z.input<typeof movementSchema>;
-type MovementFormValues = z.output<typeof movementSchema>;
+type MovementFormValues = z.infer<typeof movementSchema>;
 
 // --- Components ---
 
 export default function CajaChicaPage() {
+    const { data: userData, error: userError, isLoading: userLoading } = useSWR("/api/v1/users/me", fetcher);
+    const orgId = userData?.organization?.id || userData?.member?.org_id;
+
     // State
     const [movements, setMovements] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
-    const [organizations, setOrganizations] = useState<any[]>([]);
     const [balance, setBalance] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -97,18 +104,11 @@ export default function CajaChicaPage() {
     useEffect(() => {
         async function loadFoundation() {
             try {
-                const [catRes, orgRes] = await Promise.all([
-                    fetch("/api/v1/finance/petty-cash/categories"),
-                    fetch("/api/v1/settings") // We'll use settings to get orgs or a specific one from context
-                ]);
-                
+                const catRes = await fetch("/api/v1/finance/petty-cash/categories");
                 if (catRes.ok) {
                     const { categories } = await catRes.json();
                     setCategories(categories);
                 }
-                
-                // For now, let's just get the orgs from the settings res if available
-                // In a real app, we'd have a specific /organizations endpoint
             } catch (err) {
                 console.error("Error loading categories", err);
             }
@@ -118,16 +118,18 @@ export default function CajaChicaPage() {
 
     // Load Movements & Balance
     const loadData = useCallback(async () => {
+        if (!orgId) return;
         try {
             setIsLoading(true);
-            const query = new URLSearchParams({
+            const queryParams = new URLSearchParams({
                 ...filters,
+                org_id: orgId, // Force current org context
                 limit: "50"
             }).toString();
 
             const [movRes, balRes] = await Promise.all([
-                fetch(`/api/v1/finance/petty-cash?${query}`),
-                fetch(`/api/v1/finance/petty-cash/balance?org_id=${filters.org_id}`)
+                fetch(`/api/v1/finance/petty-cash?${queryParams}`),
+                fetch(`/api/v1/finance/petty-cash/balance?org_id=${orgId}`)
             ]);
 
             if (movRes.ok) {
@@ -141,37 +143,69 @@ export default function CajaChicaPage() {
             }
         } catch (err) {
             console.error("Error loading data", err);
+            toast.error("Error al cargar movimientos");
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, orgId]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (orgId) {
+            loadData();
+        }
+    }, [loadData, orgId]);
 
     // Form
-    const form = useForm<MovementFormInput, undefined, MovementFormValues>({
+    const form = useForm({
         resolver: zodResolver(movementSchema),
         defaultValues: {
             type: "EXPENSE",
             date: format(new Date(), "yyyy-MM-dd"),
+            org_id: orgId || "",
+            category_id: "",
+            concept: "",
+            amount: 0,
+            notes: "",
+            receipt_url: "",
+            partial_amount: null
         }
     });
 
-    const onSubmit = async (values: MovementFormValues) => {
+    // Update form when orgId arrives
+    useEffect(() => {
+        if (orgId) {
+            form.setValue("org_id", orgId);
+        }
+    }, [orgId, form]);
+
+    const onSubmit: SubmitHandler<MovementFormValues> = async (values) => {
+        if (!orgId) return;
         try {
             const res = await fetch("/api/v1/finance/petty-cash", {
                 method: "POST",
-                body: JSON.stringify(values),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...values,
+                    org_id: orgId // Hardware enforcement of current org
+                }),
             });
             if (res.ok) {
+                toast.success("Movimiento registrado");
                 setIsDialogOpen(false);
-                form.reset();
+                form.reset({
+                    ...form.getValues(),
+                    amount: 0,
+                    concept: "",
+                    notes: ""
+                });
                 loadData();
+            } else {
+                const error = await res.json();
+                toast.error(error.error || "Error al guardar");
             }
         } catch (err) {
             console.error("Error saving movement", err);
+            toast.error("Error de red");
         }
     };
 
@@ -184,6 +218,23 @@ export default function CajaChicaPage() {
                         Control de ingresos y egresos de caja menor.
                     </p>
                 </div>
+
+                {userLoading && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Verificando contexto...</span>
+                    </div>
+                )}
+
+                {userError && (
+                    <Alert variant="destructive" className="max-w-md">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error de Contexto</AlertTitle>
+                        <AlertDescription>
+                            No se pudo determinar la organización activa. Por favor, reintente.
+                        </AlertDescription>
+                    </Alert>
+                )}
                 
                 <div className="flex items-center gap-2">
                     <Button 
@@ -201,23 +252,24 @@ export default function CajaChicaPage() {
                         accept=".xlsx, .xls"
                         onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
+                            if (file && orgId) {
                                 try {
-                                    // Mapping orgs to names for the demo
-                                    const orgs = { "LEC": "81fbc964-8d7e-4bea-8879-66b516a66a30" };
+                                    const orgs = { [userData?.organization?.name || "Empresa"]: orgId };
                                     const cats = Object.fromEntries(categories.map(c => [c.name, c.id]));
                                     const movements: any = await parseLegacyExcel(file, orgs, cats);
                                     
-                                    // Bulk insert via API
                                     for (const m of movements) {
                                         await fetch("/api/v1/finance/petty-cash", {
                                             method: "POST",
-                                            body: JSON.stringify(m)
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ ...m, org_id: orgId })
                                         });
                                     }
+                                    toast.success("Importación completada");
                                     loadData();
                                 } catch (err) {
                                     console.error("Import failed", err);
+                                    toast.error("Error al importar Excel");
                                 }
                             }
                         }}
@@ -237,17 +289,22 @@ export default function CajaChicaPage() {
                             <DialogHeader>
                                 <DialogTitle>Registrar Movimiento</DialogTitle>
                             </DialogHeader>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                            <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4 pt-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Empresa</label>
-                                        <Select onValueChange={(v) => form.setValue("org_id", v)}>
+                                        <Select 
+                                            onValueChange={(v) => form.setValue("org_id", v)}
+                                            value={form.watch("org_id")}
+                                            disabled
+                                        >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Seleccione empresa" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="81fbc964-8d7e-4bea-8879-66b516a66a30">LEC Puebla</SelectItem>
-                                                {/* Add others as needed */}
+                                                <SelectItem value={orgId || "loading"}>
+                                                    {userData?.organization?.name || "Cargando..."}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
