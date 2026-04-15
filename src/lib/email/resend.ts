@@ -31,8 +31,9 @@ export async function sendInvitationEmail({
     }
 
     try {
+        const from = process.env.RESEND_FROM_EMAIL || "LEC Platform <onboarding@updates.luisaguilaraguila.com>";
         const { error } = await resend.emails.send({
-            from: "LEC Platform <onboarding@resend.dev>",
+            from,
             to,
             subject: `Invitacion a ${orgName} - LEC Platform`,
             html: getInvitationEmailHtml({ orgName, role, joinUrl }),

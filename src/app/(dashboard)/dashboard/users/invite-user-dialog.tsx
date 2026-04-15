@@ -193,8 +193,8 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                             </AlertDescription>
                         </Alert>
 
-                        <div className="rounded-lg border bg-slate-50 p-4 space-y-3">
-                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-medium text-zinc-400">
                                 <Link2 className="h-4 w-4" />
                                 Enlace de acceso
                             </div>
@@ -202,18 +202,19 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                                 <Input
                                     readOnly
                                     value={inviteResult.joinUrl}
-                                    className="bg-white font-mono text-xs"
+                                    className="border-zinc-800 bg-zinc-900 font-mono text-xs text-zinc-100 selection:bg-zinc-700"
                                 />
                                 <Button
                                     type="button"
                                     size="icon"
                                     variant="outline"
+                                    className="border-zinc-800 hover:bg-zinc-800 hover:text-white"
                                     onClick={copyLink}
                                 >
-                                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                 </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-zinc-500">
                                 El enlace seguira funcionando mientras la invitacion permanezca pendiente.
                             </p>
                         </div>
