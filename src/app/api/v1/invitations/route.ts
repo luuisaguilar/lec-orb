@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { sendInvitationEmail } from "@/lib/email/resend";
+import { resolveAppOrigin } from "@/lib/env/app-url";
 
 const inviteSchema = z.object({
     email: z.string().email("Email invalido"),
@@ -50,8 +51,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
 
     if (error) throw error;
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
-    const joinUrl = `${appUrl}/join/${invitation.token}`;
+    const joinUrl = `${resolveAppOrigin(req)}/join/${invitation.token}`;
 
     let emailSent = false;
 

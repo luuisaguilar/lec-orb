@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 import { sendInvitationEmail } from "@/lib/email/resend";
+import { resolveAppOrigin } from "@/lib/env/app-url";
 
 export const POST = withAuth(async (req, { supabase, member }, { params }) => {
     const { id } = await params;
@@ -27,8 +28,7 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
         );
     }
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
-    const joinUrl = `${appUrl}/join/${invitation.token}`;
+    const joinUrl = `${resolveAppOrigin(req)}/join/${invitation.token}`;
 
     let orgName = "tu organizacion";
 

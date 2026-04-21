@@ -56,3 +56,4 @@ lint_summary_clean.txt
 out.log
 
 .codex-review/
+.env*.local
