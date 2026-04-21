@@ -1,99 +1,108 @@
-# Caja Chica and Budget Roadmap
+# Caja Chica WebApp Roadmap
 
-> Canonical status reference for the finance work inside `lec-orb`.
-> Last updated: April 2026
+> Conversión a Markdown del archivo HTML interactivo.
+> **Última actualización:** Abril 2026 (Reflejando implementación en `lec-orb`)
 
-## Current Status
+## Índice
 
-### Phase 1 - Foundation and movement capture
+- [Roadmap](#roadmap)
+- [Backlog](#backlog)
+- [Stack técnico](#stack-tecnico)
+- [Modelo de datos](#modelo-de-datos)
 
-- [x] Supabase auth and org-scoped permissions
-- [x] Core finance schema and API v1 routes
-- [x] Movement registration UI
-- [x] Unified movement table
-- [x] Server-side balance calculation via `fn_petty_cash_balance`
-- [x] CRUD foundation for petty cash movements
+## Roadmap
 
-### Phase 2 - Filters and operating workflow
+### ✅ Fase 1 — Fundación y registro de gastos (COMPLETADA)
+- Auth (Next-Auth + permissions wrapper)
+- BD con empresas LEC / DISCOVER / URUS
+- Formulario de registro de gasto (Implemented in `/src/app/(dashboard)/dashboard/finanzas/caja-chica`)
+- Selector de empresa (Scoping por `org_id`)
+- Tabla de movimientos unificada
+- Cálculo de saldo en tiempo real (RPC `fn_petty_cash_balance`)
+- CRUD de movimientos (API v1)
 
-- [x] Search by concept
-- [x] Filter by category and movement type
-- [x] Pagination support at the API layer
-- [x] Excel import/export utilities in the app layer
-- [ ] Consolidated multi-org finance dashboard
-- [ ] Rich KPI cards for income, expense, and trend summaries
-- [ ] Category charts based on live aggregated data
+### 🚀 Fase 2 — Dashboard consolidado y filtros (EN PROGRESO)
+- [x] Paginación de movimientos
+- [x] Filtro por empresa / fecha / categoría (Query params in API)
+- [x] Búsqueda de concepto
+- [ ] Vista unificada todas las empresas (Dashboard multitenant)
+- [ ] KPIs: saldo, entradas, salidas
+- [ ] Gráfica gastos por categoría
 
-### Phase 3 - Budget and comparative analysis
+### 📅 Fase 3 — Presupuesto y comparativa (EN PROGRESO)
+- [x] Módulo de presupuesto mensual (API v1 implemented)
+- [x] Presupuesto por empresa y categoría (Upsert pattern)
+- [ ] Variación presupuesto vs real (Comparative Logic)
+- [ ] Alertas por categoría excedida
+- [ ] Exportar a Excel (Feature present in `src/lib/finance/import-xlsx.ts` context)
 
-- [x] Monthly budget module
-- [x] Bulk budget upsert flow
-- [x] Budget-vs-actual comparative API
-- [x] Comparative UI tab in the dashboard
-- [ ] Over-budget alerts and thresholding
-- [ ] Deeper reporting and month-over-month trends
+### 🛠️ Fase 4 — Refinamiento y experiencia (PLANIFICADA)
+- [ ] Roles: admin / visor (RBAC foundation ready)
+- [ ] Subida de comprobante (Supabase Storage integration)
+- [ ] Auditoría de cambios (Audit logging service implemented)
+- [ ] App mobile-first responsiva
 
-### Phase 4 - Refinement and UX
+---
 
-- [x] Invitation flow for user onboarding
-- [x] RBAC foundation for admin, supervisor, operador, applicator
-- [x] Receipt upload to Supabase Storage
-- [x] Audit logging for finance mutations
-- [ ] Receipt preview/download polish inside the movement list
-- [ ] Additional mobile UX refinement for finance-heavy screens
+## Backlog
 
-## Canonical Routes
+- **NextAuth.js** — auth
+- **ExcelJS** — export
 
-- `/dashboard/finanzas/caja-chica`
-- `/dashboard/finanzas/presupuesto`
-- `/dashboard/users`
-- `/api/v1/finance/petty-cash`
-- `/api/v1/finance/petty-cash/balance`
-- `/api/v1/finance/petty-cash/categories`
-- `/api/v1/finance/budget`
-- `/api/v1/finance/budget/comparative`
+### Estructura de rutas
 
-## Technical Notes
+- **/dashboard** — consolidado
+- **/gastos** — registro y tabla
+- **/gastos/nuevo** — formulario
+- **/presupuesto** — por mes
+- **/configuracion** — empresas, saldos
+- **/api/...** — route handlers
 
-- Auth is Supabase-based, not NextAuth.
-- Finance mutations are always tenant-scoped by `org_id`.
-- Receipt uploads store `receipt_url`, not `comprobante_url`.
-- Comparative analysis is implemented at the API layer and rendered in the UI.
+### Decisiones de diseño
 
-## Simplified Data Model
+- **Caja única consolidada** — vs hojas separadas
+- **Campo empresa en cada gasto** — filtrable
+- **Saldo calculado en BD** — no en frontend
+- **Categorías en tabla enum** — extensible
+- **Multi-empresa desde día 1** — diseño
 
-### Movement
+## Modelo de datos
 
-| Field | Type | Notes |
+### Empresa
+
+| Campo | Tipo | Nota |
 |---|---|---|
-| `id` | `UUID` | Primary key |
-| `org_id` | `UUID` | Tenant boundary |
-| `category_id` | `UUID` | FK to `petty_cash_categories` |
-| `date` | `Date` | Required |
-| `concept` | `String` | Movement description |
-| `type` | `Enum` | `INCOME` or `EXPENSE` |
-| `amount` | `Decimal` | Positive numeric value |
-| `partial_amount` | `Decimal?` | Optional |
-| `receipt_url` | `String?` | Storage-backed receipt URL |
-| `notes` | `String?` | Optional |
-| `created_by` | `UUID` | Auth user id |
+| `id` | `UUID` | PK |
+| `nombre` | `String` | LEC, DISCOVER, URUS… |
+| `saldo_inicial` | `Decimal` | configurable |
+| `activa` | `Boolean` | default true |
+| `createdAt` | `DateTime` | auto |
 
-### Budget
+### Movimiento
 
-| Field | Type | Notes |
+| Campo | Tipo | Nota |
 |---|---|---|
-| `id` | `UUID` | Primary key |
-| `org_id` | `UUID` | Tenant boundary |
-| `category_id` | `UUID` | FK to `petty_cash_categories` |
-| `month` | `Int` | 1-12 |
-| `year` | `Int` | Calendar year |
-| `amount` | `Decimal` | Budgeted amount |
-| `updated_at` | `DateTime` | Audit/support field |
-| `updated_by` | `UUID` | Auth user id |
+| `id` | `UUID` | PK |
+| `empresa_id` | `UUID` | FK → Empresa |
+| `fecha` | `Date` | requerido |
+| `concepto` | `String` | descripción del gasto |
+| `categoria` | `Enum` | Papelería, Limpieza… |
+| `tipo` | `Enum` | ENTRADA | SALIDA |
+| `monto` | `Decimal` | siempre positivo |
+| `parcial` | `Decimal?` | opcional, sub-concepto |
+| `comprobante_url` | `String?` | Fase 4 |
+| `notas` | `String?` | Fase 4 |
+| `createdAt` | `DateTime` | auto |
+| `createdBy` | `UUID` | FK → Usuario |
 
-## Remaining Backlog
+### Presupuesto
 
-- Multi-org consolidated finance dashboard
-- Better visual analytics
-- Staging smoke tests with real auth/data
-- Receipt preview UX
+| Campo | Tipo | Nota |
+|---|---|---|
+| `id` | `UUID` | PK |
+| `empresa_id` | `UUID` | FK → Empresa |
+| `mes` | `Int` | 1–12 |
+| `año` | `Int` | ej. 2025 |
+| `categoria` | `Enum` | mismas que Movimiento |
+| `monto` | `Decimal` | monto presupuestado |
+| `updatedAt` | `DateTime` | auto |
