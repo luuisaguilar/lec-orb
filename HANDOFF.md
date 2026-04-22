@@ -1,66 +1,51 @@
-# Handoff Guide - LEC Platform (LEC Orb)
+# Handoff — LEC Orb
 
-**Canonical Repository**: `lec-orb`  
-**Date**: April 2026
+Resumen ejecutivo del estado del proyecto. Para contexto técnico completo ver `CLAUDE.md`.
 
-## Architecture Summary
+**Repo canónico:** `lec-orb` | **Última actualización:** Abril 2026
 
-The app is a multi-tenant SaaS built with Next.js 16 and React 19. Supabase is the primary backend for auth, database, storage, and RLS-backed tenancy boundaries.
+---
 
-### Core Stack
+## Estado actual
 
-- Framework: Next.js 16.1.6
-- UI: React 19 + Tailwind CSS 4 + Radix UI
-- Backend: Supabase PostgreSQL + Auth + Storage
-- API shape: Next.js route handlers under `src/app/api/v1`
+| Área | Estado |
+|------|--------|
+| Build / Typecheck / Lint | ✅ Pasan sin errores |
+| Vitest (unit/integration) | ✅ 26 archivos, 143 tests — 21/21 módulos API cubiertos |
+| Playwright (E2E) | ✅ Cubre finanzas e invitaciones contra servidor demo |
+| Finance — Caja Chica | ✅ CRUD + balance RPC + Excel export + receipt upload |
+| Finance — Presupuesto | ✅ Upsert mensual + comparativo presupuesto-vs-real |
+| Invitaciones | ✅ Creación atómica vía RPC + email Resend + joinUrl fallback |
+| DEMO_MODE | ✅ Documentado en `docs/DEMO_MODE.md` |
 
-## Auth, Session, and RBAC
+---
 
-- Browser auth uses Supabase `signInWithPassword`.
-- Protected app routes are guarded by `src/lib/supabase/proxy.ts`.
-- Server-side authorization uses `withAuth` in `src/lib/auth/with-handler.ts`.
-- Active roles are `admin`, `supervisor`, `operador`, and `applicator`.
-- Data isolation is enforced with `org_id` plus Supabase RLS.
+## Próximos pasos
 
-## Finance Modules Status
+1. **KPI cards + gráficas en Caja Chica** — richer dashboard de finanzas
+2. **Preview de comprobantes** — en vez de solo descarga
+3. **Staging smoke tests** — contra Supabase real con org de prueba dedicada
 
-### Caja Chica
+---
 
-- CRUD API is implemented in `src/app/api/v1/finance/petty-cash`.
-- Balance uses the `fn_petty_cash_balance` RPC for server-side calculation.
-- Receipt upload is wired from the UI to the `petty-cash-receipts` bucket.
-- Excel export is implemented in `src/lib/finance/export-xlsx.ts`.
-- Mutations are audited through `logAudit`.
+## Notas operacionales
 
-### Presupuesto
+- No deshabilitar RLS en tablas de tenant (`petty_cash_movements`, `org_members`, `invitations`).
+- Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y `org-documents`).
+- Al extender RBAC, verificar consistencia entre **module slug** y **permission-module name**.
+- `SUPABASE_SERVICE_ROLE_KEY` es obligatorio en producción para invitaciones.
 
-- Monthly budget upsert is implemented in `src/app/api/v1/finance/budget`.
-- Comparative budget-vs-actual analysis is implemented in `src/app/api/v1/finance/budget/comparative`.
-- The dashboard UI exposes both configuration and comparative tabs.
+---
 
-## Invitations and Email
+## Documentación del proyecto
 
-- Invitations are created in `src/app/api/v1/invitations/route.ts`.
-- The backend always returns a `joinUrl`, even when email delivery fails.
-- Resend integration lives in `src/lib/email/resend.ts`.
-- `NEXT_PUBLIC_APP_URL` and `RESEND_FROM_EMAIL` should be set in production to avoid localhost links and sender drift.
-
-## Testing Status
-
-- Vitest covers focused API and utility logic.
-- Playwright now runs against a dedicated local demo-mode server plus a browser-side API harness for deterministic UI flows.
-- Current Playwright coverage is strongest around finance and invitation flows.
-- A future staging smoke layer with real auth/storage state would still be valuable for higher-fidelity release validation.
-
-## Operational Notes
-
-- Do not disable RLS on tenant tables such as `petty_cash_movements`, `org_members`, or invitation-related tables.
-- Monitor Supabase Storage usage for receipts and uploaded documents.
-- Be careful with module slug vs permission-module naming when extending RBAC-sensitive routes.
-
-## Recommended Next Steps
-
-1. Expand Vitest coverage beyond finance utilities and the two existing finance API areas.
-2. Add a higher-fidelity staging smoke workflow that uses real Supabase auth and a dedicated test org.
-3. Finish remaining finance polish items such as richer KPI cards, charts, and receipt preview.
-4. Keep docs aligned whenever a route, auth rule, or module slug changes.
+| Archivo | Contenido |
+|---------|-----------|
+| `CLAUDE.md` | Arquitectura completa, patrones, comandos, criterio de done |
+| `AGENTS.md` | MCP servers + flujos específicos para Antigravity/Cursor/Copilot |
+| `docs/DEMO_MODE.md` | DEMO_MODE: activación, seed data, rutas afectadas, mocking en Vitest |
+| `docs/TESTING_PATTERNS.md` | Patrones Vitest: mock Supabase, withAuth, invocación de handlers |
+| `docs/API_MODULES.md` | Referencia completa de los 23 módulos API + tabla RBAC |
+| `docs/DATABASE_SCHEMA.md` | Schema completo — todas las tablas, enums y RPCs |
+| `docs/FINANCE_MODULES.md` | Detalle de módulos Caja Chica y Presupuesto |
+| `docs/TESTING_GUIDE.md` | Comandos y estructura de tests |
