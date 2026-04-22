@@ -27,6 +27,7 @@ The LEC Platform is a multi-tenant Next.js application designed to manage divers
 ### Prerequisites
 - Node.js 20+
 - Supabase Project URL & Anon Key (configured in `.env.local`)
+- Supabase Service Role Key (`SUPABASE_SERVICE_ROLE_KEY` configured in `.env.local` for secure backend tasks like invitations)
 
 ### Installation
 ```bash
