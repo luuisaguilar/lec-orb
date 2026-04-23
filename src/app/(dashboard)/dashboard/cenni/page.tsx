@@ -37,11 +37,9 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 // ── Status definitions ────────────────────────────────────────────────────────
 const STATUSES = [
-    "SOLICITADO",
     "EN OFICINA",
-    "EN OFICINA/POR ENVIAR",
-    "EN TRAMITE",
-    "REVISION",
+    "SOLICITADO",
+    "EN TRAMITE/REVISION",
     "APROBADO",
     "RECHAZADO",
 ] as const;
@@ -53,13 +51,11 @@ const CERT_STATUSES = [
 ] as const;
 
 const statusColors: Record<string, string> = {
-    "SOLICITADO": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    "EN OFICINA": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    "EN OFICINA/POR ENVIAR": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-    "EN TRAMITE": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    "REVISION": "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-    "APROBADO": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    "RECHAZADO": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    "EN OFICINA":          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    "SOLICITADO":          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "EN TRAMITE/REVISION": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "APROBADO":            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    "RECHAZADO":           "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const certColors: Record<string, string> = {
@@ -69,13 +65,11 @@ const certColors: Record<string, string> = {
 };
 
 const kanbanColors: Record<string, string> = {
-    "SOLICITADO": "border-blue-400 bg-blue-50 dark:bg-blue-950/20",
-    "EN OFICINA": "border-gray-400 bg-gray-50 dark:bg-gray-950/20",
-    "EN OFICINA/POR ENVIAR": "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/20",
-    "EN TRAMITE": "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
-    "REVISION": "border-violet-400 bg-violet-50 dark:bg-violet-950/20",
-    "APROBADO": "border-green-400 bg-green-50 dark:bg-green-950/20",
-    "RECHAZADO": "border-red-400 bg-red-50 dark:bg-red-950/20",
+    "EN OFICINA":          "border-gray-400 bg-gray-50 dark:bg-gray-950/20",
+    "SOLICITADO":          "border-blue-400 bg-blue-50 dark:bg-blue-950/20",
+    "EN TRAMITE/REVISION": "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
+    "APROBADO":            "border-green-400 bg-green-50 dark:bg-green-950/20",
+    "RECHAZADO":           "border-red-400 bg-red-50 dark:bg-red-950/20",
 };
 
 interface CenniCase {
@@ -92,6 +86,9 @@ interface CenniCase {
     cliente: string | null;
     estatus: string;
     estatus_certificado: string | null;
+    fecha_recepcion: string | null;
+    fecha_revision: string | null;
+    motivo_rechazo: string | null;
     notes: string | null;
     created_at: string;
 }
@@ -154,7 +151,7 @@ export default function CENNIPage() {
         try {
             const xlsx = await import("xlsx");
             const rows = filteredCases.map((c) => ({
-                "FECHA REGISTRO": new Date(c.created_at).toLocaleDateString(),
+                "FECHA REGISTRO": new Date(c.created_at).toLocaleDateString("es-MX"),
                 "FOLIO": c.folio_cenni,
                 "CLIENTE/ESTUDIANTE": c.cliente_estudiante,
                 "CELULAR": c.celular || "",
@@ -166,7 +163,10 @@ export default function CENNIPage() {
                 "DATOS CURP": c.datos_curp || "",
                 "CLIENTE": c.cliente || "",
                 "ESTATUS": c.estatus,
+                "FECHA RECEPCION": c.fecha_recepcion || "",
+                "FECHA REVISION": c.fecha_revision || "",
                 "ESTATUS CERTIFICADO": c.estatus_certificado || "",
+                "MOTIVO RECHAZO": c.motivo_rechazo || "",
                 "NOTAS": c.notes || "",
             }));
             const ws = xlsx.utils.json_to_sheet(rows);
@@ -285,7 +285,7 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b bg-muted/50">
-                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Fecha</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Registro</th>
                                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Folio</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Cliente / Estudiante</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Correo</th>
@@ -295,6 +295,8 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                 <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Identificación">ID</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Certificado</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Estatus</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Recepción</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Revisión</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Est. Certificado</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Acciones</th>
                             </tr>
@@ -359,6 +361,14 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                                 ))}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
+                                    </td>
+                                    {/* Fecha Recepción */}
+                                    <td className="px-3 py-2 text-[10px] text-muted-foreground whitespace-nowrap font-mono">
+                                        {c.fecha_recepcion ? new Date(c.fecha_recepcion + "T00:00:00").toLocaleDateString("es-MX") : "—"}
+                                    </td>
+                                    {/* Fecha Revisión */}
+                                    <td className="px-3 py-2 text-[10px] text-muted-foreground whitespace-nowrap font-mono">
+                                        {c.fecha_revision ? new Date(c.fecha_revision + "T00:00:00").toLocaleDateString("es-MX") : "—"}
                                     </td>
                                     {/* Est. Certificado */}
                                     <td className="px-3 py-2 text-center">
@@ -576,12 +586,13 @@ function EditCenniDialog({ case_, onClose, onSuccess }: {
             notes: fd.get("notes") || null,
             estatus: fd.get("estatus"),
             estatus_certificado: (() => { const v = fd.get("estatus_certificado") as string; return (!v || v === "__none__") ? null : v; })(),
+            fecha_recepcion: (fd.get("fecha_recepcion") as string) || null,
+            fecha_revision: (fd.get("fecha_revision") as string) || null,
+            motivo_rechazo: fd.get("motivo_rechazo") || null,
             solicitud_cenni: solicitud,
             acta_o_curp: acta,
             id_documento: idDoc,
         };
-        // The date parsing here isn't strictly necessary to format as ISO string,
-        // we could just send the string, but keeping it as is to preserve logic.
         const dateVal = fd.get("created_at") as string;
         if (dateVal) patch.created_at = new Date(dateVal).toISOString();
 
@@ -681,6 +692,20 @@ function EditCenniDialog({ case_, onClose, onSuccess }: {
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="e_fec_rec">Fecha Recepción</Label>
+                            <Input id="e_fec_rec" name="fecha_recepcion" type="date" defaultValue={case_.fecha_recepcion || ""} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="e_fec_rev">Fecha Revisión</Label>
+                            <Input id="e_fec_rev" name="fecha_revision" type="date" defaultValue={case_.fecha_revision || ""} />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="e_motivo">Motivo de Rechazo</Label>
+                        <Input id="e_motivo" name="motivo_rechazo" defaultValue={case_.motivo_rechazo || ""} placeholder="Razón del rechazo (si aplica)" />
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="e_notes">Notas</Label>

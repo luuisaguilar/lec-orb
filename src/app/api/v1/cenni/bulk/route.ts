@@ -15,7 +15,10 @@ const cenniBulkSchema = z.object({
         certificado: z.string().optional().nullable(),
         datos_curp: z.string().optional().nullable(),
         cliente: z.string().optional().nullable(),
-        estatus: z.string().optional().default("SOLICITADO"),
+        estatus: z.string().optional().default("EN OFICINA"),
+        fecha_recepcion: z.string().optional().nullable(),
+        fecha_revision: z.string().optional().nullable(),
+        motivo_rechazo: z.string().optional().nullable(),
         estatus_certificado: z.string().optional().nullable(),
     }))
 });
