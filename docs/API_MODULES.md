@@ -19,7 +19,7 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 | [Exam Codes](#exam-codes) | `/exam-codes` | GET POST | — | `exam_codes` |
 | [Finance — Caja Chica](#finance--caja-chica) | `/finance/petty-cash` | GET POST | — | `petty_cash_movements` |
 | [Finance — Presupuesto](#finance--presupuesto) | `/finance/budget` | GET POST | — | `budgets` |
-| [Invitations](#invitations) | `/invitations` | GET POST | — | `org_invitations` |
+| [Invitations](#invitations) | `/invitations` | GET POST DELETE | — | `org_invitations` |
 | [Modules](#modules) | `/modules` | GET POST | — | `module_registry`, `module_permissions` |
 | [Notifications](#notifications) | `/notifications` | GET PATCH | — | `notifications` |
 | [Packs](#packs) | `/packs` | GET POST PATCH DELETE | ✅ | `packs`, `movements` |
@@ -152,7 +152,7 @@ Crea un caso. Body requerido: `folio_cenni`, `cliente_estudiante`.
 **Body:**
 ```ts
 {
-  folio_cenni: string     // requerido
+  folio_cenni: string         // requerido
   cliente_estudiante: string  // requerido
   celular?: string
   correo?: string
@@ -162,8 +162,11 @@ Crea un caso. Body requerido: `folio_cenni`, `cliente_estudiante`.
   certificado?: string
   datos_curp?: string
   cliente?: string
-  estatus?: string            // default "EN OFICINA"
+  estatus?: string            // default "EN OFICINA" — ver enum cenni_status
   estatus_certificado?: string
+  fecha_recepcion?: string    // DATE ISO
+  fecha_revision?: string     // DATE ISO
+  motivo_rechazo?: string     // TEXT
   notes?: string
 }
 ```
@@ -174,8 +177,17 @@ Crea un caso. Body requerido: `folio_cenni`, `cliente_estudiante`.
 Actualización parcial con validación de enums.
 
 **Enums:**
-- `estatus`: `SOLICITADO` | `EN OFICINA` | `EN OFICINA/POR ENVIAR` | `EN TRAMITE` | `REVISION` | `APROBADO` | `RECHAZADO`
+- `estatus` (`cenni_status`): `EN OFICINA` | `SOLICITADO` | `EN TRAMITE/REVISION` | `APROBADO` | `RECHAZADO`
 - `estatus_certificado`: `APROBADO` | `RECHAZADO` | `EN PROCESO DE DICTAMINACION` | null
+
+**Campos de fecha/motivo (nuevos desde migración 20260422):**
+```ts
+{
+  fecha_recepcion?: string   // DATE ISO — cuándo se recibió el trámite
+  fecha_revision?: string    // DATE ISO — cuándo se revisó
+  motivo_rechazo?: string    // TEXT — razón del rechazo (si estatus = RECHAZADO)
+}
+```
 
 **Response 200:** `{ "case": {...} }`  
 **Response 404:** si no existe o ya tiene `deleted_at`
@@ -492,6 +504,20 @@ Actualiza una invitación. Solo admins.
 
 ### POST `/invitations/[id]/resend`
 Reenvía el correo de la invitación.
+
+### DELETE `/invitations/[id]`
+Elimina una invitación individual. Solo funciona sobre invitaciones **no-pendientes**
+(aceptadas, rechazadas, expiradas). Solo admins.
+
+**Response 200:** `{ "success": true }`  
+**Response 400:** si la invitación aún está pendiente  
+**Response 404:** si no existe o pertenece a otra org
+
+### DELETE `/invitations/cleanup`
+Elimina en bulk **todas** las invitaciones no-pendientes de la org (limpieza de historial).
+Solo admins.
+
+**Response 200:** `{ "success": true, "deleted": 5 }`
 
 ## Modules
 
@@ -1150,7 +1176,9 @@ en la tabla `module_permissions` de Supabase.
 | `/finance/petty-cash/[id]` | PATCH | finanzas | edit | - |
 | `/finance/petty-cash/[id]` | DELETE | finanzas | delete | - |
 | `/invitations/[id]` | PATCH | users | edit | - |
+| `/invitations/[id]` | DELETE | users | delete | Solo no-pendientes; Solo admin |
 | `/invitations/[id]/resend` | POST | users | edit | - |
+| `/invitations/cleanup` | DELETE | users | delete | Bulk; Solo admin |
 | `/modules/[slug]` | GET | studio | view | - |
 | `/modules/[slug]` | PATCH | studio | edit | Solo role=admin |
 | `/modules/[slug]` | DELETE | studio | delete | Solo role=admin |

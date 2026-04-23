@@ -68,6 +68,40 @@ npx supabase gen types typescript --project-id <id> > src/types/database.types.t
 
 ## Patrones Críticos — LEER ANTES DE ESCRIBIR CÓDIGO
 
+### Server Actions — nunca `throw`
+
+En Next.js 15+, lanzar un `throw` dentro de un Server Action produce "Application error"
+(pantalla blanca) en producción. **Todos los error paths deben usar `redirect()`.**
+
+```ts
+// MAL — causa pantalla blanca en prod
+throw new Error('token inválido');
+
+// BIEN — redirige con error inline
+redirect(`/join/${token}?error=${encodeURIComponent('Invitación inválida')}`);
+```
+
+Las páginas destino leen `searchParams.error` para mostrar el mensaje al usuario.
+
+### Next.js 15+ — `params` y `searchParams` son Promises
+
+En Next.js 15+, acceder a `params.property` sin `await` produce "Application error"
+en producción (funciona en dev, falla en build). **Siempre tipar y await los params.**
+
+```tsx
+// MAL — falla en producción
+export default async function Page({ params }: { params: { id: string } }) {
+  const { id } = params; // crash en Next.js 15+
+}
+
+// BIEN — patrón obligatorio
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+}
+```
+
+Aplica igual para `searchParams`. Toda página dinámica server-side debe seguir este patrón.
+
 ### `withAuth` — obligatorio en toda ruta mutante
 
 Toda ruta `POST / PUT / PATCH / DELETE` DEBE usar `withAuth`. Proporciona `user` y `org`
@@ -151,12 +185,43 @@ Plantilla en `.env.example`. Archivo local: `.env.local` (no commitear).
 - Análisis comparativo presupuesto-vs-real en `/comparative`.
 - UI con tabs: Configuración y Comparativo.
 
+## Módulo CENNI (`src/app/api/v1/cenni/`)
+
+Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
+
+- **Estatus enum** (`cenni_status`): `EN OFICINA` | `SOLICITADO` | `EN TRAMITE/REVISION` | `APROBADO` | `RECHAZADO`
+- **Campos clave:** `folio_cenni`, `cliente_estudiante`, `estatus`, `fecha_recepcion DATE`,
+  `fecha_revision DATE`, `motivo_rechazo TEXT`
+- **Migración:** `supabase/migrations/20260422_cenni_estatus_and_new_fields.sql`
+- **Soft delete** vía `deleted_at`.
+- **Endpoints:** `GET/POST /api/v1/cenni`, `PATCH/DELETE /api/v1/cenni/[id]`, `POST /api/v1/cenni/bulk`
+
+> Después de aplicar la migración CENNI, regenerar `src/types/database.types.ts`.
+
 ## Invitaciones
 
-- Creación: `src/app/api/v1/invitations/route.ts` — siempre devuelve `joinUrl`.
-- Aceptación: RPC `fn_accept_invitation` (atómica, privilegiada via admin client).
-- Email: Resend es opcional en local, obligatorio en producción.
-- Si el email falla, el flujo de invitación NO debe fallar — el `joinUrl` es el fallback.
+**Flujo completo:**
+1. Admin crea invitación desde `/dashboard/users` → `POST /api/v1/invitations`
+2. El servidor devuelve `invitation` + `joinUrl` (siempre, incluso si el email falla)
+3. Admin comparte `joinUrl` manualmente si Resend no está configurado
+4. Usuario visita el enlace `/join/[token]` → se le pide login/registro si no está autenticado
+5. Después del login, se redirige a `/join/[token]?next=...` preservando el token
+6. El usuario acepta → RPC atómica `fn_accept_invitation` procesa la invitación
+
+**Archivos clave:**
+- `src/app/join/[token]/page.tsx` — página de aceptación
+- `src/app/join/[token]/actions.ts` — Server Action (nunca throw, siempre redirect)
+- `src/app/join/[token]/queries.ts` — queries con admin client
+
+**Endpoints de limpieza:**
+- `DELETE /api/v1/invitations/[id]` — elimina invitación individual (no-pendiente)
+- `DELETE /api/v1/invitations/cleanup` — elimina todas las no-pendientes (historial)
+
+**Reglas:**
+- Email (Resend) es opcional — `joinUrl` es el fallback confiable.
+- Si el email falla, el flujo de invitación NO debe fallar.
+- `SUPABASE_SERVICE_ROLE_KEY` es obligatoria en producción para la RPC.
+- ⚠️ `RESEND_API_KEY` y `RESEND_FROM_EMAIL` aún no configurados en Vercel (abril 2026).
 
 ## Testing
 
@@ -200,9 +265,19 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 
 ## Próximos Pasos Documentados
 
-1. KPI cards, gráficas y preview de comprobantes en Caja Chica.
-2. Staging smoke tests con Supabase auth real + org de prueba dedicada.
-3. Mantener docs alineados cuando cambien rutas, reglas de auth o module slugs.
+**Prioridad Alta:**
+1. Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` en Vercel para habilitar emails de invitación.
+2. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
+3. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
+
+**Prioridad Media:**
+4. KPI cards y gráficas en Caja Chica.
+5. Staging environment con org de prueba dedicada.
+6. Regenerar `database.types.ts` después de migraciones CENNI.
+
+**Prioridad Baja:**
+7. ADR formales para decisiones de arquitectura.
+8. E2E tests actualizados con flujo de invitaciones real.
 
 ---
 
