@@ -6,7 +6,15 @@ import { CheckCircle2, XCircle, UserPlus, AlertTriangle } from "lucide-react";
 import { getInvitationPreview } from "./queries";
 import { acceptInvitation } from "./actions";
 
-export default async function JoinPage({ params }: { params: { token: string } }) {
+export default async function JoinPage({
+    params,
+    searchParams,
+}: {
+    params: { token: string };
+    searchParams?: { error?: string };
+}) {
+    const acceptError = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
+
     // 1. Validate Token securely on the server
     const preview = await getInvitationPreview(params.token);
 
@@ -78,6 +86,13 @@ export default async function JoinPage({ params }: { params: { token: string } }
                     </div>
                 </CardContent>
                 
+                {acceptError && (
+                    <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3 flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                        <p className="text-sm text-red-700">{acceptError}</p>
+                    </div>
+                )}
+
                 <form action={acceptInvitation}>
                     <input type="hidden" name="token" value={params.token} />
                     <Button type="submit" className="w-full mt-6 bg-[#002e5d] text-white hover:bg-[#001f3f]">
