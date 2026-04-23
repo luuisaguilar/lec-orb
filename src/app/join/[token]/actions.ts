@@ -20,7 +20,13 @@ export async function acceptInvitation(formData: FormData) {
     }
 
     // 2. Call the Atomic RPC via Admin Client
-    const adminClient = createAdminClient();
+    let adminClient;
+    try {
+        adminClient = createAdminClient();
+    } catch (e) {
+        console.error("[join] Admin client unavailable:", e);
+        redirect(`/join/${token}?error=${encodeURIComponent("Error de configuración del servidor. Contacta al administrador.")}`);
+    }
     const { data: result, error: rpcError } = await adminClient.rpc('fn_accept_invitation', {
         p_token: token,
         p_user_id: user.id,
