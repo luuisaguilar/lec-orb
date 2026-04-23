@@ -37,6 +37,8 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 
 ---
 
+
+> **Nota**: El índice no contiene todas las sub-rutas dinámicas o herramientas avanzadas. Ver detalles en cada sección.
 ## Applicators
 
 **Ruta:** `/api/v1/applicators`  
@@ -185,6 +187,12 @@ Soft delete — actualiza `deleted_at`, no elimina el registro.
 
 ---
 
+
+### POST `/cenni/bulk`
+Carga masiva de casos CENNI.
+**Body:** `{ "cases": [...] }`
+**Response 201:** `{ "success": true, "count": 10 }`
+
 ## Dashboard Stats
 
 **Ruta:** `/api/v1/dashboard/stats`  
@@ -255,6 +263,12 @@ Elimina el archivo de Storage y luego el registro en DB.
 
 ---
 
+
+### GET `/documents/download`
+Descarga de documento (genera signed URL). Requiere parámetro `path`.
+
+**Response 302:** Redirección a la URL firmada.
+
 ## Events
 
 **Ruta:** `/api/v1/events`  
@@ -308,6 +322,19 @@ Hard delete. Filtro por `org_id`.
 
 ---
 
+
+### POST `/events/[id]/recalculate`
+**OBSOLETO.** Usa el endpoint de recálculo por sesión.
+
+### POST `/events/[id]/sessions/[sessionId]/recalculate`
+Recalcula los slots para una sesión en específico en base a su duración y descansos.
+
+### PATCH `/events/[id]/slots`
+Actualiza o crea slots (horarios de aplicación de exámenes).
+
+### GET `/events/staff-availability`
+Devuelve la disponibilidad de staff para fechas específicas.
+
 ## Exam Codes
 
 **Ruta:** `/api/v1/exam-codes`  
@@ -335,6 +362,13 @@ Crea un código.
 **Response 201:** `{ "code": {...} }`
 
 ---
+
+
+### PATCH `/exam-codes/[id]`
+Actualización parcial por ID.
+
+### DELETE `/exam-codes/[id]`
+Soft delete o Hard delete según la regla del negocio.
 
 ## Finance — Caja Chica
 
@@ -374,6 +408,19 @@ Crea un movimiento. Balance calculado server-side vía RPC `fn_petty_cash_balanc
 **Response 201:** `{ "movement": {...} }`
 
 ---
+
+
+### GET `/finance/petty-cash/categories`
+Lista de categorías.
+
+### GET `/finance/petty-cash/balance`
+Obtiene el balance general.
+
+### PATCH `/finance/petty-cash/[id]`
+Actualiza un movimiento de caja chica.
+
+### DELETE `/finance/petty-cash/[id]`
+Elimina un movimiento de caja chica.
 
 ## Finance — Presupuesto
 
@@ -439,6 +486,13 @@ Crea invitación. **Solo rol `admin`** puede crear invitaciones.
 
 ---
 
+
+### PATCH `/invitations/[id]`
+Actualiza una invitación. Solo admins.
+
+### POST `/invitations/[id]/resend`
+Reenvía el correo de la invitación.
+
 ## Modules
 
 **Ruta:** `/api/v1/modules`  
@@ -470,6 +524,28 @@ Crea módulo personalizado. **Solo admins.** Genera automáticamente permisos de
 **Permisos generados:** admin (full), supervisor (sin delete), operador (solo view), applicator (sin acceso)
 
 ---
+
+
+### GET `/modules/[slug]`
+Obtiene detalles del módulo, sus campos y permisos.
+
+### PATCH `/modules/[slug]`
+Actualiza la configuración del módulo. Solo admins.
+
+### DELETE `/modules/[slug]`
+Desactiva un módulo (`is_active = false`). Solo admins y no nativos.
+
+### GET `/modules/[slug]/fields`
+Obtiene la lista de campos configurados.
+
+### POST `/modules/[slug]/fields`
+Crea un campo para un módulo.
+
+### GET `/modules/[slug]/records`
+Obtiene los registros dinámicos del módulo.
+
+### POST `/modules/[slug]/records`
+Crea un registro dinámico para el módulo.
 
 ## Notifications
 
@@ -615,6 +691,22 @@ Soft delete — actualiza `is_active = false`.
 **Response 200:** `{ "message": "Payment deleted successfully" }`
 
 ---
+
+
+### POST `/payments/bulk-delete`
+Elimina múltiples pagos a la vez enviando un arreglo de IDs.
+
+### GET `/payments/catalog`
+Lista el catálogo de conceptos de pagos.
+
+### POST `/payments/catalog`
+Crea un nuevo concepto de pago.
+
+### GET `/payments/export`
+Exporta los pagos a un archivo Excel.
+
+### POST `/payments/import`
+Importa pagos desde un archivo Excel.
 
 ## Payroll
 
@@ -785,6 +877,13 @@ Lista escuelas activas de la org (soft-delete filter, orden por name).
 
 ---
 
+
+### PATCH `/schools/[id]`
+Actualiza información de la escuela.
+
+### DELETE `/schools/[id]`
+Soft delete de la escuela.
+
 ## Settings
 
 **Ruta:** `/api/v1/settings`  
@@ -877,6 +976,13 @@ Lista administraciones activas. `test_date` se expone también como `start_date`
 
 ---
 
+
+### PATCH `/toefl/administrations/[id]`
+Actualiza la administración.
+
+### DELETE `/toefl/administrations/[id]`
+Elimina la administración.
+
 ## TOEFL — Codes
 
 **Ruta:** `/api/v1/toefl/codes`  
@@ -909,6 +1015,16 @@ Crea N códigos en bulk. Genera folios únicos con formato `TFL-YYYYMMDD-HHMMSS-
 
 ---
 
+
+### PATCH `/toefl/codes/[id]`
+Actualiza código específico.
+
+### DELETE `/toefl/codes/[id]`
+Elimina código específico.
+
+### POST `/toefl/codes/import`
+Importación masiva de códigos.
+
 ## Users
 
 **Ruta:** `/api/v1/users`  
@@ -940,6 +1056,16 @@ Elimina un miembro de la org. Filtro por `org_id`.
 **Response 400:** sin `id`
 
 ---
+
+
+### GET `/users/me`
+Obtiene la información de perfil actual y sus accesos a módulos.
+
+### GET `/users/[id]`
+Obtiene información del usuario específico y sus accesos de módulos.
+
+### PATCH `/users/[id]`
+Actualiza permisos de módulos específicos para el usuario. Solo admins.
 
 ## RBAC — Módulo × Acción requerida por endpoint
 
@@ -1013,6 +1139,40 @@ en la tabla `module_permissions` de Supabase.
 | `/toefl/codes` | POST | toefl-codes | edit | — |
 | `/users` | GET | users | view | — |
 | `/users` | DELETE | users | delete | — |
+| `/cenni/bulk` | POST | cenni | edit | - |
+| `/documents/download` | GET | documents | view | - |
+| `/events/[id]/recalculate` | POST | events | edit | Obsoleto |
+| `/events/[id]/sessions/[sessionId]/recalculate` | POST | events | edit | - |
+| `/events/[id]/slots` | PATCH | events | edit | - |
+| `/events/staff-availability` | GET | events | view | - |
+| `/finance/petty-cash/categories` | GET | finanzas | view | - |
+| `/finance/petty-cash/balance` | GET | finanzas | view | - |
+| `/finance/petty-cash/[id]` | PATCH | finanzas | edit | - |
+| `/finance/petty-cash/[id]` | DELETE | finanzas | delete | - |
+| `/invitations/[id]` | PATCH | users | edit | - |
+| `/invitations/[id]/resend` | POST | users | edit | - |
+| `/modules/[slug]` | GET | studio | view | - |
+| `/modules/[slug]` | PATCH | studio | edit | Solo role=admin |
+| `/modules/[slug]` | DELETE | studio | delete | Solo role=admin |
+| `/modules/[slug]/fields` | GET | studio | view | - |
+| `/modules/[slug]/fields` | POST | studio | edit | Solo role=admin |
+| `/modules/[slug]/records` | GET | studio | view | - |
+| `/modules/[slug]/records` | POST | studio | edit | - |
+| `/payments/bulk-delete` | POST | finanzas | delete | - |
+| `/payments/catalog` | GET | finanzas | view | - |
+| `/payments/catalog` | POST | finanzas | edit | Solo admin/supervisor |
+| `/payments/export` | GET | finanzas | view | - |
+| `/payments/import` | POST | finanzas | edit | - |
+| `/schools/[id]` | PATCH | schools | edit | - |
+| `/schools/[id]` | DELETE | schools | delete | - |
+| `/toefl/administrations/[id]` | PATCH | examenes | edit | - |
+| `/toefl/administrations/[id]` | DELETE | examenes | delete | - |
+| `/toefl/codes/[id]` | PATCH | toefl-codes | edit | - |
+| `/toefl/codes/[id]` | DELETE | toefl-codes | delete | - |
+| `/toefl/codes/import` | POST | toefl-codes | edit | - |
+| `/users/me` | GET | users | view | - |
+| `/users/[id]` | GET | users | view | - |
+| `/users/[id]` | PATCH | users | edit | Solo role=admin |
 
 > **Patrones de delete:**
 > - **Hard delete** (elimina el registro): `events`, `applicators`
