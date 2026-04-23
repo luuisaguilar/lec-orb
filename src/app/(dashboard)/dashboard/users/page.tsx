@@ -4,7 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Users, Mail, ShieldAlert, Trash2, CheckCircle2, Loader2, RefreshCw, Settings2 } from "lucide-react";
+import { Users, Mail, ShieldAlert, Trash2, CheckCircle2, Loader2, RefreshCw, Settings2, Eye, EyeOff } from "lucide-react";
 
 import {
     Table,
@@ -58,6 +58,8 @@ export default function UsersPage() {
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
+    const [showAllInvites, setShowAllInvites] = useState(false);
+    const [cleaningUp, setCleaningUp] = useState(false);
 
     const members: OrgMember[] = membersData?.members || [];
     const invitations: OrgInvitation[] = invitationsData?.invitations || [];
@@ -133,6 +135,22 @@ export default function UsersPage() {
             mutateMembers();
         } catch {
             toast.error("Error al remover usuario. Verifica que tengas permisos de administrador.");
+        }
+    };
+
+    const handleCleanupHistory = async () => {
+        if (!confirm("¿Eliminar permanentemente todas las invitaciones revocadas, aceptadas y expiradas? Las pendientes no se afectan.")) return;
+        setCleaningUp(true);
+        try {
+            const res = await fetch("/api/v1/invitations/cleanup", { method: "DELETE" });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Error");
+            toast.success(`Historial limpiado`, { description: `Se eliminaron ${data.deleted} invitaciones del historial.` });
+            mutateInvites();
+        } catch (e: unknown) {
+            toast.error("No se pudo limpiar el historial", { description: e instanceof Error ? e.message : undefined });
+        } finally {
+            setCleaningUp(false);
         }
     };
 
@@ -278,10 +296,37 @@ export default function UsersPage() {
                 <TabsContent value="pending" className="space-y-4">
                     <Card className="shadow-sm border-t-4 border-t-[#002e5d]">
                         <CardHeader>
-                            <CardTitle>Invitaciones Enviadas</CardTitle>
-                            <CardDescription>
-                                Administra las invitaciones pendientes y revoca envíos no deseados.
-                            </CardDescription>
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <CardTitle>Invitaciones Enviadas</CardTitle>
+                                    <CardDescription>
+                                        Administra las invitaciones pendientes y revoca envíos no deseados.
+                                    </CardDescription>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1.5 text-xs"
+                                        onClick={() => setShowAllInvites((v) => !v)}
+                                    >
+                                        {showAllInvites ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                        {showAllInvites ? "Ocultar historial" : "Ver historial"}
+                                    </Button>
+                                    {invitations.some((i) => i.status !== "pending") && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5 text-xs text-red-600 hover:text-red-700 hover:border-red-300"
+                                            disabled={cleaningUp}
+                                            onClick={handleCleanupHistory}
+                                        >
+                                            {cleaningUp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                            Limpiar historial
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {loadingInvites ? (
@@ -302,7 +347,7 @@ export default function UsersPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {invitations.map((inv) => (
+                                        {invitations.filter((inv) => showAllInvites || inv.status === "pending").map((inv) => (
                                             <TableRow key={inv.id} className="hover:bg-muted/30">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-2">
