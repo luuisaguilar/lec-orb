@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 
+const CENNI_STATUSES = [
+    "EN OFICINA",
+    "SOLICITADO",
+    "EN TRAMITE/REVISION",
+    "APROBADO",
+    "RECHAZADO",
+] as const;
+
 const updateCenniSchema = z.object({
     folio_cenni: z.string().min(1).optional(),
     cliente_estudiante: z.string().min(1).optional(),
@@ -13,16 +21,11 @@ const updateCenniSchema = z.object({
     certificado: z.string().nullable().optional(),
     datos_curp: z.string().nullable().optional(),
     cliente: z.string().nullable().optional(),
-    estatus: z.enum([
-        "SOLICITADO",
-        "EN OFICINA",
-        "EN OFICINA/POR ENVIAR",
-        "EN TRAMITE",
-        "REVISION",
-        "APROBADO",
-        "RECHAZADO",
-    ]).optional(),
+    estatus: z.enum(CENNI_STATUSES).optional(),
     estatus_certificado: z.enum(["APROBADO", "RECHAZADO", "EN PROCESO DE DICTAMINACION"]).nullable().optional(),
+    fecha_recepcion: z.string().nullable().optional(),
+    fecha_revision: z.string().nullable().optional(),
+    motivo_rechazo: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
     created_at: z.string().datetime({ offset: true }).optional(),
 });

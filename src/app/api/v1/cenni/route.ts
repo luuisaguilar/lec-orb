@@ -15,6 +15,14 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     return NextResponse.json({ cases, role: member.role, total: cases.length });
 }, { module: "cenni", action: "view" });
 
+const CENNI_STATUSES = [
+    "EN OFICINA",
+    "SOLICITADO",
+    "EN TRAMITE/REVISION",
+    "APROBADO",
+    "RECHAZADO",
+] as const;
+
 const createCenniSchema = z.object({
     folio_cenni: z.string().min(1),
     cliente_estudiante: z.string().min(1),
@@ -26,8 +34,11 @@ const createCenniSchema = z.object({
     certificado: z.string().optional().nullable(),
     datos_curp: z.string().optional().nullable(),
     cliente: z.string().optional().nullable(),
-    estatus: z.string().optional().default("EN OFICINA"),
+    estatus: z.enum(CENNI_STATUSES).optional().default("EN OFICINA"),
     estatus_certificado: z.string().optional().nullable(),
+    fecha_recepcion: z.string().optional().nullable(),
+    fecha_revision: z.string().optional().nullable(),
+    motivo_rechazo: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
 });
 
@@ -55,8 +66,11 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             certificado: d.certificado || null,
             datos_curp: d.datos_curp || null,
             cliente: d.cliente || null,
-            estatus: d.estatus || "SOLICITADO",
+            estatus: d.estatus || "EN OFICINA",
             estatus_certificado: d.estatus_certificado || null,
+            fecha_recepcion: d.fecha_recepcion || null,
+            fecha_revision: d.fecha_revision || null,
+            motivo_rechazo: d.motivo_rechazo || null,
             notes: d.notes || null,
         })
         .select()

@@ -107,8 +107,10 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                         throw new Error(`Fila ${index + 2}: El campo 'FOLIO CENNI' es obligatorio.`);
                     }
 
-                    let estatus = row["ESTATUS"]?.toString().trim().toUpperCase() || "SOLICITADO";
-                    if (estatus === "PENDIENTE") estatus = "SOLICITADO";
+                    let estatus = row["ESTATUS"]?.toString().trim().toUpperCase() || "EN OFICINA";
+                    // Normalize legacy values to the canonical 5-value enum
+                    if (estatus === "PENDIENTE" || estatus === "EN OFICINA/POR ENVIAR") estatus = "EN OFICINA";
+                    if (estatus === "EN TRAMITE" || estatus === "REVISION" || estatus === "EN TRAMITE" || estatus === "TRÁMITE") estatus = "EN TRAMITE/REVISION";
                     let estatus_certificado = row["ESTATUS CERTIFICADO"]?.toString().trim().toUpperCase() || null;
                     if (estatus_certificado === "PENDIENTE") estatus_certificado = "EN PROCESO DE DICTAMINACION";
 
@@ -125,6 +127,9 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                         cliente: row["CLIENTE"]?.toString().trim() || null,
                         estatus,
                         estatus_certificado,
+                        fecha_recepcion: row["FECHA RECEPCION"]?.toString().trim() || null,
+                        fecha_revision: row["FECHA REVISION"]?.toString().trim() || null,
+                        motivo_rechazo: row["MOTIVO RECHAZO"]?.toString().trim() || null,
                     };
                 });
 
@@ -189,7 +194,10 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                 "CERTIFICADO": "COPIA OOPT",
                 "DATOS CURP": "PERJ900815HJC",
                 "CLIENTE": "EXTERNO",
-                "ESTATUS": "SOLICITADO",
+                "ESTATUS": "EN OFICINA",
+                "FECHA RECEPCION": "",
+                "FECHA REVISION": "",
+                "MOTIVO RECHAZO": "",
                 "ESTATUS CERTIFICADO": ""
             }
         ];
