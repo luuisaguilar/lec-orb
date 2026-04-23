@@ -1,35 +1,91 @@
-# Testing & Development Guide
+# Testing Guide
 
-This project follows a rigorous testing strategy combining unit, integration, and E2E tests.
+Stack: **Vitest** (unit/integration) + **Playwright** (E2E).
 
-## 🧪 Testing Frameworks
-- **Vitest**: Used for fast unit and integration tests.
-- **Playwright**: Used for end-to-end user journey verification.
+## Comandos
 
-## 🛠️ Testing Patterns
-
-### 1. Mocking Supabase
-We use a chainable mock factory in `src/tests/api/finance/` to simulate the Supabase client without hitting the real database:
-```typescript
-const mockSupabase = {
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    // ... other chainable methods
-    then: vi.fn((resolve) => resolve({ data, error })),
-};
+```bash
+npm run test          # Vitest — todos los tests (vitest run)
+npm run test:watch    # Modo watch interactivo
+npm run test:e2e      # Playwright E2E (requiere servidor demo corriendo)
+npm run lint          # ESLint
+npm run build         # Build gate — debe pasar antes de cualquier PR
 ```
 
-### 2. Bypass Authentication
-For integration tests, the `withAuth` Higher Order Function is mocked to return the inner handler directly, allowing us to pass a `mockMember` directly.
+---
 
-### 3. File Operations
-When testing XLSX utilities, we mock `FileReader` (via `vi.stubGlobal`) and the `xlsx` library to verify data mapping without actual file I/O.
+## Vitest
 
-## 📝 Writing New Tests
-1. **Source Code**: `src/tests/` mirrors the `src/` directory.
-2. **E2E**: Located in `tests/e2e/` using the `.spec.ts` suffix.
+26 archivos de test · 143 tests · 21/21 módulos API cubiertos.
 
-## ✅ Best Practices
-- Every new API route must have an integration test covering its `GET` and `POST` methods.
-- Logic involving money (balances, variances) must have unit tests with boundary case coverage.
-- Avoid persistent data in tests; always mock external services (Storage, DB).
+```
+src/tests/
+├── api/                  ← Route handler tests
+│   ├── finance/
+│   │   ├── petty-cash.test.ts
+│   │   └── budget.test.ts
+│   ├── applicators.test.ts
+│   ├── audit-logs.test.ts
+│   ├── cenni.test.ts
+│   ├── dashboard-stats.test.ts
+│   ├── documents.test.ts
+│   ├── events.test.ts
+│   ├── exam-codes.test.ts
+│   ├── invitations.test.ts
+│   ├── modules.test.ts
+│   ├── notifications.test.ts
+│   ├── packs.test.ts
+│   ├── payments.test.ts
+│   ├── payroll.test.ts
+│   ├── purchase-orders.test.ts
+│   ├── quotes.test.ts
+│   ├── scan.test.ts
+│   ├── schools.test.ts
+│   ├── settings.test.ts
+│   ├── suppliers.test.ts
+│   ├── toefl-administrations.test.ts
+│   ├── toefl-codes.test.ts
+│   └── users.test.ts
+└── lib/
+    ├── finance/
+    │   └── xlsx-utils.test.ts
+    └── env/
+        └── app-url.test.ts
+```
+
+### Patrones
+
+Ver `docs/TESTING_PATTERNS.md` para los patrones completos de:
+- Mock de Supabase (simple, multi-tabla, secuencial, Storage, RPC)
+- Invocación de handlers con `withAuth` mockeado
+- Construcción de `NextRequest` para GET / POST JSON / POST FormData / DELETE
+
+---
+
+## Playwright (E2E)
+
+Los tests E2E corren contra el servidor local en **modo demo** (datos in-memory,
+sin Supabase, sin credenciales reales).
+
+```bash
+# Terminal 1 — servidor demo
+NEXT_PUBLIC_DEMO_MODE=true npm run dev
+
+# Terminal 2 — correr E2E
+npm run test:e2e
+```
+
+Cobertura actual: flujos de finanzas (Caja Chica, Presupuesto) e invitaciones.
+
+Ver `docs/DEMO_MODE.md` para detalles del entorno demo.
+Ver `playwright.config.ts` para configuración del runner.
+
+---
+
+## Criterio de done para cualquier cambio
+
+```bash
+npm run build && npm run test
+```
+
+Si alguno falla, el sprint no está terminado.

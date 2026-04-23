@@ -93,12 +93,12 @@ export default function LoginPage() {
                             <>
                                 <Button
                                     onClick={handleDemoLogin}
-                                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold h-12 text-base hidden"
+                                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold h-12 text-base"
                                 >
                                     <Play className="mr-2 h-5 w-5" />
                                     Entrar en Modo Demo
                                 </Button>
-                                <div className="relative hidden">
+                                <div className="relative">
                                     <Separator />
                                     <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
                                         o
