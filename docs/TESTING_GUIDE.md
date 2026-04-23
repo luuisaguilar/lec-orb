@@ -1,69 +1,91 @@
 # Testing Guide
 
-This repository currently uses a practical mix of focused Vitest coverage and deterministic Playwright UI flows.
+Stack: **Vitest** (unit/integration) + **Playwright** (E2E).
 
-## Test Commands
+## Comandos
 
 ```bash
-npm run lint
-npm test
-npm run test:e2e
-npm run build
+npm run test          # Vitest — todos los tests (vitest run)
+npm run test:watch    # Modo watch interactivo
+npm run test:e2e      # Playwright E2E (requiere servidor demo corriendo)
+npm run lint          # ESLint
+npm run build         # Build gate — debe pasar antes de cualquier PR
 ```
 
-## What Exists Today
+---
 
-### Vitest
+## Vitest
 
-- Focused coverage for finance API handlers and XLSX utilities.
-- Runs in `jsdom` via `vitest.config.ts`.
-- Test files live under `src/tests`.
+26 archivos de test · 143 tests · 21/21 módulos API cubiertos.
 
-### Playwright
+```
+src/tests/
+├── api/                  ← Route handler tests
+│   ├── finance/
+│   │   ├── petty-cash.test.ts
+│   │   └── budget.test.ts
+│   ├── applicators.test.ts
+│   ├── audit-logs.test.ts
+│   ├── cenni.test.ts
+│   ├── dashboard-stats.test.ts
+│   ├── documents.test.ts
+│   ├── events.test.ts
+│   ├── exam-codes.test.ts
+│   ├── invitations.test.ts
+│   ├── modules.test.ts
+│   ├── notifications.test.ts
+│   ├── packs.test.ts
+│   ├── payments.test.ts
+│   ├── payroll.test.ts
+│   ├── purchase-orders.test.ts
+│   ├── quotes.test.ts
+│   ├── scan.test.ts
+│   ├── schools.test.ts
+│   ├── settings.test.ts
+│   ├── suppliers.test.ts
+│   ├── toefl-administrations.test.ts
+│   ├── toefl-codes.test.ts
+│   └── users.test.ts
+└── lib/
+    ├── finance/
+    │   └── xlsx-utils.test.ts
+    └── env/
+        └── app-url.test.ts
+```
 
-- Specs live under `tests/e2e`.
-- The suite starts its own local Next.js dev server.
-- That server runs with `NEXT_PUBLIC_DEMO_MODE=true`.
-- The browser layer installs a deterministic API harness from `tests/e2e/support/demo-api.ts`.
+### Patrones
 
-This means Playwright validates real page rendering, routing, dialogs, and client behavior without depending on live Supabase data or manual test credentials.
+Ver `docs/TESTING_PATTERNS.md` para los patrones completos de:
+- Mock de Supabase (simple, multi-tabla, secuencial, Storage, RPC)
+- Invocación de handlers con `withAuth` mockeado
+- Construcción de `NextRequest` para GET / POST JSON / POST FormData / DELETE
 
-## Current Intent of Each Layer
+---
 
-- Vitest: business logic, route behavior, and utility coverage.
-- Playwright: local UI regression coverage for the most important flows.
-- Build: integration and type safety gate.
+## Playwright (E2E)
 
-## Patterns In Use
+Los tests E2E corren contra el servidor local en **modo demo** (datos in-memory,
+sin Supabase, sin credenciales reales).
 
-### Mocking Supabase in Vitest
+```bash
+# Terminal 1 — servidor demo
+NEXT_PUBLIC_DEMO_MODE=true npm run dev
 
-Integration-style tests mock the Supabase client chain directly so route handlers can be exercised without hitting the real database.
+# Terminal 2 — correr E2E
+npm run test:e2e
+```
 
-### Bypassing `withAuth` in Vitest
+Cobertura actual: flujos de finanzas (Caja Chica, Presupuesto) e invitaciones.
 
-For route tests, `withAuth` is mocked so the inner handler can receive a synthetic auth context.
+Ver `docs/DEMO_MODE.md` para detalles del entorno demo.
+Ver `playwright.config.ts` para configuración del runner.
 
-### Controlled Browser API Harness in Playwright
+---
 
-Playwright does not rely on a real seeded org today. Instead, it intercepts selected `/api/v1/**` requests and returns predictable responses for:
+## Criterio de done para cualquier cambio
 
-- user/session context
-- module registry
-- notifications
-- invitations
-- petty cash
-- budget comparative flows
+```bash
+npm run build && npm run test
+```
 
-## Writing New Tests
-
-1. Add focused logic/API tests under `src/tests`.
-2. Add UI flows under `tests/e2e`.
-3. Prefer deterministic test data over shared mutable backend state.
-4. Keep Playwright scenarios scoped to user-visible behavior, not internal implementation details.
-
-## Recommended Next Steps
-
-- Expand Vitest coverage to more route handlers beyond the current finance focus.
-- Add a higher-fidelity staging smoke layer with real auth and a dedicated test org.
-- Keep the local Playwright harness fast and deterministic for everyday development.
+Si alguno falla, el sprint no está terminado.
