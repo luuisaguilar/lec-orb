@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, XCircle, UserPlus, AlertTriangle } from "lucide-react";
-import { getInvitationPreview } from "./queries";
+import { CheckCircle2, XCircle, UserPlus, AlertTriangle, ClockIcon } from "lucide-react";
+import { getInvitationResult } from "./queries";
 import { acceptInvitation } from "./actions";
 
 export default async function JoinPage({
@@ -16,16 +16,30 @@ export default async function JoinPage({
     const acceptError = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
 
     // 1. Validate Token securely on the server
-    const preview = await getInvitationPreview(params.token);
+    const result = await getInvitationResult(params.token);
 
-    if (!preview) {
+    if (!result.ok) {
+        // Distinguish between "used/accepted" and "not found/server error"
+        const isAlreadyProcessed = result.reason === "already_processed";
+        const isServerError = result.reason === "server_error";
+
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
                 <Card className="max-w-md w-full text-center p-6 border-t-4 border-t-red-500 shadow-xl">
-                    <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <CardTitle className="text-2xl mb-2">Invitación Inválida</CardTitle>
+                    {isAlreadyProcessed ? (
+                        <ClockIcon className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                    ) : (
+                        <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    )}
+                    <CardTitle className="text-2xl mb-2">
+                        {isAlreadyProcessed ? "Invitación Ya Utilizada" : "Invitación Inválida"}
+                    </CardTitle>
                     <CardDescription>
-                        Esta invitación ha expirado, fue revocada o el enlace es incorrecto.
+                        {isAlreadyProcessed
+                            ? "Esta invitación ya fue aceptada o revocada. Si crees que es un error, pide al administrador que te envíe una nueva invitación."
+                            : isServerError
+                            ? "Hubo un error al verificar la invitación. Por favor intenta de nuevo en unos minutos o contacta al administrador."
+                            : "Esta invitación ha expirado, fue revocada o el enlace es incorrecto. Pide al administrador que te envíe una nueva invitación."}
                     </CardDescription>
                     <Button asChild className="mt-6 bg-[#002e5d]">
                         <Link href="/login">Ir al Inicio</Link>
@@ -34,6 +48,8 @@ export default async function JoinPage({
             </div>
         );
     }
+
+    const preview = result.preview;
 
     // 2. Check if user is logged in
     const supabase = await createClient();
@@ -85,7 +101,7 @@ export default async function JoinPage({
                         <p className="text-green-700">{user.email}</p>
                     </div>
                 </CardContent>
-                
+
                 {acceptError && (
                     <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3 flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
