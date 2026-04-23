@@ -32,14 +32,12 @@ export async function acceptInvitation(formData: FormData) {
         throw new Error("Ocurrió un error inesperado al procesar tu invitación.");
     }
 
-    const { success, code, message, organization_id } = result as any;
+    const { success, message } = result as any;
 
     if (!success) {
-        throw new Error(message || "No se pudo aceptar la invitación.");
+        redirect(`/join/${token}?error=${encodeURIComponent(message || "No se pudo aceptar la invitación.")}`);
     }
 
-    // 3. Success / Redirect
-    // If the schema/app expects a specific dashboard routing based on org_id, we can append it.
-    // For now, redirect to the general dashboard as before.
+    // 3. Success — redirect to dashboard
     redirect("/dashboard");
 }
