@@ -8,7 +8,7 @@ export async function acceptInvitation(formData: FormData) {
     const token = formData.get("token")?.toString();
 
     if (!token) {
-        throw new Error("Token de invitación faltante.");
+        redirect("/login");
     }
 
     // 1. Get current authenticated user
@@ -27,6 +27,7 @@ export async function acceptInvitation(formData: FormData) {
         console.error("[join] Admin client unavailable:", e);
         redirect(`/join/${token}?error=${encodeURIComponent("Error de configuración del servidor. Contacta al administrador.")}`);
     }
+
     const { data: result, error: rpcError } = await adminClient.rpc('fn_accept_invitation', {
         p_token: token,
         p_user_id: user.id,
@@ -34,11 +35,12 @@ export async function acceptInvitation(formData: FormData) {
     });
 
     if (rpcError) {
-        console.error("RPC Error processing invitation:", rpcError);
-        throw new Error("Ocurrió un error inesperado al procesar tu invitación.");
+        // Never throw from a Server Action — redirect with the error message instead
+        console.error("[join] RPC error on fn_accept_invitation:", rpcError.message, rpcError.code);
+        redirect(`/join/${token}?error=${encodeURIComponent("Ocurrió un error al procesar tu invitación. Intenta de nuevo o contacta al administrador.")}`);
     }
 
-    const { success, message } = result as any;
+    const { success, message } = result as { success: boolean; message?: string };
 
     if (!success) {
         redirect(`/join/${token}?error=${encodeURIComponent(message || "No se pudo aceptar la invitación.")}`);
