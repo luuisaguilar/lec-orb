@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,8 +29,10 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const next = searchParams.get("next");
     const { t } = useI18n();
     const [error, setError] = useState<string | null>(null);
 
@@ -62,48 +64,16 @@ export default function RegisterPage() {
             return;
         }
 
-        if (authData.user) {
-            // 2. Create a profile record for the user
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: authData.user.id,
-                    full_name: data.fullName,
-                });
+        // Profile + org + org_member are created automatically by the
+        // handle_new_user() DB trigger on auth.users INSERT.
 
-            if (profileError) {
-                console.error("Profile creation failed: ", profileError);
-            }
+        const loginUrl = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
+        const toastMsg = next
+            ? "¡Cuenta creada! Verifica tu correo e inicia sesión para aceptar la invitación."
+            : "¡Cuenta creada! Por favor verifica tu correo e inicia sesión.";
 
-            // 3. Auto-create an Organization for this user
-            // (The first user to register becomes the admin of their own org)
-            const orgName = `${data.fullName.split(' ')[0]}'s Organization`;
-            const { data: newOrg, error: orgError } = await supabase
-                .from('organizations')
-                .insert({ name: orgName })
-                .select()
-                .single();
-
-            if (orgError) {
-                console.error("Organization creation failed: ", orgError);
-            } else if (newOrg) {
-                // 4. Link the user to the org as an admin
-                const { error: memberError } = await supabase
-                    .from('org_members')
-                    .insert({
-                        user_id: authData.user.id,
-                        org_id: newOrg.id,
-                        role: 'admin',
-                    });
-
-                if (memberError) {
-                    console.error("Org member link failed: ", memberError);
-                }
-            }
-        }
-
-        toast.success("¡Cuenta creada! Por favor verifica tu correo e inicia sesión.");
-        router.push("/login");
+        toast.success(toastMsg);
+        router.push(loginUrl);
     }
 
     return (
@@ -210,5 +180,13 @@ export default function RegisterPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense>
+            <RegisterForm />
+        </Suspense>
     );
 }

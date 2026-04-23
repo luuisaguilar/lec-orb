@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,8 +29,10 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const next = searchParams.get("next") ?? "/dashboard";
     const { t } = useI18n();
     const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +57,7 @@ export default function LoginPage() {
             return;
         }
 
-        router.push("/dashboard");
+        router.push(next);
         router.refresh();
     }
 
@@ -66,6 +68,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
+
             <div className="w-full max-w-md space-y-8">
                 {/* Logo */}
                 <div className="text-center space-y-2 flex flex-col items-center">
@@ -176,5 +179,13 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }
