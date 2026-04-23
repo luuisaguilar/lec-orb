@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, XCircle, UserPlus, AlertTriangle, ClockIcon } from "lucide-react";
+import { CheckCircle2, XCircle, UserPlus, AlertTriangle, Clock } from "lucide-react";
 import { getInvitationResult } from "./queries";
 import { acceptInvitation } from "./actions";
 
@@ -10,16 +10,18 @@ export default async function JoinPage({
     params,
     searchParams,
 }: {
-    params: { token: string };
-    searchParams?: { error?: string };
+    params: Promise<{ token: string }>;
+    searchParams?: Promise<{ error?: string }>;
 }) {
-    const acceptError = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
+    // Next.js 15+ requires awaiting params and searchParams before use
+    const { token } = await params;
+    const sp = await searchParams;
+    const acceptError = sp?.error ? decodeURIComponent(sp.error) : null;
 
     // 1. Validate Token securely on the server
-    const result = await getInvitationResult(params.token);
+    const result = await getInvitationResult(token);
 
     if (!result.ok) {
-        // Distinguish between "used/accepted" and "not found/server error"
         const isAlreadyProcessed = result.reason === "already_processed";
         const isServerError = result.reason === "server_error";
 
@@ -27,7 +29,7 @@ export default async function JoinPage({
             <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
                 <Card className="max-w-md w-full text-center p-6 border-t-4 border-t-red-500 shadow-xl">
                     {isAlreadyProcessed ? (
-                        <ClockIcon className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                        <Clock className="h-12 w-12 text-amber-500 mx-auto mb-4" />
                     ) : (
                         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                     )}
@@ -36,10 +38,10 @@ export default async function JoinPage({
                     </CardTitle>
                     <CardDescription>
                         {isAlreadyProcessed
-                            ? "Esta invitación ya fue aceptada o revocada. Si crees que es un error, pide al administrador que te envíe una nueva invitación."
+                            ? "Esta invitación ya fue aceptada o revocada. Pide al administrador que te envíe una nueva invitación."
                             : isServerError
-                            ? "Hubo un error al verificar la invitación. Por favor intenta de nuevo en unos minutos o contacta al administrador."
-                            : "Esta invitación ha expirado, fue revocada o el enlace es incorrecto. Pide al administrador que te envíe una nueva invitación."}
+                            ? "Hubo un error al verificar la invitación. Por favor intenta de nuevo o contacta al administrador."
+                            : "Esta invitación ha expirado, fue revocada o el enlace es incorrecto."}
                     </CardDescription>
                     <Button asChild className="mt-6 bg-[#002e5d]">
                         <Link href="/login">Ir al Inicio</Link>
@@ -72,10 +74,10 @@ export default async function JoinPage({
                         </p>
                         <div className="flex flex-col gap-2">
                             <Button asChild className="bg-[#002e5d]">
-                                <Link href={`/register?next=/join/${params.token}`}>Crear Cuenta</Link>
+                                <Link href={`/register?next=/join/${token}`}>Crear Cuenta</Link>
                             </Button>
                             <Button asChild variant="outline">
-                                <Link href={`/login?next=/join/${params.token}`}>Ya tengo cuenta</Link>
+                                <Link href={`/login?next=/join/${token}`}>Ya tengo cuenta</Link>
                             </Button>
                         </div>
                     </CardContent>
@@ -110,7 +112,7 @@ export default async function JoinPage({
                 )}
 
                 <form action={acceptInvitation}>
-                    <input type="hidden" name="token" value={params.token} />
+                    <input type="hidden" name="token" value={token} />
                     <Button type="submit" className="w-full mt-6 bg-[#002e5d] text-white hover:bg-[#001f3f]">
                         Aceptar y Continuar
                     </Button>
