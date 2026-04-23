@@ -12,7 +12,13 @@ export interface InvitationPreview {
  * Does not expose internal UUIDs or full emails to the client.
  */
 export async function getInvitationPreview(token: string): Promise<InvitationPreview | null> {
-    const adminClient = createAdminClient();
+    let adminClient;
+    try {
+        adminClient = createAdminClient();
+    } catch (e) {
+        console.error("[join] Admin client unavailable — SUPABASE_SERVICE_ROLE_KEY missing?", e);
+        return null;
+    }
 
     const { data: invitation, error } = await adminClient
         .from("org_invitations")
