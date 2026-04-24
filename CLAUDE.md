@@ -221,7 +221,11 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 - Email (Resend) es opcional — `joinUrl` es el fallback confiable.
 - Si el email falla, el flujo de invitación NO debe fallar.
 - `SUPABASE_SERVICE_ROLE_KEY` es obligatoria en producción para la RPC.
-- ⚠️ `RESEND_API_KEY` y `RESEND_FROM_EMAIL` aún no configurados en Vercel (abril 2026).
+- ✅ Resend configurado y enviando (abril 2026). `RESEND_FROM_EMAIL` debe usar formato
+  `Nombre <email@dominio.com>` y el dominio debe estar verificado en Resend.
+- Al firmarse un usuario con invitación pendiente, `handle_new_user` **no** crea org personal
+  (evita el bug de doble membership → `.single()` 403). El trigger `fn_audit_log` llena tanto
+  `operation` (NOT NULL) como la columna legacy `action`.
 
 ## Testing
 
@@ -266,9 +270,9 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 ## Próximos Pasos Documentados
 
 **Prioridad Alta:**
-1. Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` en Vercel para habilitar emails de invitación.
-2. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
-3. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
+1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
+2. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
+3. Integrar Sentry para error tracking en producción.
 
 **Prioridad Media:**
 4. KPI cards y gráficas en Caja Chica.

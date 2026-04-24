@@ -37,10 +37,12 @@ Todas las variables se configuran en: **Vercel Dashboard → lec-orb → Setting
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Clave service_role (NO la anon key) — para invitaciones |
 | `NEXT_PUBLIC_APP_URL` | ✅ | URL de producción (ej. `https://app.lecorb.com`) — evita links con `localhost` |
 | `RESEND_API_KEY` | ✅ prod | API key de Resend para emails de invitación |
-| `RESEND_FROM_EMAIL` | ✅ prod | Dirección del remitente (ej. `invitaciones@lecorb.com`) |
+| `RESEND_FROM_EMAIL` | ✅ prod | Remitente en formato `Nombre <email@dominio.com>` (dominio debe estar verificado en Resend) |
 
-> ⚠️ **Abril 2026:** `RESEND_API_KEY` y `RESEND_FROM_EMAIL` aún no están configurados.
-> Los emails no se envían. Usar `joinUrl` manual como fallback.
+> ✅ **Abril 2026:** Resend operativo. Dominio `updates.luisaguilaraguila.com` verificado.
+> `RESEND_FROM_EMAIL` debe seguir el formato `Nombre <email@dominio>`;
+> si se usa solo `email@dominio`, Resend responde con error
+> `Invalid from field`.
 
 **Cómo agregar/editar una variable en Vercel:**
 1. Vercel Dashboard → lec-orb → Settings → Environment Variables
@@ -165,6 +167,49 @@ Cuando un usuario reporta error en `/join/[token]`:
 ```ts
 redirect(`/ruta?error=${encodeURIComponent('Mensaje de error')}`);
 ```
+
+---
+
+### 403 en todos los endpoints API para un usuario recién invitado
+
+**Causa:** el usuario tiene **más de una fila** en `org_members` (doble membership).
+`getAuthenticatedMember()` usa `.single()` y falla silenciosamente → 403 en cada ruta,
+incluso en `/api/v1/users/me` que no checa permisos de módulo.
+
+**Historial:** antes del 2026-04-24 el trigger `handle_new_user` creaba una org personal
++ membership admin para **todo** usuario nuevo, sin importar si venía por invitación.
+Cuando el usuario aceptaba la invitación quedaban 2 filas en `org_members`.
+
+**Diagnóstico:**
+```sql
+SELECT m.id AS member_id, m.user_id, m.org_id, m.role, o.name AS org_name, m.created_at
+FROM public.org_members m
+LEFT JOIN public.organizations o ON o.id = m.org_id
+WHERE m.user_id IN (SELECT id FROM auth.users WHERE email = '<email-del-usuario>')
+ORDER BY m.created_at;
+```
+
+**Solución inmediata** (para usuarios afectados antes del fix):
+```sql
+-- Borrar la membership personal (la más antigua, role='admin' en "X's Organization")
+DELETE FROM public.org_members WHERE id = '<member_id_personal>';
+DELETE FROM public.organizations WHERE id = '<org_id_personal>';
+```
+
+**Solución estructural:** aplicada en migración `20260424_handle_new_user_skip_invited.sql`
+— el trigger ahora salta la creación de org personal si el email del usuario tiene una
+invitación pendiente.
+
+---
+
+### Error "null value in column 'operation' of relation 'audit_log'"
+
+**Causa:** `audit_log` tiene `operation NOT NULL` pero el trigger `fn_audit_log`
+solo llenaba la columna legacy `action`.
+
+**Solución:** aplicada en migración `20260424_fix_fn_audit_log_operation.sql` — el trigger
+ahora llena ambas columnas (`operation` y `action`) y hace fallback de `auth.uid()` al
+`user_id` de `new_data` cuando el trigger se dispara desde un RPC `SECURITY DEFINER`.
 
 ---
 

@@ -18,33 +18,30 @@
 
 ### Pendiente / Con advertencia
 
-- Email de invitaciones — `RESEND_API_KEY` y `RESEND_FROM_EMAIL` no configurados en Vercel.
-  Los emails no se envían; el `joinUrl` es el fallback manual actual.
+_(sin advertencias activas — Resend quedó operativo el 2026-04-24)_
 
 ---
 
 ## Prioridad Alta
 
-### 1. Configurar RESEND en Vercel
-
-Agregar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` en Vercel Dashboard.
-Sin esto, los emails de invitación no se envían y el admin debe compartir el `joinUrl` manualmente.
-
-Ver: `docs/RUNBOOK.md` → sección Variables de Entorno.
-
-### 2. Dashboard CENNI por estatus
+### 1. Dashboard CENNI por estatus
 
 Vista de resumen con:
 - Cards de conteo por cada uno de los 5 estatus
 - Gráfica de distribución
 - Filtro rápido por estatus en la tabla principal
 
-### 3. Expiración de invitaciones (`expires_at`)
+### 2. Expiración de invitaciones (`expires_at`)
 
 Agregar campo `expires_at TIMESTAMPTZ` a la tabla `org_invitations`.
 - La RPC `fn_accept_invitation` debe rechazar invitaciones expiradas
 - La UI debe mostrar el estado "Expirada" en el historial
 - Job o trigger para marcar como expiradas automáticamente
+
+### 3. Sentry para error tracking
+
+Integrar Sentry en Next.js + Supabase para capturar errores en producción.
+Incluir tags de `org_id` y `user_id` para aislamiento por tenant en el dashboard de Sentry.
 
 ---
 
