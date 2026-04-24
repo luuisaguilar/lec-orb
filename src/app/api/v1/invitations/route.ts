@@ -86,7 +86,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             invitation,
             joinUrl,
             emailSent,
-            emailError: emailSent ? undefined : result.error,
+            emailError: emailSent ? undefined : (result.error ?? "Email not sent"),
         });
     }
 
