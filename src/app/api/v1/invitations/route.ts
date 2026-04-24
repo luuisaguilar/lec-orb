@@ -81,7 +81,14 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         });
 
         emailSent = result.sent;
+
+        return NextResponse.json({
+            invitation,
+            joinUrl,
+            emailSent,
+            emailError: emailSent ? undefined : result.error,
+        });
     }
 
-    return NextResponse.json({ invitation, joinUrl, emailSent, emailError: emailSent ? undefined : "Email not sent — check server logs" });
+    return NextResponse.json({ invitation, joinUrl, emailSent });
 }, { module: "users", action: "edit" });
