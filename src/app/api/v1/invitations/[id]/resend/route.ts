@@ -54,5 +54,9 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
         joinUrl,
     });
 
-    return NextResponse.json({ joinUrl, emailSent: result.sent });
+    return NextResponse.json({
+        joinUrl,
+        emailSent: result.sent,
+        emailError: result.sent ? undefined : result.error,
+    });
 }, { module: "users", action: "edit" });
