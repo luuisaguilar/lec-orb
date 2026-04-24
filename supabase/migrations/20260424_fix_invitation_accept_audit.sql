@@ -46,9 +46,9 @@ BEGIN
         RETURN pg_catalog.jsonb_build_object('success', false, 'code', 'EXPIRED_OR_PROCESSED', 'message', 'Esta invitación ya fue procesada o está expirada.');
     END IF;
 
-    -- Cast invitation role (user_role) into member_role for org_members insert
+    -- org_invitations.role is member_role; org_members.role is user_role — cast explicitly
     INSERT INTO public.org_members (org_id, user_id, role)
-    VALUES (v_invitation.org_id, p_user_id, v_invitation.role::text::public.member_role)
+    VALUES (v_invitation.org_id, p_user_id, v_invitation.role::text::public.user_role)
     RETURNING id INTO v_member_id;
 
     UPDATE public.org_invitations SET status = 'accepted', accepted_at = pg_catalog.now() WHERE id = v_invitation.id;
