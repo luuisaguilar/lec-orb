@@ -323,7 +323,7 @@ describe("CENNI API", () => {
             expect(res.status).toBe(400);
         });
 
-        it("attaches org_id to each case on insert", async () => {
+        it("attaches org_id to each case on upsert", async () => {
             const supabase = createMockSupabase([{ data: null }]);
             const req = new NextRequest("http://localhost/api/v1/cenni/bulk", {
                 method: "POST",
@@ -331,10 +331,11 @@ describe("CENNI API", () => {
             });
             await (POST_BULK as any)(req, { supabase, user: USER, member: MEMBER });
 
-            expect(supabase.insert).toHaveBeenCalledWith(
+            expect(supabase.upsert).toHaveBeenCalledWith(
                 expect.arrayContaining([
                     expect.objectContaining({ org_id: MEMBER.org_id }),
-                ])
+                ]),
+                expect.objectContaining({ onConflict: "org_id,folio_cenni" })
             );
         });
     });
