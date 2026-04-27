@@ -57,3 +57,6 @@ out.log
 
 .codex-review/
 .env*.local
+
+# Sentry Config File
+.env.sentry-build-plugin

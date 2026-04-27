@@ -169,6 +169,8 @@ y el **permission-module name** — son distintos y su desalineación rompe el a
 | `NEXT_PUBLIC_APP_URL` | ✅ | Evita links con `localhost` |
 | `RESEND_API_KEY` | ✅ | Email de invitaciones |
 | `RESEND_FROM_EMAIL` | ✅ | Sender drift en producción |
+| `NEXT_PUBLIC_SENTRY_DSN` | ✅ | Error tracking (Sentry project: orb-lec) |
+| `SENTRY_AUTH_TOKEN` | ✅ | Source maps upload en CI/CD (GitHub Actions + Vercel) |
 
 Plantilla en `.env.example`. Archivo local: `.env.local` (no commitear).
 
