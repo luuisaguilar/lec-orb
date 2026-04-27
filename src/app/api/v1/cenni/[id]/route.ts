@@ -30,7 +30,7 @@ const updateCenniSchema = z.object({
     created_at: z.string().datetime({ offset: true }).optional(),
 });
 
-export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
+export const PATCH = withAuth(async (req, { supabase, user, member }, { params }) => {
     const { id } = await params;
     const body = await req.json();
     const parsed = updateCenniSchema.safeParse(body);
@@ -43,6 +43,14 @@ export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
 
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No fields to update" }, { status: 400 });
 
+    const { data: oldCase } = await supabase
+        .from("cenni_cases")
+        .select("*")
+        .eq("id", id)
+        .eq("org_id", member.org_id)
+        .is("deleted_at", null)
+        .single();
+
     const { data: updatedCase, error } = await supabase
         .from("cenni_cases")
         .update(updates)
@@ -53,11 +61,30 @@ export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
         .single();
 
     if (error || !updatedCase) return NextResponse.json({ error: error?.message || "Case not found" }, { status: 404 });
+
+    await supabase.from("audit_log").insert({
+        org_id: member.org_id,
+        table_name: "cenni_cases",
+        record_id: id,
+        action: "UPDATE",
+        old_data: oldCase ?? null,
+        new_data: updatedCase,
+        performed_by: user.id,
+    });
+
     return NextResponse.json({ case: updatedCase });
 }, { module: "cenni", action: "edit" });
 
-export const DELETE = withAuth(async (req, { supabase, member }, { params }) => {
+export const DELETE = withAuth(async (req, { supabase, user, member }, { params }) => {
     const { id } = await params;
+
+    const { data: oldCase } = await supabase
+        .from("cenni_cases")
+        .select("*")
+        .eq("id", id)
+        .eq("org_id", member.org_id)
+        .is("deleted_at", null)
+        .single();
 
     const { error } = await supabase
         .from("cenni_cases")
@@ -66,5 +93,16 @@ export const DELETE = withAuth(async (req, { supabase, member }, { params }) => 
         .eq("org_id", member.org_id);
 
     if (error) throw error;
+
+    await supabase.from("audit_log").insert({
+        org_id: member.org_id,
+        table_name: "cenni_cases",
+        record_id: id,
+        action: "DELETE",
+        old_data: oldCase ?? null,
+        new_data: null,
+        performed_by: user.id,
+    });
+
     return NextResponse.json({ success: true });
 }, { module: "cenni", action: "delete" });

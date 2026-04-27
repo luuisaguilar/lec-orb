@@ -2,17 +2,35 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 
+const PAGE_LIMIT_MAX = 500;
+const PAGE_LIMIT_DEFAULT = 300;
+
 export const GET = withAuth(async (req, { supabase, member }) => {
-    const { data: cases, error } = await supabase
+    const { searchParams } = new URL(req.url);
+    const limit = Math.min(
+        parseInt(searchParams.get("limit") ?? String(PAGE_LIMIT_DEFAULT), 10) || PAGE_LIMIT_DEFAULT,
+        PAGE_LIMIT_MAX,
+    );
+    const q = searchParams.get("q")?.trim() ?? "";
+
+    let query = supabase
         .from("cenni_cases")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("org_id", member.org_id)
         .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(limit);
 
+    if (q) {
+        query = query.or(
+            `folio_cenni.ilike.%${q}%,cliente_estudiante.ilike.%${q}%,correo.ilike.%${q}%`,
+        );
+    }
+
+    const { data: cases, error, count } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ cases, role: member.role, total: cases.length });
+    return NextResponse.json({ cases, role: member.role, total: count ?? 0 });
 }, { module: "cenni", action: "view" });
 
 const CENNI_STATUSES = [

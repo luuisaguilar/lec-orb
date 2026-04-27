@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import {
 import {
     Plus, Search, Download, Loader2, Check, X,
     MoreHorizontal, Trash2, FileSpreadsheet, Pencil,
-    LayoutList, KanbanSquare
+    LayoutList, KanbanSquare, FileCheck, ExternalLink, Mail, ChevronLeft, ChevronRight, Upload
 } from "lucide-react";
 import {
     DndContext, DragOverlay, closestCorners, KeyboardSensor,
@@ -91,6 +91,10 @@ interface CenniCase {
     motivo_rechazo: string | null;
     notes: string | null;
     created_at: string;
+    certificate_storage_path: string | null;
+    certificate_uploaded_at: string | null;
+    certificate_sent_at: string | null;
+    certificate_sent_to: string | null;
 }
 
 // ── DocDisplay — read-only indicator ────────────────────────────────────────
@@ -103,6 +107,11 @@ const DocDisplay = ({ checked }: { checked: boolean }) => (
     </span>
 );
 
+const TABLE_PAGE_SIZE = 50;
+
+const displayFolio = (folio: string) =>
+    folio.startsWith("CENNI-") ? folio.slice(6) : folio;
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function CENNIPage() {
     const { t } = useI18n();
@@ -111,21 +120,34 @@ export default function CENNIPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editCase, setEditCase] = useState<CenniCase | null>(null);
-    const [view, setView] = useState<"table" | "kanban">("table");
+    const [view, setView] = useState<"table" | "kanban" | "certs">("table");
 
-    const { data, isLoading, mutate } = useSWR("/api/v1/cenni", fetcher);
+    const [page, setPage] = useState(0);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 350);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { setPage(0); }, [debouncedSearch, statusFilter]);
+
+    const swrUrl = useMemo(() => {
+        const params = new URLSearchParams({ limit: "300" });
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        return `/api/v1/cenni?${params.toString()}`;
+    }, [debouncedSearch]);
+
+    const { data, isLoading, mutate } = useSWR(swrUrl, fetcher);
     const allCases: CenniCase[] = data?.cases || [];
     const userRole = data?.role || "operador";
 
-    const filteredCases = allCases.filter((c) => {
-        const q = search.toLowerCase();
-        const matchesSearch = !search
-            || c.folio_cenni.toLowerCase().includes(q)
-            || c.cliente_estudiante.toLowerCase().includes(q)
-            || (c.correo && c.correo.toLowerCase().includes(q));
-        const matchesStatus = statusFilter === "all" || c.estatus === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredCases = allCases.filter(
+        (c) => statusFilter === "all" || c.estatus === statusFilter,
+    );
+
+    const pageCount = Math.max(1, Math.ceil(filteredCases.length / TABLE_PAGE_SIZE));
+    const pagedCases = filteredCases.slice(page * TABLE_PAGE_SIZE, (page + 1) * TABLE_PAGE_SIZE);
 
     const handlePatch = useCallback(async (id: string, patch: Record<string, unknown>) => {
         try {
@@ -191,6 +213,9 @@ export default function CENNIPage() {
                         <Button size="sm" variant={view === "kanban" ? "default" : "ghost"} className="rounded-none px-3" onClick={() => setView("kanban")}>
                             <KanbanSquare className="h-4 w-4" />
                         </Button>
+                        <Button size="sm" variant={view === "certs" ? "default" : "ghost"} className="rounded-none px-3" onClick={() => setView("certs")} title="Certificados emitidos">
+                            <FileCheck className="h-4 w-4" />
+                        </Button>
                     </div>
                     <Button variant="outline" onClick={() => setShowImport(true)}>
                         <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar
@@ -235,15 +260,21 @@ export default function CENNIPage() {
                     onDelete={handleDelete}
                     onStatusChange={(id, s) => handlePatch(id, { estatus: s })}
                 />
+            ) : view === "certs" ? (
+                <CertificadosView cases={allCases.filter(c => c.certificate_storage_path)} search={search} onUpdate={mutate} />
             ) : (
                 <TableView
-                    cases={filteredCases}
-                    total={allCases.length}
+                    cases={pagedCases}
+                    total={filteredCases.length}
+                    page={page}
+                    pageCount={pageCount}
+                    onPageChange={setPage}
                     userRole={userRole}
                     onEdit={setEditCase}
                     onDelete={handleDelete}
                     onStatusChange={(id, s) => handlePatch(id, { estatus: s })}
                     onCertStatusChange={(id, s) => handlePatch(id, { estatus_certificado: s || null })}
+                    onCertUploaded={mutate}
                 />
             )}
 
@@ -268,16 +299,39 @@ export default function CENNIPage() {
 }
 
 // ── Table View ────────────────────────────────────────────────────────────────
-function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, onCertStatusChange }: {
+function TableView({ cases, total, page, pageCount, onPageChange, userRole, onEdit, onDelete, onStatusChange, onCertStatusChange, onCertUploaded }: {
     cases: CenniCase[];
     total: number;
+    page: number;
+    pageCount: number;
+    onPageChange: (p: number) => void;
     userRole: string;
     onEdit: (c: CenniCase) => void;
     onDelete: (id: string) => void;
     onStatusChange: (id: string, s: string) => void;
     onCertStatusChange: (id: string, s: string) => void;
+    onCertUploaded: () => void;
 }) {
     const canDelete = userRole === "admin" || userRole === "supervisor" || userRole === "coordinador";
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+    const handleCertUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !uploadingId) return;
+        e.target.value = "";
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`/api/v1/cenni/${uploadingId}/certificate-upload`, { method: "POST", body: form });
+        if (res.ok) {
+            toast.success("Certificado subido correctamente");
+            onCertUploaded();
+        } else {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error || "Error al subir el certificado");
+        }
+        setUploadingId(null);
+    }, [uploadingId, onCertUploaded]);
     return (
         <Card>
             <CardContent className="p-0">
@@ -288,6 +342,7 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Registro</th>
                                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Folio</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Cliente / Estudiante</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">CURP</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Correo</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Celular</th>
                                 <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Solicitud CENNI">Sol.</th>
@@ -295,8 +350,6 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                 <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap" title="Identificación">ID</th>
                                 <th className="px-3 py-2.5 text-left font-medium">Certificado</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Estatus</th>
-                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Recepción</th>
-                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Revisión</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Est. Certificado</th>
                                 <th className="px-3 py-2.5 text-center font-medium">Acciones</th>
                             </tr>
@@ -309,17 +362,19 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                         {new Date(c.created_at).toLocaleDateString("es-MX")}
                                     </td>
                                     {/* Folio */}
-                                    <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap">
-                                        {c.folio_cenni}
+                                    <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap" title={c.folio_cenni}>
+                                        {displayFolio(c.folio_cenni)}
                                     </td>
                                     {/* Cliente / Estudiante */}
                                     <td className="px-3 py-2">
                                         <div className="font-medium text-xs">{c.cliente_estudiante}</div>
-                                        {(c.datos_curp || c.cliente) && (
-                                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                {[c.datos_curp, c.cliente].filter(Boolean).join(" · ")}
-                                            </div>
+                                        {c.cliente && (
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">{c.cliente}</div>
                                         )}
+                                    </td>
+                                    {/* CURP */}
+                                    <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground whitespace-nowrap">
+                                        {c.datos_curp || "—"}
                                     </td>
                                     {/* Correo — full, no truncate */}
                                     <td className="px-3 py-2 text-xs text-muted-foreground min-w-[180px]">
@@ -362,14 +417,6 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </td>
-                                    {/* Fecha Recepción */}
-                                    <td className="px-3 py-2 text-[10px] text-muted-foreground whitespace-nowrap font-mono">
-                                        {c.fecha_recepcion ? new Date(c.fecha_recepcion + "T00:00:00").toLocaleDateString("es-MX") : "—"}
-                                    </td>
-                                    {/* Fecha Revisión */}
-                                    <td className="px-3 py-2 text-[10px] text-muted-foreground whitespace-nowrap font-mono">
-                                        {c.fecha_revision ? new Date(c.fecha_revision + "T00:00:00").toLocaleDateString("es-MX") : "—"}
-                                    </td>
                                     {/* Est. Certificado */}
                                     <td className="px-3 py-2 text-center">
                                         <DropdownMenu>
@@ -407,6 +454,9 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                                                 <DropdownMenuItem onClick={() => onEdit(c)}>
                                                     <Pencil className="mr-2 h-4 w-4" /> Editar registro
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => { setUploadingId(c.id); fileInputRef.current?.click(); }}>
+                                                    <Upload className="mr-2 h-4 w-4" /> Subir certificado
+                                                </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 {canDelete && (
                                                     <DropdownMenuItem className="text-red-600 focus:text-red-700 dark:text-red-500" onClick={() => onDelete(c.id)}>
@@ -421,8 +471,30 @@ function TableView({ cases, total, userRole, onEdit, onDelete, onStatusChange, o
                         </tbody>
                     </table>
                 </div>
-                <div className="px-4 py-2 border-t text-xs text-muted-foreground">
-                    {cases.length} de {total} registros
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                    onChange={handleCertUpload}
+                />
+                <div className="px-4 py-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                        {total === 0
+                            ? "Sin registros"
+                            : `${page * TABLE_PAGE_SIZE + 1}–${Math.min((page + 1) * TABLE_PAGE_SIZE, total)} de ${total} registros`}
+                    </span>
+                    {pageCount > 1 && (
+                        <div className="flex items-center gap-1">
+                            <Button size="sm" variant="ghost" className="h-7 px-2" disabled={page === 0} onClick={() => onPageChange(page - 1)}>
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            <span className="px-1">{page + 1} / {pageCount}</span>
+                            <Button size="sm" variant="ghost" className="h-7 px-2" disabled={page >= pageCount - 1} onClick={() => onPageChange(page + 1)}>
+                                <ChevronRight className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
@@ -828,5 +900,211 @@ function CreateCenniDialog({ open, onOpenChange, onSuccess }: {
                 </form>
             </DialogContent>
         </Dialog>
+    );
+}
+
+// ── Certificados View ─────────────────────────────────────────────────────────
+function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; search: string; onUpdate: () => void }) {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingId, setUploadingId] = useState<string | null>(null);
+    const [sendDialog, setSendDialog] = useState<{ id: string; email: string } | null>(null);
+    const [sendEmail, setSendEmail] = useState("");
+    const [isSending, setIsSending] = useState(false);
+
+    const handleSendOpen = (c: CenniCase) => {
+        setSendEmail(c.correo ?? "");
+        setSendDialog({ id: c.id, email: c.correo ?? "" });
+    };
+
+    const handleSendConfirm = async () => {
+        if (!sendDialog) return;
+        setIsSending(true);
+        try {
+            const res = await fetch(`/api/v1/cenni/${sendDialog.id}/send-certificate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ to: sendEmail }),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success(`Certificado enviado a ${sendEmail}`);
+                onUpdate();
+                setSendDialog(null);
+            } else {
+                toast.error(body.error ?? "Error al enviar");
+            }
+        } catch {
+            toast.error("Error al enviar");
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const filtered = cases.filter((c) => {
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return c.folio_cenni.toLowerCase().includes(q)
+            || c.cliente_estudiante.toLowerCase().includes(q)
+            || (c.correo?.toLowerCase().includes(q) ?? false);
+    });
+
+    const handleCertReplace = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !uploadingId) return;
+        e.target.value = "";
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`/api/v1/cenni/${uploadingId}/certificate-upload`, { method: "POST", body: form });
+        if (res.ok) {
+            toast.success("Certificado actualizado");
+            onUpdate();
+        } else {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error || "Error al subir el certificado");
+        }
+        setUploadingId(null);
+    }, [uploadingId, onUpdate]);
+
+    const handleOpen = async (id: string) => {
+        const res = await fetch(`/api/v1/cenni/${id}/certificate-url`);
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error || "No se pudo obtener el certificado");
+            return;
+        }
+        const { url } = await res.json();
+        window.open(url, "_blank", "noopener,noreferrer");
+    };
+
+    const handleDownload = async (id: string, folio: string) => {
+        const res = await fetch(`/api/v1/cenni/${id}/certificate-url`);
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error || "No se pudo descargar");
+            return;
+        }
+        const { url } = await res.json();
+        const pdfRes = await fetch(url);
+        const blob = await pdfRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `${folio}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+    };
+
+    if (filtered.length === 0) {
+        return (
+            <>
+                <Card>
+                    <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                        <FileCheck className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                        No hay certificados emitidos todavía.
+                    </CardContent>
+                </Card>
+                <Dialog open={!!sendDialog} onOpenChange={(open) => { if (!open) setSendDialog(null); }}>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle>Enviar certificado por email</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 py-2">
+                            <p className="text-sm text-muted-foreground">
+                                Se enviará un enlace de descarga válido por 7 días al siguiente correo:
+                            </p>
+                            <div className="space-y-1">
+                                <Label htmlFor="send-email">Correo destinatario</Label>
+                                <Input
+                                    id="send-email"
+                                    type="email"
+                                    placeholder="correo@ejemplo.com"
+                                    value={sendEmail}
+                                    onChange={(e) => setSendEmail(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setSendDialog(null)} disabled={isSending}>Cancelar</Button>
+                            <Button onClick={handleSendConfirm} disabled={isSending || !sendEmail.trim()}>
+                                {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Enviar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </>
+        );
+    }
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b bg-muted/50">
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Folio</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Alumno</th>
+                                <th className="px-3 py-2.5 text-left font-medium">Correo</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Emitido</th>
+                                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">Enviado</th>
+                                <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((c) => (
+                                <tr key={c.id} className="border-b hover:bg-muted/40">
+                                    <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap">{c.folio_cenni}</td>
+                                    <td className="px-3 py-2 text-xs font-medium">{c.cliente_estudiante}</td>
+                                    <td className="px-3 py-2 text-xs text-muted-foreground">{c.correo || "—"}</td>
+                                    <td className="px-3 py-2 text-[11px] text-muted-foreground whitespace-nowrap font-mono">
+                                        {c.certificate_uploaded_at
+                                            ? new Date(c.certificate_uploaded_at).toLocaleDateString("es-MX")
+                                            : "—"}
+                                    </td>
+                                    <td className="px-3 py-2 text-[11px] whitespace-nowrap">
+                                        {c.certificate_sent_at ? (
+                                            <span className="text-green-600">
+                                                {new Date(c.certificate_sent_at).toLocaleDateString("es-MX")}
+                                                {c.certificate_sent_to && (
+                                                    <span className="block text-[10px] text-muted-foreground">{c.certificate_sent_to}</span>
+                                                )}
+                                            </span>
+                                        ) : (
+                                            <span className="text-muted-foreground">No enviado</span>
+                                        )}
+                                    </td>
+                                    <td className="px-3 py-2 text-center whitespace-nowrap">
+                                        <div className="flex justify-center gap-1.5">
+                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleOpen(c.id)} title="Ver PDF">
+                                                <ExternalLink className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleDownload(c.id, c.folio_cenni)} title="Descargar">
+                                                <Download className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => { setUploadingId(c.id); fileInputRef.current?.click(); }} title="Reemplazar PDF">
+                                                <Upload className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleSendOpen(c)} title="Enviar por email">
+                                                <Mail className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                    onChange={handleCertReplace}
+                />
+            </CardContent>
+        </Card>
     );
 }

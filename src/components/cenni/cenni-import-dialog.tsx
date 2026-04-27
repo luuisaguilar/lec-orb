@@ -43,6 +43,7 @@ interface ParsedCenni {
 export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImportDialogProps) {
     const [file, setFile] = useState<File | null>(null);
     const [previewData, setPreviewData] = useState<ParsedCenni[]>([]);
+    const [skippedRows, setSkippedRows] = useState<string[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,49 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
     const parseBoolean = (val: any) => {
         if (!val) return false;
         const s = String(val).trim().toUpperCase();
-        return s === "SI" || s === "SÍ" || s === "YES" || s === "TRUE" || s === "1" || s === "X";
+        return s === "SI" || s === "SÍ" || s === "YES" || s === "TRUE" || s === "1" || s === "X" || s === "✅";
+    };
+
+    // Normalizes messy date strings from the master CSV to ISO YYYY-MM-DD.
+    // Handles: "Recibido el: 10/02/2026", "REVISADO 04/13/2026", "31-03-25", "15-03-2025", etc.
+    const parseDate = (val: any): string | null => {
+        if (!val) return null;
+        let s = String(val)
+            .replace(/\r?\n|\r/g, " ")
+            .replace(/recibido\s+el\s*:/gi, "")
+            .replace(/recibido\s+/gi, "")
+            .replace(/revisado\s+/gi, "")
+            .trim();
+        if (!s) return null;
+
+        // DD-MM-YYYY or DD-MM-YY (hyphen)
+        const hyphen = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+        if (hyphen) {
+            let [, d, m, y] = hyphen;
+            if (y.length === 2) y = "20" + y;
+            return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+        }
+
+        // D/M/YYYY or M/D/YYYY (slash)
+        const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (slash) {
+            const [, a, b, y] = slash;
+            // If b > 12 it can only be a day → a is month (M/D/YYYY, US format)
+            if (parseInt(b) > 12) return `${y}-${a.padStart(2, "0")}-${b.padStart(2, "0")}`;
+            // Otherwise assume D/M/YYYY (Mexican standard)
+            return `${y}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
+        }
+
+        return null;
+    };
+
+    const normalizeCertStatus = (val: string | null): string | null => {
+        if (!val) return null;
+        const s = val.trim().toUpperCase().replace(/\s+/g, " ");
+        if (s.startsWith("APROBADO") || s === "APORBADO") return "APROBADO";
+        if (s.startsWith("RECHAZADO") || s === "RECHAZADO") return "RECHAZADO";
+        if (s.includes("PROCESO") || s.includes("DICTAMIN")) return "EN PROCESO DE DICTAMINACION";
+        return null;
     };
 
     const processFile = (file: File) => {
@@ -95,26 +138,51 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                     throw new Error("El archivo está vacío.");
                 }
 
-                // Parse and map columns
-                const parsed: ParsedCenni[] = json.map((row, index) => {
-                    const cliente_estudiante = row["CLIENTE/ESTUDIANTE"]?.toString().trim() || row["CLIENTE ESTUDIANTE"]?.toString().trim();
-                    const folio_cenni = row["FOLIO CENNI"]?.toString().trim() || row["FOLIO"]?.toString().trim();
+                // Parse and map columns — skip rows with no name AND no folio
+                const skipped: string[] = [];
+                const parsed: ParsedCenni[] = json.reduce((acc: ParsedCenni[], row, index) => {
+                    const cliente_estudiante = (
+                        row["CLIENTE/ESTUDIANTE"]?.toString().trim() ||
+                        row["CLIENTE ESTUDIANTE"]?.toString().trim() ||
+                        ""
+                    );
+                    const folio_cenni = (
+                        row["FOLIO CENNI"]?.toString().trim() ||
+                        row["FOLIO"]?.toString().trim() ||
+                        ""
+                    );
 
-                    if (!cliente_estudiante) {
-                        throw new Error(`Fila ${index + 2}: El campo 'CLIENTE/ESTUDIANTE' es obligatorio.`);
-                    }
+                    // Skip entirely blank rows
+                    if (!cliente_estudiante && !folio_cenni) return acc;
+                    // Skip rows with name but no folio (pending cases not yet assigned)
                     if (!folio_cenni) {
-                        throw new Error(`Fila ${index + 2}: El campo 'FOLIO CENNI' es obligatorio.`);
+                        skipped.push(`Fila ${index + 2}: ${cliente_estudiante} (sin folio)`);
+                        return acc;
+                    }
+                    // Skip rows with folio but no name
+                    if (!cliente_estudiante) {
+                        skipped.push(`Fila ${index + 2}: folio ${folio_cenni} (sin nombre)`);
+                        return acc;
                     }
 
                     let estatus = row["ESTATUS"]?.toString().trim().toUpperCase() || "EN OFICINA";
-                    // Normalize legacy values to the canonical 5-value enum
-                    if (estatus === "PENDIENTE" || estatus === "EN OFICINA/POR ENVIAR") estatus = "EN OFICINA";
-                    if (estatus === "EN TRAMITE" || estatus === "REVISION" || estatus === "EN TRAMITE" || estatus === "TRÁMITE") estatus = "EN TRAMITE/REVISION";
-                    let estatus_certificado = row["ESTATUS CERTIFICADO"]?.toString().trim().toUpperCase() || null;
-                    if (estatus_certificado === "PENDIENTE") estatus_certificado = "EN PROCESO DE DICTAMINACION";
+                    // Normalize to canonical 5-value enum
+                    if (["PENDIENTE", "EN OFICINA/POR ENVIAR"].includes(estatus))          estatus = "EN OFICINA";
+                    if (["EN TRAMITE", "TRAMITE", "TRÁMITE", "REVISION"].includes(estatus)) estatus = "EN TRAMITE/REVISION";
+                    if (["ENVIADO", "ENVIADO DIGITAL", "APROBADO"].includes(estatus))       estatus = "APROBADO";
+                    // BC is a client/branch code mistakenly used as status in older records
+                    if (!["EN OFICINA", "SOLICITADO", "EN TRAMITE/REVISION", "APROBADO", "RECHAZADO"].includes(estatus)) {
+                        estatus = "EN OFICINA";
+                    }
 
-                    return {
+                    const estatus_certificado = normalizeCertStatus(
+                        row["ESTATUS CERTIFICADO"]?.toString() || null
+                    );
+
+                    const notas = row["NOTAS"]?.toString().trim() || null;
+                    const motivo_rechazo = row["MOTIVO RECHAZO"]?.toString().trim() || null;
+
+                    acc.push({
                         cliente_estudiante,
                         folio_cenni,
                         celular: row["CELULAR"]?.toString().trim() || null,
@@ -127,18 +195,23 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                         cliente: row["CLIENTE"]?.toString().trim() || null,
                         estatus,
                         estatus_certificado,
-                        fecha_recepcion: row["FECHA RECEPCION"]?.toString().trim() || null,
-                        fecha_revision: row["FECHA REVISION"]?.toString().trim() || null,
-                        motivo_rechazo: row["MOTIVO RECHAZO"]?.toString().trim() || null,
-                    };
-                });
+                        // Accept both legacy ("FECHA RECEPCION") and master CSV ("RECIBIDO") column names
+                        fecha_recepcion: parseDate(row["RECIBIDO"] || row["FECHA RECEPCION"] || null),
+                        fecha_revision:  parseDate(row["REVISADO"]  || row["FECHA REVISION"]  || null),
+                        motivo_rechazo: motivo_rechazo || (estatus === "RECHAZADO" ? notas : null),
+                        notes: notas,
+                    });
+                    return acc;
+                }, []);
 
                 setPreviewData(parsed);
+                setSkippedRows(skipped);
                 setError(null);
             } catch (err: any) {
                 console.error("Error al procesar Excel:", err);
                 setError(err.message || "Error al leer el archivo. Verifica que el formato sea correcto.");
                 setPreviewData([]);
+                setSkippedRows([]);
                 setFile(null);
             } finally {
                 setIsProcessing(false);
@@ -171,7 +244,7 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                 throw new Error(result.error || "Hubo un problema al subir los datos.");
             }
 
-            toast.success(`Se han importado ${result.count} trámites de CENNI exitosamente.`);
+            toast.success(`${result.count} registros CENNI sincronizados (nuevos e actualizados).`);
             onSuccess();
         } catch (err: any) {
             console.error("Bulk upload error:", err);
@@ -184,15 +257,15 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
     const downloadTemplate = () => {
         const templateData = [
             {
+                "FOLIO CENNI": "CF57JE",
                 "CLIENTE/ESTUDIANTE": "Juan Perez Ramos",
-                "FOLIO CENNI": "CENN-12345",
+                "DATOS CURP": "PERJ900815HJCRRN07",
                 "CELULAR": "3312345678",
                 "CORREO": "juan@ejemplo.com",
                 "SOLICITUD CENNI": "SI",
                 "ACTA O CURP": "SI",
                 "ID": "SI",
                 "CERTIFICADO": "COPIA OOPT",
-                "DATOS CURP": "PERJ900815HJC",
                 "CLIENTE": "EXTERNO",
                 "ESTATUS": "EN OFICINA",
                 "FECHA RECEPCION": "",
@@ -211,6 +284,7 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
     const resetState = () => {
         setFile(null);
         setPreviewData([]);
+        setSkippedRows([]);
         setError(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
@@ -227,10 +301,10 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
-                        Importar CENNI desde Excel
+                        Importar / Actualizar CENNI desde Excel
                     </DialogTitle>
                     <DialogDescription>
-                        Sube tu base de datos de trámites CENNI en formato .xlsx o .csv.
+                        Sube tu base de datos de trámites CENNI. Los folios nuevos se insertan y los existentes se actualizan con los datos del archivo.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -279,11 +353,21 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                                         <CheckCircle2 className="h-3 w-3 mr-1" /> Archivo Válido
                                     </Badge>
                                     <span className="text-sm text-muted-foreground font-medium">
-                                        Se encontraron {previewData.length} registros.
+                                        {previewData.length} registros a importar{skippedRows.length > 0 ? `, ${skippedRows.length} omitidos` : ""}.
                                     </span>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={resetState}>Cambiar Archivo</Button>
                             </div>
+
+                            {skippedRows.length > 0 && (
+                                <Alert className="mb-2 shrink-0 border-amber-200 bg-amber-50 text-amber-800">
+                                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                                    <AlertTitle className="text-amber-800">Filas omitidas (sin folio asignado)</AlertTitle>
+                                    <AlertDescription className="text-amber-700 text-xs mt-1 space-y-0.5">
+                                        {skippedRows.map((r, i) => <div key={i}>{r}</div>)}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
 
                             <ScrollArea className="flex-1 border rounded-md">
                                 <table className="w-full text-sm text-left whitespace-nowrap">
@@ -337,9 +421,9 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                         className="gap-2"
                     >
                         {isUploading ? (
-                            <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</>
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Sincronizando...</>
                         ) : (
-                            <><Upload className="h-4 w-4" /> Importar {previewData.length > 0 ? previewData.length : ""} Registros</>
+                            <><Upload className="h-4 w-4" /> Importar / Actualizar {previewData.length > 0 ? previewData.length : ""} Registros</>
                         )}
                     </Button>
                 </DialogFooter>
