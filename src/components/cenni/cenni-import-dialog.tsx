@@ -73,7 +73,7 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
     // Handles: "Recibido el: 10/02/2026", "REVISADO 04/13/2026", "31-03-25", "15-03-2025", etc.
     const parseDate = (val: any): string | null => {
         if (!val) return null;
-        let s = String(val)
+        const s = String(val)
             .replace(/\r?\n|\r/g, " ")
             .replace(/recibido\s+el\s*:/gi, "")
             .replace(/recibido\s+/gi, "")
@@ -84,7 +84,8 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
         // DD-MM-YYYY or DD-MM-YY (hyphen)
         const hyphen = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
         if (hyphen) {
-            let [, d, m, y] = hyphen;
+            const [, d, m] = hyphen;
+            let y = hyphen[3];
             if (y.length === 2) y = "20" + y;
             return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
         }
