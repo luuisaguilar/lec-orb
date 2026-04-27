@@ -217,6 +217,10 @@ export type Database = {
           acta_o_curp: boolean | null
           celular: string | null
           certificado: string | null
+          certificate_sent_at: string | null
+          certificate_sent_to: string | null
+          certificate_storage_path: string | null
+          certificate_uploaded_at: string | null
           cliente: string | null
           cliente_estudiante: string
           correo: string | null
@@ -242,6 +246,10 @@ export type Database = {
           acta_o_curp?: boolean | null
           celular?: string | null
           certificado?: string | null
+          certificate_sent_at?: string | null
+          certificate_sent_to?: string | null
+          certificate_storage_path?: string | null
+          certificate_uploaded_at?: string | null
           cliente?: string | null
           cliente_estudiante: string
           correo?: string | null
@@ -267,6 +275,10 @@ export type Database = {
           acta_o_curp?: boolean | null
           celular?: string | null
           certificado?: string | null
+          certificate_sent_at?: string | null
+          certificate_sent_to?: string | null
+          certificate_storage_path?: string | null
+          certificate_uploaded_at?: string | null
           cliente?: string | null
           cliente_estudiante?: string
           correo?: string | null
@@ -291,6 +303,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cenni_cases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cenni_scraper_jobs: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          folio_cenni: string | null
+          id: string
+          kind: string
+          org_id: string
+          requested_by: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          folio_cenni?: string | null
+          id?: string
+          kind: string
+          org_id: string
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          folio_cenni?: string | null
+          id?: string
+          kind?: string
+          org_id?: string
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cenni_scraper_jobs_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

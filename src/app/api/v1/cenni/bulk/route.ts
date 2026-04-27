@@ -53,7 +53,9 @@ export const POST = withAuth(async (req, { supabase, member }) => {
         org_id: member.org_id,
     }));
 
-    const { error } = await supabase.from("cenni_cases").insert(payload);
+    const { error } = await supabase
+        .from("cenni_cases")
+        .upsert(payload, { onConflict: "org_id,folio_cenni", ignoreDuplicates: false });
     if (error) throw error;
 
     return NextResponse.json({ success: true, count: payload.length }, { status: 201 });

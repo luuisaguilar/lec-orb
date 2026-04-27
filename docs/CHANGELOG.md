@@ -10,6 +10,28 @@ Cambios ordenados de más reciente a más antiguo.
 
 ---
 
+## [2026-04-24] — Fixes de entrega de invitaciones
+
+- fix(email): Resend operativo en producción — corregido formato de `RESEND_FROM_EMAIL`
+  (`Nombre <email@dominio>`), dominio `updates.luisaguilaraguila.com` verificado
+- fix(invitations): `/api/v1/invitations` y `/api/v1/invitations/[id]/resend` propagan
+  `emailError` al UI cuando Resend falla, en vez de silenciar el error
+- fix(db): `fn_accept_invitation` usa `pg_catalog.btrim` (no `trim`, que no existe en
+  `pg_catalog`), castea el enum `member_role → user_role` al insertar en `org_members`,
+  y escribe en la columna correcta `operation` de `audit_log`
+  (migración `20260424_fix_invitation_accept_audit.sql`)
+- fix(db): `fn_audit_log` llena la columna `operation NOT NULL` (además del legacy
+  `action`) y hace fallback de `auth.uid()` a `new_data.user_id` cuando el trigger se
+  dispara desde un RPC `SECURITY DEFINER`
+  (migración `20260424_fix_fn_audit_log_operation.sql`)
+- fix(db): `handle_new_user` ya no crea org personal + admin membership cuando el
+  usuario se registra con una invitación pendiente — evita el bug de doble fila en
+  `org_members` que rompía `.single()` en `getAuthenticatedMember()` con 403 en todas
+  las rutas API
+  (migración `20260424_handle_new_user_skip_invited.sql`)
+
+---
+
 ## [2026-04-23] — PR #13
 
 - fix(join): tipar `params` y `searchParams` como `Promise<{...}>` y hacer `await` — resuelve "Application error" en producción con Next.js 15+

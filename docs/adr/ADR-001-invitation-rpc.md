@@ -55,3 +55,33 @@ const { data, error } = await adminSupabase.rpc('fn_accept_invitation', {
 - Requiere `SUPABASE_SERVICE_ROLE_KEY` configurado en todas las instancias de producción
 - Si esta variable no está disponible, la aceptación de invitaciones falla completamente
 - La función bypasea RLS de forma controlada — cualquier cambio a la función requiere revisión de seguridad
+
+---
+
+## Addendum — 2026-04-24 — Fixes de la RPC y triggers relacionados
+
+En producción se descubrieron tres bugs relacionados con la RPC y el ecosistema de
+triggers que la rodean. Todos fueron corregidos con migraciones fechadas 2026-04-24.
+
+1. **`pg_catalog.trim` no existe.** La RPC usaba `pg_catalog.trim()` para normalizar
+   el email; `pg_catalog` solo expone `btrim`. Fix: `pg_catalog.btrim()`.
+
+2. **Mismatch de enums `user_role` ↔ `member_role`.** `org_invitations.role` es
+   `member_role` y `org_members.role` es `user_role`. La RPC ahora hace cast explícito
+   `v_invitation.role::text::public.user_role` al insertar.
+
+3. **`audit_log.operation` NOT NULL.** El trigger `fn_audit_log` solo llenaba la columna
+   legacy `action`; la columna real requerida es `operation`. Ahora se llenan ambas y
+   `auth.uid()` hace fallback a `new_data.user_id` cuando el trigger se dispara desde
+   una RPC `SECURITY DEFINER` (como ésta).
+
+4. **`handle_new_user` duplicaba memberships.** El trigger creaba una org personal +
+   admin membership para **todo** usuario nuevo. Si el usuario venía por invitación,
+   terminaba con 2 filas en `org_members` y `getAuthenticatedMember().single()` fallaba
+   con 403 en cada ruta API. Fix: `handle_new_user` ahora salta la creación de la org
+   personal si hay una invitación pendiente con el email del nuevo usuario.
+
+**Migraciones asociadas:**
+- `20260424_fix_invitation_accept_audit.sql`
+- `20260424_fix_fn_audit_log_operation.sql`
+- `20260424_handle_new_user_skip_invited.sql`

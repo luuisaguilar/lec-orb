@@ -189,14 +189,71 @@ Plantilla en `.env.example`. Archivo local: `.env.local` (no commitear).
 
 Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 
-- **Estatus enum** (`cenni_status`): `EN OFICINA` | `SOLICITADO` | `EN TRAMITE/REVISION` | `APROBADO` | `RECHAZADO`
-- **Campos clave:** `folio_cenni`, `cliente_estudiante`, `estatus`, `fecha_recepcion DATE`,
-  `fecha_revision DATE`, `motivo_rechazo TEXT`
-- **Migración:** `supabase/migrations/20260422_cenni_estatus_and_new_fields.sql`
-- **Soft delete** vía `deleted_at`.
-- **Endpoints:** `GET/POST /api/v1/cenni`, `PATCH/DELETE /api/v1/cenni/[id]`, `POST /api/v1/cenni/bulk`
+### Enums y campos clave
 
-> Después de aplicar la migración CENNI, regenerar `src/types/database.types.ts`.
+- **Estatus** (`cenni_status`): `EN OFICINA` | `SOLICITADO` | `EN TRAMITE/REVISION` | `APROBADO` | `RECHAZADO`
+- **Estatus certificado** (`cenni_cert_status`): `APROBADO` | `RECHAZADO` | `EN PROCESO DE DICTAMINACION`
+- **Campos:** `folio_cenni`, `cliente_estudiante`, `datos_curp`, `celular`, `correo`,
+  `solicitud_cenni BOOL`, `acta_o_curp BOOL`, `id_documento BOOL`,
+  `certificado TEXT`, `cliente TEXT`, `estatus`, `estatus_certificado`,
+  `fecha_recepcion DATE`, `fecha_revision DATE`, `motivo_rechazo TEXT`, `notes TEXT`
+- **Certificado Storage:** `certificate_storage_path TEXT`, `certificate_uploaded_at TIMESTAMPTZ`,
+  `certificate_sent_at TIMESTAMPTZ`, `certificate_sent_to TEXT`
+- **Soft delete** vía `deleted_at`.
+- **Constraint DB:** `UNIQUE(org_id, folio_cenni)` — requerida para upsert masivo.
+
+### Endpoints
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/cenni` | Lista casos. Params: `q` (búsqueda), `limit` (max 500, def 300) |
+| POST | `/api/v1/cenni` | Crea caso individual |
+| PATCH | `/api/v1/cenni/[id]` | Edita caso + audit log |
+| DELETE | `/api/v1/cenni/[id]` | Soft delete + audit log |
+| POST | `/api/v1/cenni/bulk` | Upsert masivo desde Excel (`onConflict: org_id,folio_cenni`) |
+| POST | `/api/v1/cenni/[id]/certificate-upload` | Sube PDF al bucket `cenni-certificates` |
+| POST | `/api/v1/cenni/[id]/send-certificate` | Genera signed URL (7 días) y envía por email via Resend |
+
+### Storage
+
+- Bucket: `cenni-certificates`
+- Path por caso: `{org_id}/{case_id}.pdf`
+- `upsert: true` — reemplaza el PDF si ya existe uno previo
+- Para in-app preview: signed URL con expiración 300s
+- Para email: signed URL con expiración 7 días
+
+### Import masivo (UI)
+
+- Componente: `src/components/cenni/cenni-import-dialog.tsx`
+- Acepta `.xlsx`, `.xls`, `.csv`
+- Columnas reconocidas del CSV maestro: `FOLIO CENNI`, `CLIENTE/ESTUDIANTE`, `DATOS CURP`,
+  `CELULAR`, `CORREO`, `SOLICITUD CENNI`, `ACTA O CURP`, `ID`, `CERTIFICADO`, `CLIENTE`,
+  `ESTATUS`, `RECIBIDO` (→ `fecha_recepcion`), `REVISADO` (→ `fecha_revision`),
+  `MOTIVO RECHAZO`, `ESTATUS CERTIFICADO`, `NOTAS`
+- Normalización de estatus: `ENVIADO`/`ENVIADO DIGITAL` → `APROBADO`; desconocidos → `EN OFICINA`
+- Filas sin folio (casos en trámite sin asignar): se omiten con aviso, no fallan el import
+- Upsert por `folio_cenni` — seguro de re-ejecutar
+
+### Migraciones aplicadas
+
+| Archivo | Descripción |
+|---------|-------------|
+| `006_cenni.sql` | Schema base |
+| `20260422_cenni_estatus_and_new_fields.sql` | Enum estatus + campos extra |
+| `20260427_cenni_certificate_fields.sql` | Campos certificate_* en cenni_cases |
+| `20260427_cenni_unique_folio.sql` | UNIQUE(org_id, folio_cenni) — aplicada en DB |
+
+### UI — tabla principal
+
+- Folio: muestra solo el código sin prefijo "CENNI-" (tooltip con valor completo)
+- Columna CURP visible en tabla
+- Paginación server-side: 50 registros por página
+- Búsqueda de texto: debounce 350ms → query `q` al servidor
+- Columnas Recepción y Revisión eliminadas de la tabla (datos se conservan y son editables)
+
+> Después de aplicar migraciones CENNI, regenerar `src/types/database.types.ts`
+> con: `npx supabase gen types typescript --project-id yyuegezottorxuxdfrpi > src/types/database.types.ts`
+> **Nota:** el CLI puede prefijar el output con un warning de npm — eliminar la primera línea si sucede.
 
 ## Invitaciones
 
@@ -221,13 +278,18 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 - Email (Resend) es opcional — `joinUrl` es el fallback confiable.
 - Si el email falla, el flujo de invitación NO debe fallar.
 - `SUPABASE_SERVICE_ROLE_KEY` es obligatoria en producción para la RPC.
-- ⚠️ `RESEND_API_KEY` y `RESEND_FROM_EMAIL` aún no configurados en Vercel (abril 2026).
+- ✅ Resend configurado y enviando (abril 2026). `RESEND_FROM_EMAIL` debe usar formato
+  `Nombre <email@dominio.com>` y el dominio debe estar verificado en Resend.
+- Al firmarse un usuario con invitación pendiente, `handle_new_user` **no** crea org personal
+  (evita el bug de doble membership → `.single()` 403). El trigger `fn_audit_log` llena tanto
+  `operation` (NOT NULL) como la columna legacy `action`.
 
 ## Testing
 
 ```
 Vitest   → unit/integration (src/tests/)
-           26 archivos, 143 tests — 21/21 módulos API cubiertos
+           27 archivos, ~170 tests — 22/22 módulos API cubiertos
+           cenni.test.ts: 27 tests (GET, POST, PATCH, DELETE, bulk, cert-upload, send-cert)
 Playwright → E2E contra servidor demo local (npm run dev)
            Cobertura: flows de finanzas e invitaciones
 ```
@@ -266,18 +328,26 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 ## Próximos Pasos Documentados
 
 **Prioridad Alta:**
-1. Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` en Vercel para habilitar emails de invitación.
-2. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
-3. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
+1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
+2. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
+3. Integrar Sentry para error tracking en producción.
 
 **Prioridad Media:**
 4. KPI cards y gráficas en Caja Chica.
 5. Staging environment con org de prueba dedicada.
-6. Regenerar `database.types.ts` después de migraciones CENNI.
 
 **Prioridad Baja:**
-7. ADR formales para decisiones de arquitectura.
-8. E2E tests actualizados con flujo de invitaciones real.
+6. ADR formales para decisiones de arquitectura.
+7. E2E tests actualizados con flujo de invitaciones real.
+
+**Completado en sprint abril 2026 (CENNI):**
+- ✅ Audit logging en PATCH/DELETE/bulk de cenni_cases
+- ✅ Paginación server-side + búsqueda por texto en tabla CENNI
+- ✅ Subida de certificados PDF a Supabase Storage (`cenni-certificates`)
+- ✅ Envío de certificado por email via Resend (signed URL 7 días)
+- ✅ Import masivo desde Excel con upsert por folio
+- ✅ UNIQUE(org_id, folio_cenni) constraint aplicada en DB
+- ✅ UI: folio sin prefijo, columna CURP, columnas Recepción/Revisión eliminadas
 
 ---
 
