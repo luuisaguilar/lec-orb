@@ -40,10 +40,12 @@ export async function acceptInvitation(formData: FormData) {
         redirect(`/join/${token}?error=${encodeURIComponent("Ocurrió un error al procesar tu invitación. Intenta de nuevo o contacta al administrador.")}`);
     }
 
-    const { success, message } = result as { success: boolean; message?: string };
+    const { success, message, code } = result as { success: boolean; message?: string; code?: string };
 
     if (!success) {
-        redirect(`/join/${token}?error=${encodeURIComponent(message || "No se pudo aceptar la invitación.")}`);
+        // EXPIRED gets a query flag so the page can render a "request a new invite" CTA
+        const expiredFlag = code === "EXPIRED" ? "&expired=1" : "";
+        redirect(`/join/${token}?error=${encodeURIComponent(message || "No se pudo aceptar la invitación.")}${expiredFlag}`);
     }
 
     // 3. Success — redirect to dashboard

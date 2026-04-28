@@ -1186,6 +1186,7 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           email: string
+          expires_at: string
           id: string
           invited_by: string
           org_id: string
@@ -1197,6 +1198,7 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           email: string
+          expires_at?: string
           id?: string
           invited_by: string
           org_id: string
@@ -1208,6 +1210,7 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           email?: string
+          expires_at?: string
           id?: string
           invited_by?: string
           org_id?: string
@@ -2080,6 +2083,7 @@ export type Database = {
         Args: { p_token: string; p_user_email: string; p_user_id: string }
         Returns: Json
       }
+      fn_expire_old_invitations: { Args: never; Returns: number }
       fn_petty_cash_balance: {
         Args: { p_org_id: string; p_year: number }
         Returns: number
