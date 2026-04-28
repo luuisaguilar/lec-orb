@@ -63,7 +63,13 @@ npm run test:watch   # Vitest en modo watch
 npm run test:e2e     # Playwright E2E (requiere servidor local corriendo)
 
 # Regenerar tipos de Supabase (solo cuando cambia el schema)
+# Bash / WSL — produce UTF-8 directamente
 npx supabase gen types typescript --project-id <id> > src/types/database.types.ts
+# PowerShell — el `>` produce UTF-16 LE y rompe ESLint en CI ("File appears to be binary").
+# Usar Out-File con utf8 explícito:
+#   npx supabase gen types typescript --project-id <id> | Out-File -Encoding utf8 src/types/database.types.ts
+# Tras correr el comando, eliminar la primera línea si el CLI prefijó un warning de npm
+# (ej. "Need to install the following packages: supabase@x.y.z").
 ```
 
 ## Patrones Críticos — LEER ANTES DE ESCRIBIR CÓDIGO
@@ -158,6 +164,21 @@ if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 Roles activos: `admin`, `supervisor`, `operador`, `applicator`.
 Al extender rutas con permisos nuevos, verificar la consistencia entre el **module slug**
 y el **permission-module name** — son distintos y su desalineación rompe el acceso.
+
+### Sentry — bootstrap modernos (no crear archivos legacy)
+
+Stack: `@sentry/nextjs` v10 + Next 15+. La inicialización vive en estos archivos —
+**NO crear `sentry.client.config.ts`**, ese patrón legacy duplica `Sentry.init` y
+rompe el sample rate.
+
+| Archivo | Runtime |
+|---|---|
+| `src/instrumentation.ts` | Carga `sentry.server.config.ts` o `sentry.edge.config.ts` según el runtime |
+| `src/instrumentation-client.ts` | Browser — equivalente moderno de `sentry.client.config.ts` |
+| `sentry.server.config.ts` / `sentry.edge.config.ts` | Sólo `Sentry.init` |
+| `next.config.ts` | Envuelto con `withSentryConfig` (source maps, Vercel Cron Monitors) |
+
+Sample rate: 10% en prod, 100% en dev. Project: `orb-lec` (org `luis-aguilar-aguila`).
 
 ## Variables de Entorno Requeridas
 
@@ -255,7 +276,8 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 
 > Después de aplicar migraciones CENNI, regenerar `src/types/database.types.ts`
 > con: `npx supabase gen types typescript --project-id yyuegezottorxuxdfrpi > src/types/database.types.ts`
-> **Nota:** el CLI puede prefijar el output con un warning de npm — eliminar la primera línea si sucede.
+> **Nota:** el CLI puede prefijar el output con un warning de npm — eliminar las primeras líneas si sucede.
+> **PowerShell:** usar `| Out-File -Encoding utf8 ...` en lugar de `>` (el redirect default produce UTF-16 LE, ESLint lo rechaza como binario en CI).
 
 ## Invitaciones
 
@@ -330,11 +352,12 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 ## Criterio de Done para Cualquier Sprint
 
 - [ ] `npm run build` pasa sin errores
-- [ ] `npm run lint` pasa sin errores nuevos
+- [ ] `npm run lint` pasa sin errores nuevos (warnings OK)
 - [ ] `npm run test` pasa (Vitest)
 - [ ] Sin regresiones en módulos de finanzas e invitaciones
 - [ ] Toda ruta mutante usa `withAuth`
 - [ ] Toda tabla nueva tiene RLS habilitado
+- [ ] Si se regeneró `database.types.ts`: confirmar UTF-8 (no UTF-16) — `file src/types/database.types.ts` debe decir "ASCII text" o "UTF-8"
 
 ## Próximos Pasos Documentados
 
