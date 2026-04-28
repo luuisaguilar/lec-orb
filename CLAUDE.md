@@ -169,8 +169,8 @@ y el **permission-module name** — son distintos y su desalineación rompe el a
 | `NEXT_PUBLIC_APP_URL` | ✅ | Evita links con `localhost` |
 | `RESEND_API_KEY` | ✅ | Email de invitaciones |
 | `RESEND_FROM_EMAIL` | ✅ | Sender drift en producción |
-| `NEXT_PUBLIC_SENTRY_DSN` | ✅ | Error tracking (Sentry project: orb-lec) |
-| `SENTRY_AUTH_TOKEN` | ✅ | Source maps upload en CI/CD (GitHub Actions + Vercel) |
+| `NEXT_PUBLIC_SENTRY_DSN` | ✅ | Error tracking — Sentry project `orb-lec` (org `luis-aguilar-aguila`). Configurada en Vercel (Production + Preview). |
+| `SENTRY_AUTH_TOKEN` | ✅ | Source maps upload en build. Local: `.env.sentry-build-plugin`. Producción: Vercel env vars. |
 
 Plantilla en `.env.example`. Archivo local: `.env.local` (no commitear).
 
@@ -332,7 +332,6 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 **Prioridad Alta:**
 1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
 2. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
-3. Integrar Sentry para error tracking en producción.
 
 **Prioridad Media:**
 4. KPI cards y gráficas en Caja Chica.
@@ -341,6 +340,14 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 **Prioridad Baja:**
 6. ADR formales para decisiones de arquitectura.
 7. E2E tests actualizados con flujo de invitaciones real.
+
+**Completado abril 2026 (Sentry):**
+- ✅ `@sentry/nextjs` v10 instalado y configurado
+- ✅ Bootstrap server/edge en `src/instrumentation.ts`
+- ✅ Bootstrap browser en `src/instrumentation-client.ts` (NO usar el legacy `sentry.client.config.ts`)
+- ✅ `withSentryConfig` en `next.config.ts` (source maps + Vercel Cron Monitors)
+- ✅ Env vars `NEXT_PUBLIC_SENTRY_DSN` y `SENTRY_AUTH_TOKEN` activas en Vercel
+- ✅ Sample rate: 10% en prod, 100% en dev
 
 **Completado en sprint abril 2026 (CENNI):**
 - ✅ Audit logging en PATCH/DELETE/bulk de cenni_cases
