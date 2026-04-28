@@ -10,6 +10,8 @@ const inviteSchema = z.object({
         message: "Rol invalido",
     }),
     sendEmail: z.boolean().optional().default(true),
+    // Optional override. DB default is 7 days; valid range 1–60.
+    expiresInDays: z.number().int().min(1).max(60).optional(),
 });
 
 export const GET = withAuth(async (req, { supabase, member }) => {
@@ -38,6 +40,10 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
     }
 
+    const expiresAt = parsed.data.expiresInDays
+        ? new Date(Date.now() + parsed.data.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+        : undefined;
+
     const { data: invitation, error } = await supabase
         .from("org_invitations")
         .insert({
@@ -45,6 +51,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             email: parsed.data.email,
             role: parsed.data.role,
             invited_by: user.id,
+            ...(expiresAt ? { expires_at: expiresAt } : {}),
         })
         .select()
         .single();

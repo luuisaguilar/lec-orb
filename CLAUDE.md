@@ -286,6 +286,15 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
   (evita el bug de doble membership → `.single()` 403). El trigger `fn_audit_log` llena tanto
   `operation` (NOT NULL) como la columna legacy `action`.
 
+**Vencimiento automático (abril 2026):**
+- `org_invitations.expires_at` (NOT NULL, default `now() + 7 days`).
+- POST `/api/v1/invitations` acepta `expiresInDays` opcional (1–60). Sin override usa el default de la DB.
+- POST `/api/v1/invitations/[id]/resend` extiende `expires_at` a `now() + 7 days` al reenviar.
+- DELETE `/api/v1/invitations/cleanup` ahora hace dos pasos: (1) flip `pending → expired` para vencidas, (2) borra todas las no-pending.
+- RPC `fn_accept_invitation` retorna `code='EXPIRED'` y flippea status a `'expired'` cuando el token aún es pending pero `expires_at < now()`. La página `/join/[token]` recibe `?expired=1` para renderizar CTA de "pedir nueva invitación" (UI pendiente).
+- RPC helper `fn_expire_old_invitations()` (service_role only): bulk-flip de pendientes vencidas. Listo para colgarse de un cron.
+- Migración: `20260428_org_invitations_expires_at.sql`. Tras aplicar, regenerar `database.types.ts`.
+
 ## Testing
 
 ```
@@ -331,7 +340,6 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 
 **Prioridad Alta:**
 1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
-2. Agregar campo `expires_at` a `org_invitations` para vencimiento automático.
 
 **Prioridad Media:**
 4. KPI cards y gráficas en Caja Chica.

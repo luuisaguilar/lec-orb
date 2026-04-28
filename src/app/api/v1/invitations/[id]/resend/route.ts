@@ -28,6 +28,18 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
         );
     }
 
+    // Extend expiration: re-send resets the 7-day window so the recipient has time to act.
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: extendError } = await supabase
+        .from("org_invitations")
+        .update({ expires_at: newExpiresAt })
+        .eq("id", invitation.id)
+        .eq("org_id", member.org_id);
+
+    if (extendError) {
+        console.warn("[invitations] Could not extend expires_at on resend:", extendError.message);
+    }
+
     const joinUrl = `${resolveAppOrigin(req)}/join/${invitation.token}`;
 
     let orgName = "tu organizacion";
