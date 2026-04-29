@@ -64,6 +64,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "hr": "/dashboard/hr",
     "petty-cash": "/dashboard/finanzas/caja-chica",
     "budget": "/dashboard/finanzas/presupuesto",
+    "ih-billing": "/dashboard/finanzas/ih-billing",
     "users": "/dashboard/users",
     "audit-log": "/dashboard/actividad",
     "documentos": "/dashboard/documentos",
