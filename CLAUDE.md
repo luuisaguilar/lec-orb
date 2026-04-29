@@ -520,6 +520,9 @@ viaticos (
 
 ### Sprint 2 — Dinero que falta rastrear ← SIGUIENTE
 
+**Prioridad Alta:**
+1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
+
 **Pendiente de decisión antes de codificar (Luis decide):**
 - ¿IH Billing: import Excel o captura manual?
 - ¿Adjuntar Excel/PDF de IH como comprobante del pago (Storage)?
@@ -555,6 +558,14 @@ viaticos (
 - ✅ `lib/supabase/proxy.ts` sin early return de DEMO_MODE
 - ✅ Build limpio + 26 archivos test + 164 tests verdes
 - ⚠️ `lib/demo/config.ts` y `lib/demo/data.ts` **NO eliminar** — los tests los usan con mock `DEMO_MODE=false`
+
+**Completado abril 2026 (Sentry):**
+- ✅ `@sentry/nextjs` v10 instalado y configurado
+- ✅ Bootstrap server/edge en `src/instrumentation.ts`
+- ✅ Bootstrap browser en `src/instrumentation-client.ts` (NO usar el legacy `sentry.client.config.ts`)
+- ✅ `withSentryConfig` en `next.config.ts` (source maps + Vercel Cron Monitors)
+- ✅ Env vars `NEXT_PUBLIC_SENTRY_DSN` y `SENTRY_AUTH_TOKEN` activas en Vercel
+- ✅ Sample rate: 10% en prod, 100% en dev
 
 **Completado abril 2026 (Sentry):**
 - ✅ `@sentry/nextjs` v10 instalado y configurado
