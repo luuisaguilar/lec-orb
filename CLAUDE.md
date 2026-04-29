@@ -44,17 +44,23 @@ src/
 │   │   └── dashboard/            ← Todas las rutas protegidas
 │   │       ├── finanzas/
 │   │       │   ├── caja-chica/   ← Petty Cash UI
-│   │       │   └── presupuesto/  ← Budget UI
-│   │       └── [20+ módulos]     ← applicators, events, users, etc.
+│   │       │   └── presupuesto/  ← Budget POA UI
+│   │       ├── hr/               ← HR Dashboard (7 tabs: Onboarding, OrgChart, Perfiles, Procesos, AMEF, Docs, Auditoría)
+│   │       └── [20+ módulos]     ← applicators, events, users, cenni, toefl, etc.
 │   ├── (portal)/                 ← Portal para applicators
-│   └── api/v1/                   ← 64 route handlers
+│   └── api/v1/                   ← ~75 route handlers
 │       ├── finance/petty-cash/   ← CRUD + balance RPC
 │       ├── finance/budget/       ← Upsert + comparative
-│       ├── invitations/          ← Creación + aceptación
-│       └── [19 módulos más]
-├── components/                   ← Componentes React reutilizables
+│       ├── finance/poa/          ← CRUD líneas POA (presupuesto)
+│       ├── cron/                 ← expire-invitations (Vercel Cron diario 03:00)
+│       ├── invitations/          ← Creación + aceptación + resend
+│       └── [20+ módulos más]
+├── components/
+│   ├── hr/                       ← Componentes HR Dashboard (hr-*.tsx × 7)
+│   └── [resto de componentes]
 ├── lib/
 │   ├── auth/with-handler.ts      ← withAuth — WRAPPER OBLIGATORIO
+│   ├── data/hr.ts                ← Seed data para HR Dashboard
 │   ├── supabase/                 ← Clientes (browser, server, admin, proxy)
 │   ├── finance/export-xlsx.ts    ← Exportación Excel
 │   ├── email/resend.ts           ← Integración Resend
@@ -532,18 +538,18 @@ viaticos (
 ### Pendientes técnicos (cualquier sprint)
 
 1. **UI `/join/[token]?expired=1`:** CTA "pedir nueva invitación" — backend listo, falta el componente
-2. **Cron `fn_expire_old_invitations()`:** Vercel Cron diario — listo para conectar
-3. **PR #20:** Verificar CI verde → squash merge
-4. **Fix nombre empresa:** "Language Evaluation Center" → "Languages Education Consulting" en código, emails y UI
-5. **Backfill CENNI SOLICITADO:** `python backfill_certificates.py --status SOLICITADO` en cenni-bot
-6. **CURP faltante:** Silvia Selene Moreno Carrasco (folio CENNI-CF57JA)
-7. **Retry timeout:** MARCO GASTELUM folio 336225
+2. **Merge PR #21:** `sprint2/poa-cron-docs` → resolver conversación bloqueante en GitHub y hacer squash merge
+3. **Fix nombre empresa:** "Language Evaluation Center" → "Languages Education Consulting" en código, emails y UI
+4. **Backfill CENNI SOLICITADO:** `python backfill_certificates.py --status SOLICITADO` en cenni-bot
+5. **CURP faltante:** Silvia Selene Moreno Carrasco (folio CENNI-CF57JA)
+6. **Retry timeout:** MARCO GASTELUM folio 336225
+7. **HR Dashboard — datos reales:** `src/lib/data/hr.ts` usa seed estático; conectar a Supabase (`kpi_metrics`, `risk_assessments`) en Sprint 5
 
 ### Prioridad media/baja
 
 - KPI cards y gráficas en Caja Chica
 - Dashboard CENNI: cards por estatus + gráfica (Sprint 5, el endpoint ya retorna `cenni.byStatus`)
-- Permisos por puesto (9 grupos propuestos en Obsidian — pendiente validación con gerencia)
+- Permisos por puesto (9 grupos propuestos — pendiente validación con gerencia)
 - Staging environment con org de prueba dedicada
 - Portal de aplicadores (construido, no terminado)
 - DMS: control de revisiones y versiones
@@ -559,23 +565,28 @@ viaticos (
 - ✅ Build limpio + 26 archivos test + 164 tests verdes
 - ⚠️ `lib/demo/config.ts` y `lib/demo/data.ts` **NO eliminar** — los tests los usan con mock `DEMO_MODE=false`
 
-**Completado abril 2026 (Sentry):**
-- ✅ `@sentry/nextjs` v10 instalado y configurado
-- ✅ Bootstrap server/edge en `src/instrumentation.ts`
-- ✅ Bootstrap browser en `src/instrumentation-client.ts` (NO usar el legacy `sentry.client.config.ts`)
-- ✅ `withSentryConfig` en `next.config.ts` (source maps + Vercel Cron Monitors)
-- ✅ Env vars `NEXT_PUBLIC_SENTRY_DSN` y `SENTRY_AUTH_TOKEN` activas en Vercel
-- ✅ Sample rate: 10% en prod, 100% en dev
+**Completado — PR #21 / Sprint 1.5 (abril 2026):**
+- ✅ **POA lines CRUD:** `GET/POST /api/v1/finance/poa` + `GET/PATCH/DELETE /api/v1/finance/poa/[id]`
+  - Migración: `supabase/migrations/20260429_poa_lines.sql`
+- ✅ **Cron expiración invitaciones:** `POST /api/v1/cron/expire-invitations` + `vercel.json` (schedule `0 3 * * *`)
+- ✅ **Sentry v10:** `src/instrumentation.ts`, `src/instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/app/global-error.tsx`; sample rate 10% prod / 100% dev
+- ✅ **CENNI certs:** certificate-upload, certificate-url, send-certificate — migraciones `20260427_*`
+- ✅ **Invitaciones expires_at:** migración `20260428_org_invitations_expires_at.sql`, RPC retorna `EXPIRED`, `/resend` extiende vigencia
+- ✅ **Fix DB:** audit_log.operation NOT NULL + skip org personal en signup invitado — migraciones `20260424_*`
+- ✅ **Fix types:** `database.types.ts` UTF-8, narrowing `result.reason`, `searchParams.expired`
+- ✅ **HR Dashboard** (`/dashboard/hr`) — 7 tabs:
+  - `hr-onboarding.tsx` — Misión/Visión/Valores/Cultura
+  - `hr-org-chart.tsx` — Organigrama interactivo
+  - `hr-profiles.tsx` — 21+ perfiles con buscador
+  - `hr-processes.tsx` — Mapa de procesos SGC
+  - `hr-risks.tsx` — AMEF (riesgos por proceso)
+  - `hr-docs.tsx` — Lista Maestra de Documentos
+  - `hr-audit.tsx` — Auditoría Interna con CAR generator
+  - `src/lib/data/hr.ts` — seed data (estático — conectar a Supabase en Sprint 5)
+- ✅ **gitignore/ESLint:** `scratch/`, `supabase/.temp/` excluidos; `eslint_report.json` de-tracked
+- ✅ **E2E auth setup:** `tests/e2e/auth.setup.ts`
 
-**Completado abril 2026 (Sentry):**
-- ✅ `@sentry/nextjs` v10 instalado y configurado
-- ✅ Bootstrap server/edge en `src/instrumentation.ts`
-- ✅ Bootstrap browser en `src/instrumentation-client.ts` (NO usar el legacy `sentry.client.config.ts`)
-- ✅ `withSentryConfig` en `next.config.ts` (source maps + Vercel Cron Monitors)
-- ✅ Env vars `NEXT_PUBLIC_SENTRY_DSN` y `SENTRY_AUTH_TOKEN` activas en Vercel
-- ✅ Sample rate: 10% en prod, 100% en dev
-
-**Completado en sprint abril 2026 (CENNI):**
+**Completado en sprint abril 2026 (CENNI — detalle):**
 - ✅ Audit logging en PATCH/DELETE/bulk de cenni_cases
 - ✅ Paginación server-side + búsqueda por texto en tabla CENNI
 - ✅ Subida de certificados PDF a Supabase Storage (`cenni-certificates`)
