@@ -113,7 +113,7 @@ describe("Modules API Route", () => {
             });
 
             const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: nonAdminMember });
-            const body = await response.json();
+            await response.json();
 
             expect(response.status).toBe(403);
         });

@@ -74,7 +74,7 @@ function SessionItem({
     schoolId: string | null;
 }) {
     const [busyStaffIds, setBusyStaffIds] = useState<string[]>([]);
-    const [isFetchingAvailability, setIsFetchingAvailability] = useState(false);
+    const [, setIsFetchingAvailability] = useState(false);
     const [datePopoverOpen, setDatePopoverOpen] = useState(false);
     const [speakingPopoverOpen, setSpeakingPopoverOpen] = useState(false);
     const { fields: staffFields, append: appendStaff, remove: removeStaff } = useFieldArray({
@@ -388,7 +388,6 @@ function SessionItem({
                 <div className="space-y-2">
                     {staffFields.map((field, sIndex) => {
                         const selectedAppId = form.watch(`sessions.${index}.staff.${sIndex}.applicator_id`);
-                        const selectedRole = form.watch(`sessions.${index}.staff.${sIndex}.role`);
                         const applicator = applicators.find(a => a.id === selectedAppId);
 
                         const isNotCertified = watchExamType && applicator && !isCertifiedForExam(applicator, watchExamType);

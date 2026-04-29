@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useForm, SubmitHandler, UseFormReturn } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { 
-    Wallet, 
     Plus, 
     Search, 
-    Filter, 
     MoreHorizontal, 
-    ArrowUpRight, 
-    ArrowDownLeft,
     Download,
-    Calendar as CalendarIcon,
     AlertCircle,
     Loader2
 } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import useSWR from "swr";
@@ -377,7 +371,7 @@ export default function CajaChicaPage() {
                                             const file = e.target.files?.[0];
                                             if (file) {
                                                 const path = `receipts/${Date.now()}-${file.name}`;
-                                                const { data, error } = await supabase.storage
+                                                const { data } = await supabase.storage
                                                     .from("petty-cash-receipts")
                                                     .upload(path, file);
                                                 if (data) {

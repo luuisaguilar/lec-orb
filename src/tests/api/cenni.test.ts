@@ -1,13 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { describe, it, expect, vi } from "vitest";
+import { NextRequest, NextResponse } from "next/server";
 import { GET, POST } from "@/app/api/v1/cenni/route";
 import { PATCH, DELETE } from "@/app/api/v1/cenni/[id]/route";
 import { POST as POST_BULK } from "@/app/api/v1/cenni/bulk/route";
 import { POST as POST_UPLOAD } from "@/app/api/v1/cenni/[id]/certificate-upload/route";
 import { GET as GET_CERT_URL } from "@/app/api/v1/cenni/[id]/certificate-url/route";
+import { AuthContext } from "@/lib/auth/with-handler";
 
 vi.mock("@/lib/auth/with-handler", () => ({
-    withAuth: (handler: any) => handler,
+    withAuth: (handler: unknown) => handler,
 }));
 
 vi.mock("@/lib/demo/config", () => ({ DEMO_MODE: false }));
@@ -25,12 +26,17 @@ vi.mock("@/lib/supabase/admin", () => ({
     createAdminClient: vi.fn(() => ({ storage: mockAdminStorage })),
 }));
 
+interface MockSupabaseResponse {
+    data?: unknown;
+    error?: unknown;
+    count?: number;
+}
+
 // ── Queue-based mock ──────────────────────────────────────────────────────────
-// Each `await supabase.from(...).select()...` call consumes one response from the queue.
-const createMockSupabase = (responses: Array<{ data?: any; error?: any; count?: number }> = []) => {
+const createMockSupabase = (responses: MockSupabaseResponse[] = []) => {
     let callCount = 0;
     const storageUpload = vi.fn().mockResolvedValue({ data: {}, error: null });
-    const self: any = {
+    const self = {
         from: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         insert: vi.fn().mockReturnThis(),
@@ -47,11 +53,11 @@ const createMockSupabase = (responses: Array<{ data?: any; error?: any; count?: 
             from: vi.fn().mockReturnValue({ upload: storageUpload }),
         },
         _storageUpload: storageUpload,
-        then: vi.fn((resolve: any) => {
+        then: vi.fn((resolve: (value: any) => void) => {
             const resp = responses[callCount++] ?? { data: null, error: null };
             resolve({ data: resp.data ?? null, error: resp.error ?? null, count: resp.count ?? null });
         }),
-    };
+    } as unknown as AuthContext["supabase"] & { _storageUpload: typeof storageUpload };
     return self;
 };
 
@@ -59,10 +65,18 @@ const makePdfFile = () =>
     new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], "test.pdf", { type: "application/pdf" });
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────
-const MEMBER = { id: "m1", org_id: "org-001", role: "admin" };
-const USER   = { id: "u1" };
-const CASE   = { id: "c1", folio_cenni: "C-001", cliente_estudiante: "Juan Pérez", estatus: "EN OFICINA", org_id: "org-001" };
+const MEMBER: AuthContext["member"] = { 
+    id: "m1", 
+    org_id: "org-001", 
+    role: "admin",
+    location: null,
+    organizations: { name: "Test Org", slug: "test-org" }
+};
+const USER: AuthContext["user"] = { id: "u1" };
+const CASE = { id: "c1", folio_cenni: "C-001", cliente_estudiante: "Juan Pérez", estatus: "EN OFICINA", org_id: "org-001" };
 const PARAMS = { params: { id: "c1" } };
+
+type Handler = (req: NextRequest, ctx: AuthContext, nextCtx?: any) => Promise<NextResponse>;
 
 // =============================================================================
 describe("CENNI API", () => {
@@ -73,7 +87,7 @@ describe("CENNI API", () => {
             const cases = [CASE, { ...CASE, id: "c2", folio_cenni: "C-002" }];
             const supabase = createMockSupabase([{ data: cases, count: 2 }]);
             const req = new NextRequest("http://localhost/api/v1/cenni");
-            const res = await (GET as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (GET as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             const body = await res.json();
 
             expect(res.status).toBe(200);
@@ -85,7 +99,7 @@ describe("CENNI API", () => {
         it("returns empty list when no cases exist", async () => {
             const supabase = createMockSupabase([{ data: [], count: 0 }]);
             const req = new NextRequest("http://localhost/api/v1/cenni");
-            const res = await (GET as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (GET as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             const body = await res.json();
 
             expect(res.status).toBe(200);
@@ -96,7 +110,7 @@ describe("CENNI API", () => {
         it("passes q param as ilike search to supabase", async () => {
             const supabase = createMockSupabase([{ data: [CASE], count: 1 }]);
             const req = new NextRequest("http://localhost/api/v1/cenni?q=juan");
-            await (GET as any)(req, { supabase, user: USER, member: MEMBER });
+            await (GET as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
 
             expect(supabase.or).toHaveBeenCalledWith(expect.stringContaining("ilike.%juan%"));
         });
@@ -113,7 +127,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify({ folio_cenni: "C-001", cliente_estudiante: "Juan Pérez" }),
             });
-            const res = await (POST as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (POST as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             const body = await res.json();
 
             expect(res.status).toBe(201);
@@ -126,7 +140,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify({ folio_cenni: "C-001", cliente_estudiante: "Juan" }),
             });
-            await (POST as any)(req, { supabase, user: USER, member: MEMBER });
+            await (POST as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
 
             expect(supabase.insert).toHaveBeenCalledWith(
                 expect.objectContaining({ estatus: "EN OFICINA" })
@@ -139,7 +153,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify({ cliente_estudiante: "Juan" }),
             });
-            const res = await (POST as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (POST as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             expect(res.status).toBe(400);
         });
 
@@ -149,7 +163,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify({ folio_cenni: "C-001" }),
             });
-            const res = await (POST as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (POST as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             expect(res.status).toBe(400);
         });
     });
@@ -167,7 +181,7 @@ describe("CENNI API", () => {
                 method: "PATCH",
                 body: JSON.stringify({ estatus: "SOLICITADO" }),
             });
-            const res = await (PATCH as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             const body = await res.json();
 
             expect(res.status).toBe(200);
@@ -185,11 +199,12 @@ describe("CENNI API", () => {
                 method: "PATCH",
                 body: JSON.stringify({ estatus: "APROBADO" }),
             });
-            await (PATCH as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const enrichAudit = vi.fn();
+            await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit }, PARAMS);
 
-            expect(supabase.insert).toHaveBeenLastCalledWith(
+            expect(enrichAudit).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    action: "UPDATE",
+                    operation: "UPDATE",
                     old_data: CASE,
                     new_data: updated,
                 })
@@ -202,7 +217,7 @@ describe("CENNI API", () => {
                 method: "PATCH",
                 body: JSON.stringify({}),
             });
-            const res = await (PATCH as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             expect(res.status).toBe(400);
         });
 
@@ -212,7 +227,7 @@ describe("CENNI API", () => {
                 method: "PATCH",
                 body: JSON.stringify({ estatus: "INVALIDO" }),
             });
-            const res = await (PATCH as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             expect(res.status).toBe(400);
         });
 
@@ -225,7 +240,7 @@ describe("CENNI API", () => {
                 method: "PATCH",
                 body: JSON.stringify({ estatus: "SOLICITADO" }),
             });
-            const res = await (PATCH as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             expect(res.status).toBe(404);
         });
     });
@@ -239,7 +254,7 @@ describe("CENNI API", () => {
                 { data: null },  // audit_log
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1", { method: "DELETE" });
-            const res = await (DELETE as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (DELETE as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             const body = await res.json();
 
             expect(res.status).toBe(200);
@@ -253,7 +268,7 @@ describe("CENNI API", () => {
                 { data: null },
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1", { method: "DELETE" });
-            await (DELETE as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            await (DELETE as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
 
             expect(supabase.update).toHaveBeenCalledWith(
                 expect.objectContaining({ deleted_at: expect.any(String) })
@@ -267,11 +282,12 @@ describe("CENNI API", () => {
                 { data: null },
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1", { method: "DELETE" });
-            await (DELETE as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const enrichAudit = vi.fn();
+            await (DELETE as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit }, PARAMS);
 
-            expect(supabase.insert).toHaveBeenCalledWith(
+            expect(enrichAudit).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    action: "DELETE",
+                    operation: "DELETE",
                     old_data: CASE,
                     new_data: null,
                 })
@@ -294,7 +310,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify(bulkPayload),
             });
-            const res = await (POST_BULK as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (POST_BULK as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             const body = await res.json();
 
             expect(res.status).toBe(201);
@@ -309,7 +325,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify(bulkPayload),
             });
-            const res = await (POST_BULK as any)(req, { supabase, user: USER, member: operador });
+            const res = await (POST_BULK as unknown as Handler)(req, { supabase, user: USER, member: operador, enrichAudit: vi.fn() });
             expect(res.status).toBe(403);
         });
 
@@ -319,7 +335,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify({ cases: [{ correo: "only-email@example.com" }] }),
             });
-            const res = await (POST_BULK as any)(req, { supabase, user: USER, member: MEMBER });
+            const res = await (POST_BULK as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
             expect(res.status).toBe(400);
         });
 
@@ -329,7 +345,7 @@ describe("CENNI API", () => {
                 method: "POST",
                 body: JSON.stringify(bulkPayload),
             });
-            await (POST_BULK as any)(req, { supabase, user: USER, member: MEMBER });
+            await (POST_BULK as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
 
             expect(supabase.upsert).toHaveBeenCalledWith(
                 expect.arrayContaining([
@@ -358,9 +374,9 @@ describe("CENNI API", () => {
                 { data: updated },        // update certificate_storage_path
                 { data: null },           // audit_log
             ]);
-            const res = await (POST_UPLOAD as any)(
+            const res = await (POST_UPLOAD as unknown as Handler)(
                 makeUploadReq(makePdfFile()),
-                { supabase, user: USER, member: MEMBER },
+                { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() },
                 PARAMS,
             );
             const body = await res.json();
@@ -376,9 +392,9 @@ describe("CENNI API", () => {
                 { data: { ...CASE, certificate_storage_path: "org-001/c1.pdf" } },
                 { data: null },
             ]);
-            await (POST_UPLOAD as any)(
+            await (POST_UPLOAD as unknown as Handler)(
                 makeUploadReq(makePdfFile()),
-                { supabase, user: USER, member: MEMBER },
+                { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() },
                 PARAMS,
             );
 
@@ -391,9 +407,9 @@ describe("CENNI API", () => {
 
         it("returns 400 when no file is attached", async () => {
             const supabase = createMockSupabase();
-            const res = await (POST_UPLOAD as any)(
+            const res = await (POST_UPLOAD as unknown as Handler)(
                 makeUploadReq(null),
-                { supabase, user: USER, member: MEMBER },
+                { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() },
                 PARAMS,
             );
             expect(res.status).toBe(400);
@@ -402,9 +418,9 @@ describe("CENNI API", () => {
         it("returns 400 for non-PDF file", async () => {
             const supabase = createMockSupabase();
             const notPdf = new File(["data"], "image.png", { type: "image/png" });
-            const res = await (POST_UPLOAD as any)(
+            const res = await (POST_UPLOAD as unknown as Handler)(
                 makeUploadReq(notPdf),
-                { supabase, user: USER, member: MEMBER },
+                { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() },
                 PARAMS,
             );
             const body = await res.json();
@@ -417,9 +433,9 @@ describe("CENNI API", () => {
             const supabase = createMockSupabase([
                 { data: null, error: { message: "Not found" } },  // case not found
             ]);
-            const res = await (POST_UPLOAD as any)(
+            const res = await (POST_UPLOAD as unknown as Handler)(
                 makeUploadReq(makePdfFile()),
-                { supabase, user: USER, member: MEMBER },
+                { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() },
                 PARAMS,
             );
             expect(res.status).toBe(404);
@@ -433,7 +449,7 @@ describe("CENNI API", () => {
                 { data: { certificate_storage_path: "org-001/c1.pdf" } },
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1/certificate-url");
-            const res = await (GET_CERT_URL as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (GET_CERT_URL as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
             const body = await res.json();
 
             expect(res.status).toBe(200);
@@ -446,7 +462,7 @@ describe("CENNI API", () => {
                 { data: { certificate_storage_path: null } },
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1/certificate-url");
-            const res = await (GET_CERT_URL as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (GET_CERT_URL as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
 
             expect(res.status).toBe(404);
         });
@@ -456,7 +472,7 @@ describe("CENNI API", () => {
                 { data: null, error: { message: "Not found" } },
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1/certificate-url");
-            const res = await (GET_CERT_URL as any)(req, { supabase, user: USER, member: MEMBER }, PARAMS);
+            const res = await (GET_CERT_URL as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() }, PARAMS);
 
             expect(res.status).toBe(404);
         });

@@ -11,7 +11,7 @@ const bodySchema = z.object({
     to: z.string().email("Correo electrónico inválido"),
 });
 
-export const POST = withAuth(async (req, { supabase, user, member }, { params }) => {
+export const POST = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
     const { id } = await params;
 
     const json = await req.json().catch(() => ({}));
@@ -88,14 +88,14 @@ export const POST = withAuth(async (req, { supabase, user, member }, { params })
         return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    await supabase.from("audit_log").insert({
+    enrichAudit({
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: id,
-        action: "UPDATE",
+        operation: "UPDATE",
         old_data: { certificate_sent_at: null, certificate_sent_to: null },
         new_data: { certificate_sent_at: now, certificate_sent_to: to },
-        performed_by: user.id,
+        changed_by: user.id,
     });
 
     return NextResponse.json({ case: updatedCase, sent: true });

@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
-import { DEMO_MODE } from "@/lib/demo/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +17,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/lib/i18n";
-import { LogIn, Loader2, Play } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
     email: z.string().email(),
@@ -61,11 +59,6 @@ function LoginForm() {
         router.refresh();
     }
 
-    function handleDemoLogin() {
-        // Obsolete: We are using real Supabase auth now
-        router.push("/dashboard");
-    }
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
 
@@ -80,7 +73,7 @@ function LoginForm() {
                         className="h-14 w-auto object-contain"
                     />
                     <p className="text-sm text-muted-foreground mt-2">
-                        Language Evaluation Center
+                        Languages Education Consulting
                     </p>
                 </div>
 
@@ -91,26 +84,7 @@ function LoginForm() {
                         <CardDescription>{t("auth.loginSubtitle")}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Demo Mode Button (Hidden for Production) */}
-                        {DEMO_MODE && process.env.NODE_ENV !== "production" && (
-                            <>
-                                <Button
-                                    onClick={handleDemoLogin}
-                                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold h-12 text-base"
-                                >
-                                    <Play className="mr-2 h-5 w-5" />
-                                    Entrar en Modo Demo
-                                </Button>
-                                <div className="relative">
-                                    <Separator />
-                                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                                        o
-                                    </span>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Regular Login Form */}
+                        {/* Login Form */}
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email">{t("auth.email")}</Label>
@@ -175,7 +149,7 @@ function LoginForm() {
                 </Card>
 
                 <p className="text-center text-xs text-muted-foreground">
-                    © {new Date().getFullYear()} Language Evaluation Center
+                    © {new Date().getFullYear()} Languages Education Consulting
                 </p>
             </div>
         </div>

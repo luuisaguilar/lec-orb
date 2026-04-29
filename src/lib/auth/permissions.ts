@@ -205,7 +205,7 @@ export function getReadableModules(role: Role): Module[] {
 
 // Maps the loose string module names used in API route calls to the typed Module enum.
 // This bridges the gap between checkServerPermission("eventos", ...) and Module = "events".
-const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Action; writeAction: Action; deleteAction: Action }> = {
+export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Action; writeAction: Action; deleteAction: Action }> = {
     // Finance
     finanzas: { module: "payments", readAction: "read", writeAction: "create", deleteAction: "delete" },
     cotizaciones: { module: "quotes", readAction: "read", writeAction: "create", deleteAction: "delete" },

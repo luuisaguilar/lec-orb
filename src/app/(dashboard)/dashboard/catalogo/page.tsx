@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
 import {
-    BookOpen, Plus, Pencil, Trash2, DollarSign, Tag, Loader2
+    BookOpen, Plus, Pencil, Trash2, DollarSign, Tag, Loader2, Search, Filter, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
-
-import { useMemo } from "react";
-import { Search, Filter, X } from "lucide-react";
 
 interface PaymentConcept {
     id: string;
@@ -47,7 +44,7 @@ export default function CatalogPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [currencyFilter, setCurrencyFilter] = useState<string | null>(null);
 
-    const concepts: PaymentConcept[] = data?.concepts || [];
+    const concepts = useMemo<PaymentConcept[]>(() => data?.concepts ?? [], [data?.concepts]);
 
     const filteredConcepts = useMemo(() => {
         return concepts.filter(c => {

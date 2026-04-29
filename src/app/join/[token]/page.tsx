@@ -11,7 +11,7 @@ export default async function JoinPage({
     searchParams,
 }: {
     params: Promise<{ token: string }>;
-    searchParams?: Promise<{ error?: string }>;
+    searchParams?: Promise<{ error?: string; expired?: string }>;
 }) {
     // Next.js 15+ requires awaiting params and searchParams before use
     const { token } = await params;
@@ -21,9 +21,13 @@ export default async function JoinPage({
     // 1. Validate Token securely on the server
     const result = await getInvitationResult(token);
 
-    if (!result.ok) {
-        const isAlreadyProcessed = result.reason === "already_processed";
-        const isServerError = result.reason === "server_error";
+    const isExpiredParam = sp?.expired === "1";
+
+    if (!result.ok || isExpiredParam) {
+        const failReason = result.ok ? undefined : result.reason;
+        const isAlreadyProcessed = failReason === "already_processed";
+        const isServerError = failReason === "server_error" && !isExpiredParam;
+        const isExpired = isExpiredParam || failReason === "not_found";
 
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
@@ -34,18 +38,30 @@ export default async function JoinPage({
                         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                     )}
                     <CardTitle className="text-2xl mb-2">
-                        {isAlreadyProcessed ? "Invitación Ya Utilizada" : "Invitación Inválida"}
+                        {isAlreadyProcessed 
+                            ? "Invitación Ya Utilizada" 
+                            : isExpired 
+                            ? "Invitación Expirada" 
+                            : "Invitación Inválida"}
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="mb-6">
                         {isAlreadyProcessed
                             ? "Esta invitación ya fue aceptada o revocada. Pide al administrador que te envíe una nueva invitación."
                             : isServerError
                             ? "Hubo un error al verificar la invitación. Por favor intenta de nuevo o contacta al administrador."
                             : "Esta invitación ha expirado, fue revocada o el enlace es incorrecto."}
                     </CardDescription>
-                    <Button asChild className="mt-6 bg-[#002e5d]">
-                        <Link href="/login">Ir al Inicio</Link>
-                    </Button>
+                    
+                    <div className="flex flex-col gap-3 mt-6">
+                        <Button asChild variant="outline" className="w-full">
+                            <Link href="mailto:soporte@lec.mx?subject=Nueva Invitación Platform&body=Hola, mi invitación ha expirado. ¿Podrían enviarme una nueva?">
+                                Pedir nueva invitación
+                            </Link>
+                        </Button>
+                        <Button asChild className="w-full bg-[#002e5d]">
+                            <Link href="/login">Ir al Inicio</Link>
+                        </Button>
+                    </div>
                 </Card>
             </div>
         );

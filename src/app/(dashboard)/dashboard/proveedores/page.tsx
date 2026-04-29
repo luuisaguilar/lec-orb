@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import {
-    Building2, Plus, Pencil, Trash2, Globe, Phone, Mail, Loader2, Tag
+    Building2, Plus, Pencil, Trash2, Globe, Phone, Mail, Loader2, Tag, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
-
-import { useMemo } from "react";
-import { Search, X } from "lucide-react";
 
 interface Supplier {
     id: string;
@@ -49,7 +46,7 @@ export default function SuppliersPage() {
     // Search state
     const [searchTerm, setSearchTerm] = useState("");
 
-    const suppliers: Supplier[] = data?.suppliers || [];
+    const suppliers = useMemo<Supplier[]>(() => data?.suppliers ?? [], [data?.suppliers]);
 
     const filteredSuppliers = useMemo(() => {
         return suppliers.filter(s => {

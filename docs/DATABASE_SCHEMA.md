@@ -15,7 +15,7 @@ Fuente de verdad para el schema actual: los archivos `.sql` en `supabase/migrati
 | `invitation_status` | `pending`, `accepted`, `expired`, `revoked` |
 | `pack_status` | `EN_SITIO`, `PRESTADO` |
 | `movement_type` | `SALIDA`, `ENTRADA`, `AJUSTE` |
-| cenni `estatus` (text) | `EN OFICINA`, `SOLICITADO`, `EMITIDO`, `ENVIADO`, `ENTREGADO`, `RECHAZADO`, `CANCELADO` |
+| cenni `estatus` (text) | `EN OFICINA`, `SOLICITADO`, `EN TRAMITE/REVISION`, `APROBADO`, `RECHAZADO` |
 
 ---
 
@@ -108,6 +108,7 @@ Invitaciones para unirse a una organización.
 | `status` | invitation_status | Default `pending` |
 | `invited_by` | uuid | FK → `auth.users` |
 | `created_at` | timestamptz | |
+| `expires_at` | timestamptz | Default `now() + 7 days` |
 | `accepted_at` | timestamptz | nullable |
 
 RLS: solo admins pueden gestionar. Aceptación vía RPC `fn_accept_invitation` (admin client).
@@ -390,6 +391,13 @@ Expedientes CENNI (certificación nacional de inglés).
 | `estatus` | text | Ver enum de estatus arriba |
 | `estatus_certificado` | text | |
 | `notes` | text | |
+| `fecha_recepcion` | date | |
+| `fecha_revision` | date | |
+| `motivo_rechazo` | text | |
+| `certificate_storage_path` | text | |
+| `certificate_uploaded_at` | timestamptz | |
+| `certificate_sent_at` | timestamptz | |
+| `certificate_sent_to` | text | |
 | `deleted_at` | timestamptz | Soft delete |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
@@ -670,6 +678,7 @@ Tabla append-only — nunca actualizar ni eliminar registros.
 |---------|-----------|---------|--------------|
 | `fn_petty_cash_balance` | `p_org_id uuid, p_year int` | `numeric` | `/api/v1/finance/petty-cash/balance` |
 | `fn_accept_invitation` | `p_token text, p_user_id uuid, p_user_email text` | `jsonb` | `/api/v1/invitations/accept` (admin client) |
+| `fn_expire_old_invitations` | | `integer` | `/api/v1/invitations/cleanup` |
 | `get_users_emails` | `user_ids uuid[]` | `table(id uuid, email varchar)` | `/api/v1/users` (para mostrar emails) |
 | `create_movement_and_update_pack` | pack_id, type, school_id, applicator_id, notes, performed_by | `jsonb` | `/api/v1/scan` |
 | `generate_slots_for_event_exam` | event_exam_id | `integer` | Interno — generación de slots |

@@ -16,12 +16,12 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         supabase.from("applicators").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
         supabase.from("schools").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
         supabase.from("events").select("id, status, date").eq("org_id", member.org_id).is("deleted_at", null),
-        supabase.from("event_sessions").select("id, exam_type, date"), // event_sessions often don't have direct org_id, linked via events, but if they do, add it. Checking table list... it doesn't have it.
+        supabase.from("event_sessions").select("id, exam_type, date, event:events!inner(org_id)").eq("event.org_id", member.org_id),
         supabase.from("cenni_cases").select("id", { count: "exact", head: true }).eq("org_id", member.org_id).is("deleted_at", null),
         supabase.from("cenni_cases").select("estatus").eq("org_id", member.org_id).is("deleted_at", null),
         supabase.from("applicators").select("location_zone").eq("org_id", member.org_id).is("deleted_at", null),
         supabase.from("events").select("status").eq("org_id", member.org_id).is("deleted_at", null),
-        supabase.from("event_sessions").select("exam_type"), // Assuming global exam types or linked.
+        supabase.from("event_sessions").select("exam_type, event:events!inner(org_id)").eq("event.org_id", member.org_id),
     ]);
 
     const now = new Date();

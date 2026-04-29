@@ -1,31 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GET, POST } from "@/app/api/v1/payments/route";
+import { AuthContext } from "@/lib/auth/with-handler";
 
 vi.mock("@/lib/auth/with-handler", () => ({
-    withAuth: (handler: any) => handler,
+    withAuth: (handler: unknown) => handler,
 }));
 
 vi.mock("@/lib/audit/log", () => ({
     logAudit: vi.fn(),
 }));
 
-const makeChain = (data: any, error: any = null) => ({
+const makeChain = (data: unknown, error: unknown = null) => ({
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
-    then: vi.fn((resolve: any) => resolve({ data, error })),
+    then: vi.fn((resolve: (value: any) => void) => resolve({ data, error })),
 });
 
+type Handler = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
+
 describe("Payments API Route", () => {
-    let mockMember: any;
-    let mockUser: any;
+    let mockMember: AuthContext["member"];
+    let mockUser: AuthContext["user"];
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockMember = { id: "m1", org_id: "org-uuid-001", role: "admin", location: "CDMX" };
+        mockMember = { 
+            id: "m1", 
+            org_id: "org-uuid-001", 
+            role: "admin", 
+            location: "CDMX",
+            organizations: { name: "Test Org", slug: "test-org" }
+        };
         mockUser = { id: "u1" };
     });
 
@@ -34,10 +43,15 @@ describe("Payments API Route", () => {
             const paymentsData = [
                 { id: "pay1", folio: "F-001", amount: 500, status: "PAID", payment_concepts: { concept_key: "toefl", description: "TOEFL ITP" } },
             ];
-            const mockSupabase = { from: vi.fn(() => makeChain(paymentsData)) };
+            const mockSupabase = { from: vi.fn(() => makeChain(paymentsData)) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/payments");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -65,7 +79,7 @@ describe("Payments API Route", () => {
             let callCount = 0;
             const mockSupabase = {
                 from: vi.fn(() => callCount++ === 0 ? conceptChain : paymentChain),
-            };
+            } as unknown as AuthContext["supabase"];
 
             const payload = {
                 ...basePayload,
@@ -80,7 +94,12 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(201);
@@ -91,7 +110,7 @@ describe("Payments API Route", () => {
 
         it("should create other-mode payment with custom concept", async () => {
             const paymentData = { id: "pay-other", folio: "F-2024-002", amount: 300 };
-            const mockSupabase = { from: vi.fn(() => makeChain(paymentData)) };
+            const mockSupabase = { from: vi.fn(() => makeChain(paymentData)) } as unknown as AuthContext["supabase"];
 
             const payload = {
                 ...basePayload,
@@ -106,12 +125,17 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             expect(response.status).toBe(201);
         });
 
         it("should return 400 when exam mode has no concept_id", async () => {
-            const mockSupabase = { from: vi.fn() };
+            const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
             const payload = {
                 ...basePayload,
                 mode: "exam",
@@ -125,12 +149,17 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             expect(response.status).toBe(400);
         });
 
         it("should return 400 when other mode has no custom_concept", async () => {
-            const mockSupabase = { from: vi.fn() };
+            const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
             const payload = {
                 ...basePayload,
                 mode: "other",
@@ -144,12 +173,17 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             expect(response.status).toBe(400);
         });
 
         it("should return 400 when email is invalid format", async () => {
-            const mockSupabase = { from: vi.fn() };
+            const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
             const payload = {
                 ...basePayload,
                 mode: "other",
@@ -164,7 +198,12 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             expect(response.status).toBe(400);
         });
     });

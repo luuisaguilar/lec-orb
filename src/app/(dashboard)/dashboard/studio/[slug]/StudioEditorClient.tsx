@@ -231,7 +231,7 @@ export default function StudioEditorClient({ module, initialFields }: Props) {
                     </div>
                 )}
 
-                {fields.map((field, idx) => {
+                {fields.map((field) => {
                     const FieldTypeIcon = FIELD_TYPES.find((t) => t.value === field.field_type)?.icon ?? Type;
                     return (
                         <div

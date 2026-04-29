@@ -1,27 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GET } from "@/app/api/v1/audit-logs/route";
+import { AuthContext } from "@/lib/auth/with-handler";
 
 vi.mock("@/lib/auth/with-handler", () => ({
-    withAuth: (handler: any) => handler,
+    withAuth: (handler: unknown) => handler,
 }));
 
-const makeChain = (data: any, count: number = 0, error: any = null) => ({
+const makeChain = (data: unknown, count: number = 0, error: unknown = null) => ({
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
-    then: vi.fn((resolve: any) => resolve({ data, count, error })),
+    then: vi.fn((resolve: (value: any) => void) => resolve({ data, count, error })),
 });
 
+type Handler = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
+
 describe("Audit Logs API Route", () => {
-    let mockMember: any;
-    let mockUser: any;
+    let mockMember: AuthContext["member"];
+    let mockUser: AuthContext["user"];
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockMember = { id: "m1", org_id: "org-uuid-001", role: "admin" };
+        mockMember = { 
+            id: "m1", 
+            org_id: "org-uuid-001", 
+            role: "admin",
+            location: null,
+            organizations: { name: "Test Org", slug: "test-org" }
+        };
         mockUser = { id: "u1" };
     });
 
@@ -41,10 +50,15 @@ describe("Audit Logs API Route", () => {
                     if (table === "profiles") return profilesChain;
                     return logsChain;
                 }),
-            };
+            } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/audit-logs?limit=10&offset=0");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -62,10 +76,15 @@ describe("Audit Logs API Route", () => {
                 from: vi.fn((table: string) =>
                     table === "audit_log" ? makeChain(logsData, 1) : makeChain(profilesData)
                 ),
-            };
+            } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/audit-logs");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(body.logs[0].profiles.full_name).toBe("Ana Torres");
@@ -73,30 +92,45 @@ describe("Audit Logs API Route", () => {
 
         it("should filter by table when param provided", async () => {
             const chain = makeChain([], 0);
-            const mockSupabase = { from: vi.fn(() => chain) };
+            const mockSupabase = { from: vi.fn(() => chain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/audit-logs?table=payments");
-            await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
 
             expect(chain.eq).toHaveBeenCalledWith("table_name", "payments");
         });
 
         it("should filter by action uppercased when param provided", async () => {
             const chain = makeChain([], 0);
-            const mockSupabase = { from: vi.fn(() => chain) };
+            const mockSupabase = { from: vi.fn(() => chain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/audit-logs?action=insert");
-            await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
 
             expect(chain.eq).toHaveBeenCalledWith("operation", "INSERT");
         });
 
         it("should return empty logs with null profiles when no changed_by", async () => {
             const logsData = [{ id: "l1", table_name: "events", operation: "DELETE", changed_by: null }];
-            const mockSupabase = { from: vi.fn(() => makeChain(logsData, 1)) };
+            const mockSupabase = { from: vi.fn(() => makeChain(logsData, 1)) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/audit-logs");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(body.logs[0].profiles).toBeNull();

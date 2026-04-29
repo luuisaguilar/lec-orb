@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GET, POST } from "@/app/api/v1/invitations/route";
+import { AuthContext } from "@/lib/auth/with-handler";
 
 // --- Mocks ---
 
 vi.mock("@/lib/auth/with-handler", () => ({
-    withAuth: (handler: any) => handler,
+    withAuth: (handler: unknown) => handler,
 }));
 
 vi.mock("@/lib/audit/log", () => ({
@@ -21,22 +22,30 @@ vi.mock("@/lib/email/resend", () => ({
 }));
 
 // Helper: crea una cadena de supabase encadenable para una tabla
-const createChain = (data: any, error: any = null) => ({
+const createChain = (data: unknown, error: unknown = null) => ({
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
-    then: vi.fn((resolve: any) => resolve({ data, error })),
+    then: vi.fn((resolve: (value: any) => void) => resolve({ data, error })),
 });
 
+type Handler = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
+
 describe("Invitations API Route", () => {
-    let mockMember: any;
-    let mockUser: any;
+    let mockMember: AuthContext["member"];
+    let mockUser: AuthContext["user"];
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockMember = { id: "m1", org_id: "org-uuid-001", role: "admin" };
+        mockMember = { 
+            id: "m1", 
+            org_id: "org-uuid-001", 
+            role: "admin",
+            location: null,
+            organizations: { name: "Test Org", slug: "test-org" }
+        };
         mockUser = { id: "u1" };
     });
 
@@ -47,10 +56,15 @@ describe("Invitations API Route", () => {
                 { id: "inv1", email: "a@test.com", role: "operador", org_id: "org-uuid-001" },
             ];
             const chain = createChain(invitationsData);
-            const mockSupabase = { from: vi.fn(() => chain) };
+            const mockSupabase = { from: vi.fn(() => chain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/invitations");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -60,10 +74,15 @@ describe("Invitations API Route", () => {
 
         it("should return empty array when no invitations exist", async () => {
             const chain = createChain([]);
-            const mockSupabase = { from: vi.fn(() => chain) };
+            const mockSupabase = { from: vi.fn(() => chain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/invitations");
-            const response = await (GET as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (GET as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -92,7 +111,7 @@ describe("Invitations API Route", () => {
                     if (table === "organizations") return organizationsChain;
                     return invitationsChain;
                 }),
-            };
+            } as unknown as AuthContext["supabase"];
 
             const payload = { email: "nuevo@test.com", role: "operador", sendEmail: true };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
@@ -100,7 +119,12 @@ describe("Invitations API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);
@@ -110,9 +134,9 @@ describe("Invitations API Route", () => {
         });
 
         it("should return 403 when non-admin tries to invite", async () => {
-            const nonAdminMember = { ...mockMember, role: "operador" };
+            const nonAdminMember = { ...mockMember, role: "operador" } as AuthContext["member"];
             const invitationsChain = createChain({ id: "inv-new", token: "tok" });
-            const mockSupabase = { from: vi.fn(() => invitationsChain) };
+            const mockSupabase = { from: vi.fn(() => invitationsChain) } as unknown as AuthContext["supabase"];
 
             const payload = { email: "nuevo@test.com", role: "operador", sendEmail: false };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
@@ -120,7 +144,12 @@ describe("Invitations API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: nonAdminMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: nonAdminMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(403);
@@ -128,14 +157,19 @@ describe("Invitations API Route", () => {
         });
 
         it("should return 400 when email is invalid", async () => {
-            const mockSupabase = { from: vi.fn() };
+            const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
             const payload = { email: "not-an-email", role: "operador" };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(400);
@@ -143,15 +177,20 @@ describe("Invitations API Route", () => {
         });
 
         it("should return 400 when role is invalid", async () => {
-            const mockSupabase = { from: vi.fn() };
+            const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
             const payload = { email: "valid@test.com", role: "superuser" }; // rol inválido
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
-            const body = await response.json();
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
+            await response.json();
 
             expect(response.status).toBe(400);
         });
@@ -171,7 +210,7 @@ describe("Invitations API Route", () => {
                     if (table === "organizations") return organizationsChain;
                     return invitationsChain;
                 }),
-            };
+            } as unknown as AuthContext["supabase"];
 
             const payload = { email: "x@test.com", role: "admin", sendEmail: true };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
@@ -179,7 +218,12 @@ describe("Invitations API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            const response = await (POST as unknown as Handler)(req, { 
+                supabase: mockSupabase, 
+                user: mockUser, 
+                member: mockMember,
+                enrichAudit: vi.fn()
+            });
             const body = await response.json();
 
             expect(response.status).toBe(200);

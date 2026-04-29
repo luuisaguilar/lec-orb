@@ -14,7 +14,6 @@ import {
     Mail,
     Building2,
     Wallet,
-    Plus,
     Download,
     Loader2
 } from "lucide-react";

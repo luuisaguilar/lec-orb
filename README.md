@@ -1,49 +1,71 @@
-# LEC Platform (LEC Orb) 🚀
+# LEC Platform (LEC Orb)
 
-**Canonical Project Status**: This repository (`lec-orb`) is the **primary active project** for the LEC Platform. Other variants (`-develop`, `-finance`) are considered historical references or experimental branches.
+**Canonical project status:** this repository (`lec-orb`) is the primary active project for the LEC Platform. Other variants (`-develop`, `-finance`) are historical references or experiments.
 
-Digital platform for comprehensive management of multiple business portfolios, focusing on financial efficiency and operational control.
+Digital platform for multi-tenant operational and financial management across LEC business lines.
 
-## 🏗️ Project Overview
-The LEC Platform is a multi-tenant Next.js application designed to manage diverse business units (LEC, DISCOVER, URUS, etc.) through a unified interface. It features robust financial modules for tracking petty cash and managing budgets.
+## Project Snapshot
 
-## 🛠️ Technology Stack
-- **Framework**: Next.js 16.1.6 (App Router)
-- **Language**: TypeScript
-- **Database & Auth**: Supabase (PostgreSQL) — *No Prisma*
-- **Styling**: Tailwind CSS 4 / Vanilla CSS (OKLCH Color Space)
-- **Components**: Radix UI / Lucide Icons
-- **Design System**: "Stitch" (Editorial Authority style)
-- **Data Portability**: XLSX (Excel integration)
-- **Testing**: Vitest (Unit/Integration) & Playwright (E2E)
+Verified on **2026-04-29**:
 
-## 📁 Core Modules
-- **Caja Chica (Petty Cash)**: Real-time tracking of income and expenses per organization.
-- **Presupuesto (Budgeting)**: Monthly target planning and comparative variance analysis.
-- **Organization Management**: Multi-tenant isolation with RBAC.
+- Build / typecheck: passing (`npm run build`)
+- Vitest: passing (`26` files, `164` tests)
+- ESLint: passing with warnings (`0` errors, `62` warnings)
+- Playwright E2E: currently failing (`9/9`) because the legacy demo harness still expects dashboard access before auth, while the app now redirects to `/login`
+- Sentry: active (`orb-lec`)
+- `DEMO_MODE`: removed from production auth/API flow; `src/lib/demo/*` remains for tests and placeholder portal data
 
-## 🚀 Getting Started
+## Project Overview
+
+The app is built with Next.js App Router and Supabase, with tenant isolation by `org_id`, RBAC, and operational modules such as finance, events, inventory, TOEFL, CENNI, documents, and invitations.
+
+## Technology Stack
+
+- Framework: Next.js 16.1.6
+- Language: TypeScript
+- Database and auth: Supabase PostgreSQL
+- Styling: Tailwind CSS 4
+- Components: Radix UI and Lucide
+- Monitoring: Sentry (`@sentry/nextjs`)
+- Testing: Vitest and Playwright
+
+## Core Modules
+
+- Caja Chica: movement tracking, balance, receipts, Excel import/export
+- Presupuesto: monthly upsert plus budget-vs-actual comparison
+- CENNI: CRUD, bulk import, status tracking, certificate upload/view/send
+- Invitations: create, resend, accept via RPC, expiration flow
+- Multi-tenant org management: RBAC, audit log, notifications, documents
+
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
-- Supabase Project URL & Anon Key (configured in `.env.local`)
-- Supabase Service Role Key (`SUPABASE_SERVICE_ROLE_KEY` configured in `.env.local` for secure backend tasks like invitations)
+- Supabase URL and anon key in `.env.local`
+- `SUPABASE_SERVICE_ROLE_KEY` for invitations and CENNI certificate flows
 
 ### Installation
+
 ```bash
 npm install
 ```
 
 ### Development
+
 ```bash
 npm run dev
 ```
 
-## 📚 Documentation Index
-- [**Handoff Guide** (./HANDOFF.md)](./HANDOFF.md) - **Start here** for technical overview and RBAC.
-- [Finance Modules Guide](./docs/FINANCE_MODULES.md) - Deep dive into Caja Chica & Presupuesto.
-- [Project Roadmap](./docs/caja_chica_webapp_roadmap.md) - Implementation status and backlog.
-- [Database Schema](./docs/DATABASE_SCHEMA.md) - Entity relationship and RPC documentation.
+## Documentation Index
+
+- [Handoff Guide](./HANDOFF.md) - current status, risks, next steps
+- [Project Roadmap](./docs/ROADMAP.md) - backlog and prioritization
+- [Testing Guide](./docs/TESTING_GUIDE.md) - current test strategy and known gaps
+- [Finance Modules Guide](./docs/FINANCE_MODULES.md) - Caja Chica and Presupuesto details
+- [Database Schema](./docs/DATABASE_SCHEMA.md) - entities, enums, RPCs
+- [API Modules](./docs/API_MODULES.md) - route reference
 
 ---
+
 © 2026 LEC Platform. All rights reserved.

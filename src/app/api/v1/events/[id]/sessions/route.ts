@@ -22,7 +22,7 @@ const createSessionSchema = z.object({
     })).default([])
 });
 
-export const POST = withAuth(async (req, { supabase, member }, { params }) => {
+export const POST = withAuth(async (req, { supabase }, { params }) => {
     const { id: eventId } = await params;
     const body = await req.json();
     const parsed = createSessionSchema.safeParse(body);

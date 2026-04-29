@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_MODE } from "@/lib/demo/config";
 import { withAuth } from "@/lib/auth/with-handler";
 
 const cenniBulkSchema = z.object({
@@ -27,22 +26,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
     const body = await req.json();
     const parsed = cenniBulkSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Datos inválidos o incompletos." }, { status: 400 });
-
-    if (DEMO_MODE) {
-        const { addBulkMockCenni } = await import("@/lib/demo/data");
-        const newCases = parsed.data.cases.map(c => ({
-            ...c,
-            celular: c.celular ?? null,
-            correo: c.correo ?? null,
-            certificado: c.certificado ?? null,
-            datos_curp: c.datos_curp ?? null,
-            cliente: c.cliente ?? null,
-            estatus_certificado: c.estatus_certificado ?? null,
-            notes: null,
-        }));
-        addBulkMockCenni(newCases);
-        return NextResponse.json({ count: newCases.length, success: true }, { status: 201 });
-    }
 
     if (member.role !== "admin" && member.role !== "supervisor" && member.role !== "coordinador") {
         return NextResponse.json({ error: "Permisos insuficientes para carga masiva" }, { status: 403 });

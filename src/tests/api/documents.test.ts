@@ -191,7 +191,7 @@ describe("Documents API Route", () => {
             });
 
             const response = await (DELETE as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
-            const body = await response.json();
+            await response.json();
 
             expect(response.status).toBe(404);
         });
