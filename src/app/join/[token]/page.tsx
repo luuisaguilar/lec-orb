@@ -11,7 +11,7 @@ export default async function JoinPage({
     searchParams,
 }: {
     params: Promise<{ token: string }>;
-    searchParams?: Promise<{ error?: string }>;
+    searchParams?: Promise<{ error?: string; expired?: string }>;
 }) {
     // Next.js 15+ requires awaiting params and searchParams before use
     const { token } = await params;
@@ -24,9 +24,10 @@ export default async function JoinPage({
     const isExpiredParam = sp?.expired === "1";
 
     if (!result.ok || isExpiredParam) {
-        const isAlreadyProcessed = result.reason === "already_processed";
-        const isServerError = result.reason === "server_error" && !isExpiredParam;
-        const isExpired = isExpiredParam || result.reason === "not_found";
+        const failReason = result.ok ? undefined : result.reason;
+        const isAlreadyProcessed = failReason === "already_processed";
+        const isServerError = failReason === "server_error" && !isExpiredParam;
+        const isExpired = isExpiredParam || failReason === "not_found";
 
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
