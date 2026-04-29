@@ -1,85 +1,115 @@
-# Roadmap — LEC Orb
+# Roadmap - LEC Orb
 
-Última actualización: Abril 2026
-
----
-
-## Estado Actual
-
-### Completado
-
-- Multi-tenant auth (aislamiento por `org_id`, RLS en todas las tablas)
-- Flujo de invitaciones completo (crear → joinUrl → aceptar con RPC atómica)
-- Módulo CENNI — 5 estatus, campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
-- Finanzas — Caja Chica (movimientos, balance RPC, comprobantes) + Presupuesto (comparativo)
-- Módulos operativos: Events, Applicators, Schools, TOEFL, Payroll
-- Audit log, notificaciones, gestor de documentos (DMS)
-- Cobertura Vitest: 26 archivos, 143 tests, 21/21 módulos API
-
-### Pendiente / Con advertencia
-
-_(sin advertencias activas — Resend quedó operativo el 2026-04-24)_
+Ultima actualizacion: 2026-04-29
 
 ---
 
-## Prioridad Alta
+## Estado verificado el 2026-04-29
 
-### 1. Dashboard CENNI por estatus
+- `npm run build`: pass
+- `npm test`: pass (`26` archivos, `164` tests)
+- `npm run lint`: pass con `62` warnings
+- `npm run test:e2e`: fail (`9/9`)
 
-Vista de resumen con:
-- Cards de conteo por cada uno de los 5 estatus
-- Gráfica de distribución
-- Filtro rápido por estatus en la tabla principal
+Diagnostico E2E actual:
 
-### 2. Expiración de invitaciones (`expires_at`)
-
-Agregar campo `expires_at TIMESTAMPTZ` a la tabla `org_invitations`.
-- La RPC `fn_accept_invitation` debe rechazar invitaciones expiradas
-- La UI debe mostrar el estado "Expirada" en el historial
-- Job o trigger para marcar como expiradas automáticamente
-
-### 3. Sentry para error tracking
-
-Integrar Sentry en Next.js + Supabase para capturar errores en producción.
-Incluir tags de `org_id` y `user_id` para aislamiento por tenant en el dashboard de Sentry.
+- `playwright.config.ts` sigue arrancando `npm run dev` con `NEXT_PUBLIC_DEMO_MODE=true`
+- `tests/e2e/support/demo-api.ts` intercepta llamadas API en el navegador
+- `src/lib/supabase/proxy.ts` ya no hace bypass de auth por `DEMO_MODE`
+- resultado: las rutas `/dashboard/*` redirigen a `/login`, asi que el harness actual quedo desalineado
 
 ---
 
-## Prioridad Media
+## Completado
 
-### 4. KPI cards y gráficas en Caja Chica
+- Multi-tenant auth con aislamiento por `org_id` y RLS
+- Flujo completo de invitaciones con RPC atomica y expiracion por `expires_at`
+- CENNI con 5 estatus canonicos y campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
+- Caja Chica y Presupuesto operativos
+- Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll
+- Audit log, notificaciones y DMS
+- Sentry activo en Next.js (`orb-lec`)
+- Audit logging migrado a `logAudit()` / `enrichAudit`
+- Vitest extendido a `22/22` modulos API cubiertos
 
-- Resumen visual de ingresos vs egresos por mes
-- Gráfica de tendencia de balance
-- Preview de comprobantes inline (sin salir del módulo)
+---
 
-### 5. Staging environment
+## Advertencias activas
 
-- Crear un proyecto Supabase de staging separado
-- Org de prueba dedicada con datos semilla
-- Deploy automático de rama `develop` a Vercel Preview con vars de staging
+### 1. Playwright / auth realignment
 
-### 6. Regenerar `database.types.ts`
+Los E2E ya no reflejan un estado verde del proyecto. La app compila y los tests unitarios pasan, pero el harness de navegador todavia depende de una estrategia demo que ya no existe en el runtime.
 
-Después de aplicar la migración CENNI (`20260422_cenni_estatus_and_new_fields.sql`),
-regenerar los tipos TypeScript:
+Decision tecnica pendiente:
+
+- sembrar sesion real para un usuario de prueba, o
+- crear bootstrap explicito y solo de testing para la sesion E2E
+
+No se recomienda restaurar el bypass implicito en `src/lib/supabase/proxy.ts`.
+
+### 2. Portal de aplicadores
+
+Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.ts` con `APPLICATOR_ID` hardcoded. Estan construidas, pero no integradas a datos reales.
+
+---
+
+## Prioridad alta
+
+### 1. Realinear Playwright con auth real o bootstrap de test
+
+- login/sesion reproducible para E2E
+- flujo `/dashboard/users`
+- flujo `/dashboard/finanzas/caja-chica`
+- flujo `/dashboard/finanzas/presupuesto`
+
+### 2. Dashboard CENNI por estatus
+
+- cards por cada uno de los 5 estatus
+- grafica de distribucion
+- filtro rapido por estatus
+
+### 3. Cron para expirar invitaciones
+
+- conectar `fn_expire_old_invitations()` a Vercel Cron diario
+
+---
+
+## Prioridad media
+
+### 4. Sprint 2 - IH Billing + Viaticos
+
+- definir si IH Billing entra por import Excel o captura manual
+- definir si Viaticos vive como modulo propio o como extension de Nomina
+
+### 5. KPI cards y graficas en Caja Chica
+
+- resumen ingresos vs egresos por mes
+- tendencia de balance
+- preview inline de comprobantes
+
+### 6. Staging environment
+
+- proyecto Supabase separado
+- org de prueba con seed data
+- preview deployment con variables de staging
+
+### 7. Regenerar `database.types.ts` despues de cambios de schema
+
+Si se regeneran tipos desde Supabase CLI en PowerShell:
 
 ```bash
-npx supabase gen types typescript --project-id <project-id> > src/types/database.types.ts
+npx supabase gen types typescript --project-id <project-id> | Out-File -Encoding utf8 src/types/database.types.ts
 ```
 
 ---
 
-## Prioridad Baja
+## Prioridad baja
 
-### 7. ADR formales
+### 8. ADRs adicionales
 
-Documentar decisiones de arquitectura en `docs/adr/`.
-Base inicial ya creada (ADR-001 a ADR-003). Continuar para nuevas decisiones relevantes.
+Continuar `docs/adr/` para decisiones nuevas.
 
-### 8. E2E tests actualizados
+### 9. Limpieza de marca y placeholders
 
-Actualizar los tests Playwright para cubrir:
-- Flujo completo de invitaciones con auth real
-- Aceptación de invitación con token válido/inválido
-- Flujo CENNI completo (crear, cambiar estatus, agregar motivo de rechazo)
+- cambiar los restos de "Language Evaluation Center" por "Languages Education Consulting"
+- migrar el portal de aplicadores fuera de `src/lib/demo/data.ts`

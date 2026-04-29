@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { mockSchools } from "@/lib/demo/data";
 import { withAuth } from "@/lib/auth/with-handler";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
-    if (DEMO_MODE) {
-        return NextResponse.json({
-            schools: mockSchools.filter((s) => !s.deleted_at),
-            total: mockSchools.filter((s) => !s.deleted_at).length,
-        });
-    }
-
     const { data: schools, error } = await supabase
         .from("schools")
         .select("*")

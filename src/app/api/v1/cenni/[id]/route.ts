@@ -30,7 +30,7 @@ const updateCenniSchema = z.object({
     created_at: z.string().datetime({ offset: true }).optional(),
 });
 
-export const PATCH = withAuth(async (req, { supabase, user, member }, { params }) => {
+export const PATCH = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
     const { id } = await params;
     const body = await req.json();
     const parsed = updateCenniSchema.safeParse(body);
@@ -62,20 +62,20 @@ export const PATCH = withAuth(async (req, { supabase, user, member }, { params }
 
     if (error || !updatedCase) return NextResponse.json({ error: error?.message || "Case not found" }, { status: 404 });
 
-    await supabase.from("audit_log").insert({
+    enrichAudit({
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: id,
-        action: "UPDATE",
+        operation: "UPDATE",
         old_data: oldCase ?? null,
         new_data: updatedCase,
-        performed_by: user.id,
+        changed_by: user.id,
     });
 
     return NextResponse.json({ case: updatedCase });
 }, { module: "cenni", action: "edit" });
 
-export const DELETE = withAuth(async (req, { supabase, user, member }, { params }) => {
+export const DELETE = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
     const { id } = await params;
 
     const { data: oldCase } = await supabase
@@ -94,14 +94,14 @@ export const DELETE = withAuth(async (req, { supabase, user, member }, { params 
 
     if (error) throw error;
 
-    await supabase.from("audit_log").insert({
+    enrichAudit({
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: id,
-        action: "DELETE",
+        operation: "DELETE",
         old_data: oldCase ?? null,
         new_data: null,
-        performed_by: user.id,
+        changed_by: user.id,
     });
 
     return NextResponse.json({ success: true });

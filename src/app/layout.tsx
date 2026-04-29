@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LEC Platform",
   description:
-    "Language Evaluation Center — Plataforma unificada para inventario, eventos, nómina y más.",
+    "Languages Education Consulting — Plataforma unificada para inventario, eventos, nómina y más.",
   icons: {
     icon: [
       { url: "/lec_logo_pack/icon_square_16.png", sizes: "16x16", type: "image/png" },

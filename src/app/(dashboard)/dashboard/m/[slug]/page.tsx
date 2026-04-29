@@ -83,7 +83,6 @@ export default async function DynamicModulePage({ params }: PageProps) {
         <DynamicModule
             module={module}
             fields={fields ?? []}
-            orgId={member.org_id}
             userRole={member.role}
         />
     );

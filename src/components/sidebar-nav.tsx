@@ -8,7 +8,6 @@ import {
     ChevronDown,
     Loader2,
 } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getIcon } from "@/lib/icon-registry";
@@ -105,7 +104,6 @@ interface SidebarNavProps {
 
 export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps) {
     const pathname = usePathname();
-    const { t } = useI18n();
 
     // User data (permissions, role) — existing SWR call
     const { data: userData, isLoading: userLoading } = useSWR("/api/v1/users/me", fetcher);

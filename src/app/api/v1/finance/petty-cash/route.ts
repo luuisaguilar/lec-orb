@@ -62,7 +62,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     });
 }, { module: "finanzas", action: "view" });
 
-export const POST = withAuth(async (req, { supabase, user, member }) => {
+export const POST = withAuth(async (req, { supabase, user }) => {
     const body = await req.json();
     const parsed = movementSchema.safeParse(body);
 

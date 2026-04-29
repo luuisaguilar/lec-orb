@@ -1,103 +1,73 @@
-# Demo Mode — Guía completa
+# DEMO_MODE - current status
 
-Demo Mode es un entorno de desarrollo local completamente in-memory: sin Supabase,
-sin autenticación real, con datos seed predeterminados. Es la base de los tests
-Playwright E2E del proyecto.
+Verified on **2026-04-29**.
+
+`DEMO_MODE` still exists in the repo, but its role changed.
 
 ---
 
-## Activación
+## TL;DR
 
-```bash
-# .env.local
-NEXT_PUBLIC_DEMO_MODE=true
-```
+- `src/lib/demo/config.ts` still exposes `DEMO_MODE`
+- `src/lib/demo/data.ts` still contains in-memory fixtures
+- `NEXT_PUBLIC_DEMO_MODE=true` no longer unlocks dashboard routes by itself
+- production API routes no longer branch on `DEMO_MODE`
+- the current Playwright harness still assumes the old behavior, so E2E is red
 
-Solo funciona en `NODE_ENV=development`. En producción la variable es ignorada.
+---
+
+## What still uses demo data
+
+### 1. Placeholder portal pages
+
+These pages still read directly from `src/lib/demo/data.ts`:
+
+- `src/app/(portal)/portal/page.tsx`
+- `src/app/(portal)/portal/horarios/page.tsx`
+- `src/app/(portal)/portal/metricas/page.tsx`
+- `src/app/(portal)/portal/nomina/page.tsx`
+
+They are not wired to real authenticated data yet.
+
+### 2. Vitest mocks
+
+Some tests still mock `@/lib/demo/config` because modules import demo exports indirectly.
+
+### 3. Playwright support fixtures
+
+`tests/e2e/support/demo-api.ts` still provides deterministic browser-side API mocks.
+
+---
+
+## What no longer uses DEMO_MODE
+
+### Auth / middleware bypass
+
+`src/lib/supabase/proxy.ts` no longer short-circuits auth when `DEMO_MODE` is true.
+
+### Production API handlers
+
+As verified on `2026-04-29`, there are no active `/api/v1/*` route branches keyed off `DEMO_MODE`.
+
+---
+
+## Activation
+
+The config flag still evaluates the same way:
 
 ```ts
-// src/lib/demo/config.ts
 export const DEMO_MODE =
     process.env.NODE_ENV === "development" &&
     process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 ```
 
----
-
-## Identidades demo
-
-```ts
-// src/lib/demo/config.ts
-DEMO_USER  = { id: "demo-user-001", email: "demo@lec-platform.com", full_name: "Demo Admin" }
-DEMO_ORG   = { id: "demo-org-001",  name: "LEC Demo", slug: "lec-demo" }
-DEMO_MEMBER = { id: "demo-member-001", org_id: "demo-org-001", user_id: "demo-user-001", role: "admin" }
-```
+But setting `NEXT_PUBLIC_DEMO_MODE=true` now only matters if a page, helper, or test explicitly consumes the flag or imports the in-memory demo fixtures.
 
 ---
 
-## Datos seed (`src/lib/demo/data.ts`)
+## Vitest usage
 
-Todos los stores son **mutables en memoria** — los tests pueden escribir y leer
-en la misma sesión del servidor. Se reinician al reiniciar el proceso.
-
-| Store | Registros | IDs de referencia |
-|-------|-----------|-------------------|
-| `mockPacks` | 8 packs | `pack-001` … `pack-008` (codigos: SPK-0001 … SPK-0008) |
-| `mockMovements` | 3 movimientos | `mov-001` … `mov-003` |
-| `mockSchools` | 4 escuelas | `school-001` … `school-004` |
-| `mockApplicators` | 5 aplicadores | `applicator-001` … `applicator-005` |
-| `mockEvents` | 3 eventos | `event-001` … `event-003` |
-| `mockEventExams` | 5 exámenes | `ee-001` … `ee-005` |
-| `mockSlots` | 8 slots | `slot-001` … `slot-008` |
-| `mockPayrollPeriods` | 2 periodos | `period-001` (paid), `period-002` (open) |
-| `mockPayrollEntries` | 8 entradas | `pe-001` … `pe-008` |
-| `mockCenniCases` | 12 casos | `cenni-001` … `cenni-012` |
-| `mockOrgMembers` | 4 miembros | `member-001` … `member-004` |
-| `mockOrgInvitations` | 3 invitaciones | `invitation-001` … `invitation-003` |
-| `mockExamCatalog` | 6 exámenes | `exam-001` … `exam-006` |
-
-### Helpers de mutación disponibles
-
-```ts
-addMockPack(pack)               // → MockPack
-addMockMovement(mov)            // → MockMovement
-addMockSchool(school)           // → MockSchool
-addMockApplicator(app)          // → MockApplicator
-addBulkMockApplicators(apps[])  // → MockApplicator[]
-addMockEvent(event)             // → MockEvent
-addMockOrgInvitation(inv)       // → MockOrgInvitation
-updateMockOrgInvitationStatus(id, status)
-deleteMockOrgMember(id)         // → boolean
-addMockCenniCase(c)             // → MockCenniCase
-updateMockCenniCase(id, updates)
-addBulkMockCenni(cennis[])      // → MockCenniCase[]
-```
-
----
-
-## Rutas API que usan DEMO_MODE
-
-Cuando `DEMO_MODE=true`, estas rutas **nunca llaman a Supabase** — devuelven
-o mutan datos del store en memoria:
-
-| Ruta | Métodos con branch demo |
-|------|------------------------|
-| `/api/v1/applicators` | GET, POST |
-| `/api/v1/applicators/bulk` | POST |
-| `/api/v1/packs` | GET, POST |
-| `/api/v1/scan` | GET, POST |
-| `/api/v1/schools` | GET, POST |
-| `/api/v1/payroll` | GET |
-| `/api/v1/settings` | GET, PUT |
-
-> Las rutas no listadas (finance, cenni, events, users, invitations, etc.)
-> **no tienen branch demo** — siempre usan Supabase real.
-
----
-
-## Cómo mockear DEMO_MODE en Vitest
-
-Para desactivarlo (modo real con Supabase mockeado):
+For tests that need to neutralize demo imports:
 
 ```ts
 vi.mock("@/lib/demo/config", () => ({
@@ -108,32 +78,27 @@ vi.mock("@/lib/demo/config", () => ({
 }));
 ```
 
-**Importante:** el mock debe incluir TODOS los exports (`DEMO_USER`, `DEMO_ORG`,
-`DEMO_MEMBER`) porque `src/lib/demo/data.ts` los importa en el módulo. Omitir
-alguno provoca `No "X" export is defined` en tiempo de test.
-
-Para activarlo (testear el branch demo directamente):
-
-```ts
-vi.mock("@/lib/demo/config", () => ({
-    DEMO_MODE: true,
-    DEMO_USER:   { id: "demo-user-001", email: "demo@lec-platform.com", full_name: "Demo Admin" },
-    DEMO_ORG:    { id: "demo-org-001", name: "LEC Demo", slug: "lec-demo" },
-    DEMO_MEMBER: { id: "demo-member-001", org_id: "demo-org-001", user_id: "demo-user-001", role: "admin" },
-}));
-```
+Important: include all exports because `src/lib/demo/data.ts` imports them at module load time.
 
 ---
 
-## Cómo usar DEMO_MODE en Playwright
+## Playwright status
 
-Los tests E2E arrancan el servidor en modo demo para tener datos deterministas
-sin depender de Supabase:
+Current behavior:
 
-```bash
-NEXT_PUBLIC_DEMO_MODE=true npm run dev   # terminal 1
-npm run test:e2e                          # terminal 2
-```
+- `playwright.config.ts` starts the dev server with `NEXT_PUBLIC_DEMO_MODE=true`
+- browser tests mock `/api/v1/*`
+- dashboard routes still require auth
 
-El harness de Playwright intercepta llamadas al API y verifica respuestas
-contra los stores in-memory. Ver `tests/e2e/` para ejemplos.
+Current result:
+
+- the browser lands on `/login`
+- expected dashboard headings never render
+- `9/9` E2E tests fail
+
+Recommended next step:
+
+- seed a real session for a test user, or
+- add an explicit test-only session bootstrap
+
+Do not reintroduce the old implicit demo bypass into production middleware.

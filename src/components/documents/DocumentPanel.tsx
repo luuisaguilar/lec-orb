@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import useSWR from "swr";
-import { FileText, Image, File, Trash2, Download, Upload, X } from "lucide-react";
+import { FileText, Image, File, Trash2, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

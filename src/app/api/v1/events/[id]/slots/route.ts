@@ -24,7 +24,7 @@ const updateSlotSchema = z.object({
     deletes: z.array(z.string().uuid()).optional()
 });
 
-export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
+export const PATCH = withAuth(async (req, { supabase }, { params }) => {
     const { id: eventId } = await params;
     const body = await req.json();
     const parsed = updateSlotSchema.safeParse(body);

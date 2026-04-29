@@ -4,7 +4,7 @@ import { installDemoApiMocks } from "./support/demo-api";
 /**
  * Finance Modules E2E Tests
  * -------------------------
- * These tests run against a controlled demo-mode app server and mock the
+ * These tests authenticate with a real Supabase user first, then mock the
  * finance/user APIs at the browser boundary to keep the flows deterministic.
  */
 

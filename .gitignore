@@ -14,6 +14,7 @@
 /coverage
 /playwright-report
 /test-results
+/tests/e2e/.auth/
 .env.test
 
 # next.js
@@ -57,6 +58,10 @@ out.log
 
 .codex-review/
 .env*.local
+
+# scratch / temp dev files
+scratch/
+supabase/.temp/
 
 # Sentry Config File
 .env.sentry-build-plugin

@@ -2,90 +2,95 @@
 
 Stack: **Vitest** (unit/integration) + **Playwright** (E2E).
 
-## Comandos
+## Current status
+
+Verified on **2026-04-29**:
+
+- `npm run build`: pass
+- `npm test`: pass (`26` files, `164` tests)
+- `npm run lint`: pass with `62` warnings
+- `npm run test:e2e`: fail (`9/9`)
+
+## Commands
 
 ```bash
-npm run test          # Vitest — todos los tests (vitest run)
-npm run test:watch    # Modo watch interactivo
-npm run test:e2e      # Playwright E2E (requiere servidor demo corriendo)
+npm run test          # Vitest - all tests
+npm run test:watch    # Vitest watch mode
+npm run test:e2e      # Playwright E2E
 npm run lint          # ESLint
-npm run build         # Build gate — debe pasar antes de cualquier PR
+npm run build         # production build gate
 ```
 
 ---
 
 ## Vitest
 
-26 archivos de test · 143 tests · 21/21 módulos API cubiertos.
+Current coverage:
 
-```
+- `22/22` API modules covered
+- `26` test files total
+- `164` tests passing
+
+Test layout:
+
+```text
 src/tests/
-├── api/                  ← Route handler tests
-│   ├── finance/
-│   │   ├── petty-cash.test.ts
-│   │   └── budget.test.ts
-│   ├── applicators.test.ts
-│   ├── audit-logs.test.ts
-│   ├── cenni.test.ts
-│   ├── dashboard-stats.test.ts
-│   ├── documents.test.ts
-│   ├── events.test.ts
-│   ├── exam-codes.test.ts
-│   ├── invitations.test.ts
-│   ├── modules.test.ts
-│   ├── notifications.test.ts
-│   ├── packs.test.ts
-│   ├── payments.test.ts
-│   ├── payroll.test.ts
-│   ├── purchase-orders.test.ts
-│   ├── quotes.test.ts
-│   ├── scan.test.ts
-│   ├── schools.test.ts
-│   ├── settings.test.ts
-│   ├── suppliers.test.ts
-│   ├── toefl-administrations.test.ts
-│   ├── toefl-codes.test.ts
-│   └── users.test.ts
-└── lib/
-    ├── finance/
-    │   └── xlsx-utils.test.ts
-    └── env/
-        └── app-url.test.ts
+|- api/      # route handler tests
+|- lib/      # utility tests
+`- setup.ts
 ```
 
-### Patrones
+See `docs/TESTING_PATTERNS.md` for:
 
-Ver `docs/TESTING_PATTERNS.md` para los patrones completos de:
-- Mock de Supabase (simple, multi-tabla, secuencial, Storage, RPC)
-- Invocación de handlers con `withAuth` mockeado
-- Construcción de `NextRequest` para GET / POST JSON / POST FormData / DELETE
+- Supabase mocking patterns
+- `withAuth` handler invocation
+- `NextRequest` construction patterns
 
 ---
 
 ## Playwright (E2E)
 
-Los tests E2E corren contra el servidor local en **modo demo** (datos in-memory,
-sin Supabase, sin credenciales reales).
+### What the runner does today
 
-```bash
-# Terminal 1 — servidor demo
-NEXT_PUBLIC_DEMO_MODE=true npm run dev
+- `playwright.config.ts` starts `npm run dev` automatically through `webServer`
+- that dev server is launched with `NEXT_PUBLIC_DEMO_MODE=true`
+- browser tests also intercept `/api/v1/*` requests via `tests/e2e/support/demo-api.ts`
 
-# Terminal 2 — correr E2E
-npm run test:e2e
-```
+### Why E2E is currently red
 
-Cobertura actual: flujos de finanzas (Caja Chica, Presupuesto) e invitaciones.
+As of **2026-04-29**, the app redirects `/dashboard/*` routes to `/login` because auth is real again and `src/lib/supabase/proxy.ts` no longer bypasses auth when `DEMO_MODE` is set.
 
-Ver `docs/DEMO_MODE.md` para detalles del entorno demo.
-Ver `playwright.config.ts` para configuración del runner.
+The current Playwright harness still assumes the old behavior:
+
+- open dashboard directly
+- mock API in the browser
+- skip real auth/session bootstrap
+
+Result: `9/9` tests fail before reaching the expected dashboard UI.
+
+### Recommended next fix
+
+Choose one of these strategies:
+
+1. seed a real authenticated session for an E2E test user
+2. add an explicit test-only auth bootstrap
+
+Do **not** restore the old implicit demo bypass in production middleware.
+
+See `docs/DEMO_MODE.md` for the current status of demo fixtures.
 
 ---
 
-## Criterio de done para cualquier cambio
+## Done criteria
+
+Minimum gate for any backend or schema change:
 
 ```bash
 npm run build && npm run test
 ```
 
-Si alguno falla, el sprint no está terminado.
+If the change touches auth, navigation, forms, or browser flows, also re-run:
+
+```bash
+npm run test:e2e
+```

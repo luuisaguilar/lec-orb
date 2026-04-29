@@ -10,7 +10,7 @@ const EXAM_CONFIGS: Record<string, { duration: number, capacity: number, compone
     "fce": { duration: 16, capacity: 2, components: { reading_use_of_english: 75, writing: 80, listening: 45, speaking: 16 } },
 };
 
-export const POST = withAuth(async (req, { supabase, member }, { params }) => {
+export const POST = withAuth(async (req, { supabase }, { params }) => {
     const { id: eventId, sessionId } = await params;
 
     const { data: session, error: sessionError } = await supabase

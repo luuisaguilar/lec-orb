@@ -26,7 +26,7 @@ vi.mock("xlsx", () => ({
 class MockFileReader {
     onload: any = null;
     result: any = null;
-    readAsArrayBuffer(file: any) {
+    readAsArrayBuffer() {
         this.result = new ArrayBuffer(8);
         if (this.onload) {
             this.onload({ target: { result: this.result } });

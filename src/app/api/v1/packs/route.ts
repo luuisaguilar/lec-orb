@@ -1,34 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { mockPacks, addMockPack } from "@/lib/demo/data";
 import { withAuth } from "@/lib/auth/with-handler";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
     const url = new URL(req.url);
     const search = url.searchParams.get("search") || "";
     const status = url.searchParams.get("status") || "";
-
-    if (DEMO_MODE) {
-        let filtered = mockPacks.filter((p) => !p.deleted_at);
-        if (search) {
-            const s = search.toLowerCase();
-            filtered = filtered.filter(
-                (p) =>
-                    p.codigo.toLowerCase().includes(s) ||
-                    p.nombre.toLowerCase().includes(s)
-            );
-        }
-        if (status === "EN_SITIO" || status === "PRESTADO") {
-            filtered = filtered.filter((p) => p.status === status);
-        }
-        return NextResponse.json({
-            packs: filtered,
-            total: filtered.length,
-            page: 1,
-            limit: 50,
-        });
-    }
 
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "50");
@@ -81,21 +58,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
         return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
     const { codigo, nombre, notes } = parsed.data;
-
-    if (DEMO_MODE) {
-        if (mockPacks.some((p) => p.codigo === codigo && !p.deleted_at)) {
-            return NextResponse.json({ error: "A pack with this code already exists" }, { status: 409 });
-        }
-        const pack = addMockPack({
-            codigo,
-            nombre: nombre || "",
-            status: "EN_SITIO",
-            current_school_id: null,
-            current_applicator_id: null,
-            notes: notes || null,
-        });
-        return NextResponse.json({ pack }, { status: 201 });
-    }
 
     const statusToSet = parsed.data.status || "EN_SITIO";
     const now = new Date();

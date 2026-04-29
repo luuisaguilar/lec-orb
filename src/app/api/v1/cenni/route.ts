@@ -60,7 +60,7 @@ const createCenniSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
-export const POST = withAuth(async (req, { supabase, user, member }) => {
+export const POST = withAuth(async (req, { supabase, user, member, enrichAudit }) => {
     const body = await req.json();
     const parsed = createCenniSchema.safeParse(body);
 
@@ -96,13 +96,13 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
 
     if (error) throw error;
 
-    await supabase.from("audit_log").insert({
+    enrichAudit({
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: newCase.id,
-        action: "INSERT",
+        operation: "INSERT",
         new_data: newCase,
-        performed_by: user.id,
+        changed_by: user.id,
     });
 
     return NextResponse.json({ case: newCase }, { status: 201 });

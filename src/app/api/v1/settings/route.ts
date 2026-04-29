@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import { DEMO_MODE } from "@/lib/demo/config";
 import { withAuth } from "@/lib/auth/with-handler";
 
-let demoSettings = { locale: "es-MX", theme: "system" };
-
 export const GET = withAuth(async (req, { supabase, user }) => {
-    if (DEMO_MODE) return NextResponse.json(demoSettings, { status: 200 });
-
     const { data, error } = await supabase
         .from("user_settings")
         .select("locale, theme")
@@ -24,11 +19,6 @@ export const PUT = withAuth(async (req, { supabase, user }) => {
 
     if (!["es-MX", "en-US"].includes(locale)) return NextResponse.json({ error: "Invalid locale" }, { status: 400 });
     if (!["light", "dark", "system"].includes(theme)) return NextResponse.json({ error: "Invalid theme" }, { status: 400 });
-
-    if (DEMO_MODE) {
-        demoSettings = { locale, theme };
-        return NextResponse.json(demoSettings, { status: 200 });
-    }
 
     const { error } = await supabase.from("user_settings").upsert(
         {

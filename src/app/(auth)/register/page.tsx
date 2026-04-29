@@ -49,7 +49,7 @@ function RegisterForm() {
         const supabase = createClient();
 
         // 1. Sign up the user via Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
             options: {
@@ -85,7 +85,7 @@ function RegisterForm() {
                         LEC
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Language Evaluation Center
+                        Languages Education Consulting
                     </p>
                 </div>
 
@@ -176,7 +176,7 @@ function RegisterForm() {
                 </Card>
 
                 <p className="text-center text-xs text-muted-foreground">
-                    © {new Date().getFullYear()} Language Evaluation Center
+                    © {new Date().getFullYear()} Languages Education Consulting
                 </p>
             </div>
         </div>

@@ -11,9 +11,7 @@ import {
     User,
     Clock,
     CheckCircle2,
-    Calendar,
     ShieldCheck,
-    Upload,
     Download,
     Edit,
     Link as LinkIcon
@@ -127,7 +125,7 @@ export default function ToeflCodigosPage() {
             toast.success(`${selectedIds.length} folios eliminados correctamente`, { id: "bulk-delete" });
             setSelectedIds([]);
             mutate();
-        } catch (error) {
+        } catch {
             toast.error("Hubo un error al eliminar algunos folios", { id: "bulk-delete" });
         } finally {
             setIsDeleting(false);

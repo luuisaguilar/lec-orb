@@ -89,7 +89,7 @@ export function getInvitationEmailHtml({
           <tr>
             <td style="background:#f8fafc;padding:20px 32px;text-align:center;">
               <p style="margin:0;color:#94a3b8;font-size:11px;">
-                Language Evaluation Center - LEC Platform
+                Languages Education Consulting - LEC Platform
               </p>
             </td>
           </tr>
@@ -173,7 +173,7 @@ export function getCertificateEmailHtml({
           <tr>
             <td style="background:#f8fafc;padding:20px 32px;text-align:center;">
               <p style="margin:0;color:#94a3b8;font-size:11px;">
-                ${safe(orgName)} &mdash; Language Evaluation Center (LEC)
+                ${safe(orgName)} &mdash; Languages Education Consulting (LEC)
               </p>
             </td>
           </tr>
@@ -200,7 +200,7 @@ export function getCertificateEmailText({
         "Descarga tu certificado aqui (valido por 7 dias):",
         downloadUrl,
         "",
-        `${orgName} - Language Evaluation Center (LEC)`,
+        `${orgName} - Languages Education Consulting (LEC)`,
     ].join("\n");
 }
 

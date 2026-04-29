@@ -4,7 +4,7 @@ import { DashboardShell } from "./dashboard-shell";
 
 export const metadata: Metadata = {
     title: "LEC Platform — Dashboard",
-    description: "Language Evaluation Center — Panel de control interno",
+    description: "Languages Education Consulting — Panel de control interno",
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

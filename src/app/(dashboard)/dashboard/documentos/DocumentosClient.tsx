@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/lib/i18n";
 import { FolderOpen, Search, Filter, Trash2, Download, FileText, Image, File } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ interface Document {
 }
 
 export default function DocumentosClient() {
-    const { t } = useI18n();
     const [search, setSearch] = useState("");
     const { data, mutate, isLoading } = useSWR("/api/v1/documents", fetcher);
     const documents: Document[] = data?.documents ?? [];

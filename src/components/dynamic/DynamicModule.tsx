@@ -62,7 +62,6 @@ interface DynamicModuleProps {
         config?: any;
     };
     fields: ModuleField[];
-    orgId: string;
     userRole: string;
 }
 
@@ -103,7 +102,7 @@ function formatFieldValue(field: ModuleField, value: any): React.ReactNode {
 // DynamicModule Component — generic table view for custom modules
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function DynamicModule({ module, fields, orgId, userRole }: DynamicModuleProps) {
+export default function DynamicModule({ module, fields, userRole }: DynamicModuleProps) {
     const [search, setSearch] = useState("");
     const [showCreateDialog, setShowCreateDialog] = useState(false);
 

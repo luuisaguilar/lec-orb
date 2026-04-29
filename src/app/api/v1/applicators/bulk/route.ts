@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_MODE } from "@/lib/demo/config";
 import { withAuth } from "@/lib/auth/with-handler";
 
 const bulkApplicatorSchema = z.object({
@@ -21,26 +20,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
     const parsed = bulkApplicatorSchema.safeParse(body);
     if (!parsed.success) {
         return NextResponse.json({ error: "Datos inválidos o incompletos." }, { status: 400 });
-    }
-
-    if (DEMO_MODE) {
-        const { addBulkMockApplicators } = await import("@/lib/demo/data");
-        const newApps = parsed.data.applicators.map(d => ({
-            name: d.name,
-            external_id: d.external_id ?? null,
-            email: d.email ?? null,
-            phone: d.phone ?? null,
-            birth_date: d.birth_date ?? null,
-            city: d.city ?? null,
-            rate_per_hour: null,
-            roles: d.roles ?? ["APPLICATOR"],
-            certified_levels: [],
-            authorized_exams: d.authorized_exams ?? [],
-            auth_user_id: null,
-            notes: null,
-        }));
-        addBulkMockApplicators(newApps);
-        return NextResponse.json({ count: newApps.length, success: true }, { status: 201 });
     }
 
     if (member.role !== "admin" && member.role !== "supervisor") {

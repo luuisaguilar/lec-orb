@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/auth/with-handler";
 const BUCKET = "cenni-certificates";
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-export const POST = withAuth(async (req, { supabase, user, member }, { params }) => {
+export const POST = withAuth(async (req, { supabase, user, member, enrichAudit }, { params }) => {
     const { id } = await params;
 
     const formData = await req.formData();
@@ -64,14 +64,14 @@ export const POST = withAuth(async (req, { supabase, user, member }, { params })
         return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    await supabase.from("audit_log").insert({
+    enrichAudit({
         org_id: member.org_id,
         table_name: "cenni_cases",
         record_id: id,
-        action: "UPDATE",
+        operation: "UPDATE",
         old_data: { certificate_storage_path: null },
         new_data: { certificate_storage_path: storagePath, certificate_uploaded_at: now },
-        performed_by: user.id,
+        changed_by: user.id,
     });
 
     return NextResponse.json({ case: updatedCase }, { status: 200 });

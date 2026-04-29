@@ -24,7 +24,7 @@ const updateSessionSchema = z.object({
     })).optional()
 });
 
-export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
+export const PATCH = withAuth(async (req, { supabase }, { params }) => {
     const { id: eventId, sessionId } = await params;
     const body = await req.json();
 
@@ -70,7 +70,7 @@ export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
     return NextResponse.json({ session: updatedSession });
 }, { module: "events", action: "edit" });
 
-export const DELETE = withAuth(async (req, { supabase, member }, { params }) => {
+export const DELETE = withAuth(async (req, { supabase }, { params }) => {
     const { id: eventId, sessionId } = await params;
 
     const { error } = await supabase

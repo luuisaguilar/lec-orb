@@ -4,7 +4,7 @@ import { PortalShell } from "./portal-shell";
 
 export const metadata: Metadata = {
     title: "LEC Platform — Portal Aplicadores",
-    description: "Language Evaluation Center — Portal para Aplicadores",
+    description: "Languages Education Consulting — Portal para Aplicadores",
 };
 
 export default function PortalLayout({ children }: { children: ReactNode }) {

@@ -1,32 +1,10 @@
 import { NextResponse } from "next/server";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { mockPayrollPeriods, mockPayrollEntries } from "@/lib/demo/data";
 import { withAuth } from "@/lib/auth/with-handler";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
     const url = new URL(req.url);
     const periodId = url.searchParams.get("periodId");
 
-    if (DEMO_MODE) {
-        if (periodId) {
-            const period = mockPayrollPeriods.find((p) => p.id === periodId);
-            if (!period) return NextResponse.json({ error: "Period not found" }, { status: 404 });
-            const entries = mockPayrollEntries.filter((e) => e.period_id === periodId);
-            return NextResponse.json({ period, entries });
-        }
-
-        const periods = mockPayrollPeriods.map((period) => {
-            const entries = mockPayrollEntries.filter((e) => e.period_id === period.id);
-            return {
-                ...period,
-                entry_count: entries.length,
-                total_amount: entries.reduce((sum, e) => sum + e.total, 0),
-            };
-        });
-        return NextResponse.json({ periods, total: periods.length });
-    }
-
-    // REAL MODE
     if (periodId) {
         const { data: period, error: pError } = await supabase
             .from("payroll_periods")

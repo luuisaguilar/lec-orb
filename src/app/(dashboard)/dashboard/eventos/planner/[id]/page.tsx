@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, FileText, Clock, Users, MapPin, Calculator, Mail, Download, Pencil, ChevronDown, ChevronUp, Info, AlertTriangle, Send } from "lucide-react";
+import { ArrowLeft, FileText, Clock, Users, MapPin, Calculator, Download, Pencil, ChevronDown, ChevronUp, Info, AlertTriangle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { AddEventSessionDialog } from "@/components/events/add-session-dialog";
 import { EventCOEReport } from "@/components/events/event-coe-report";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // ── Helpers shared with calculator ──────────────────────────────────────────
 function fmtMins(mins: number): string {

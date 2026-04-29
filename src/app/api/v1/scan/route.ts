@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DEMO_MODE } from "@/lib/demo/config";
-import { mockPacks, mockMovements, addMockMovement } from "@/lib/demo/data";
 import { withAuth } from "@/lib/auth/with-handler";
 
 const scanSchema = z.object({
@@ -22,47 +20,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
     }
 
     const { codigo, type, school_id, school_name, applicator_id, applicator_name, notes } = parsed.data;
-
-    if (DEMO_MODE) {
-        const pack = mockPacks.find((p) => p.codigo === codigo && !p.deleted_at);
-        if (!pack) return NextResponse.json({ error: "Pack not found", codigo }, { status: 404 });
-
-        if (type === "SALIDA" && pack.status !== "EN_SITIO") {
-            return NextResponse.json({ error: `Cannot checkout: pack is not EN_SITIO (current: ${pack.status})` }, { status: 400 });
-        }
-        if (type === "ENTRADA" && pack.status !== "PRESTADO") {
-            return NextResponse.json({ error: `Cannot checkin: pack is not PRESTADO (current: ${pack.status})` }, { status: 400 });
-        }
-
-        const previousStatus = pack.status;
-        let newStatus: "EN_SITIO" | "PRESTADO";
-        if (type === "SALIDA") newStatus = "PRESTADO";
-        else if (type === "ENTRADA") newStatus = "EN_SITIO";
-        else newStatus = pack.status === "EN_SITIO" ? "PRESTADO" : "EN_SITIO";
-
-        pack.status = newStatus;
-        pack.current_school_id = type === "SALIDA" ? (school_id || null) : type === "ENTRADA" ? null : pack.current_school_id;
-        pack.current_applicator_id = type === "SALIDA" ? (applicator_id || null) : type === "ENTRADA" ? null : pack.current_applicator_id;
-        pack.updated_at = new Date().toISOString();
-
-        const movement = addMockMovement({
-            pack_id: pack.id,
-            type,
-            school_id: school_id || null,
-            school_name: school_name || null,
-            applicator_id: applicator_id || null,
-            applicator_name: applicator_name || null,
-            previous_status: previousStatus,
-            new_status: newStatus,
-            notes: notes || null,
-        });
-
-        return NextResponse.json({
-            success: true,
-            pack: { id: pack.id, codigo: pack.codigo, nombre: pack.nombre },
-            movement: { success: true, movement_id: movement.id, previous_status: previousStatus, new_status: newStatus },
-        });
-    }
 
     const { data: pack } = await supabase
         .from("packs")
@@ -98,13 +55,6 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const url = new URL(req.url);
     const codigo = url.searchParams.get("codigo")?.trim();
     if (!codigo) return NextResponse.json({ error: "Missing codigo parameter" }, { status: 400 });
-
-    if (DEMO_MODE) {
-        const pack = mockPacks.find((p) => p.codigo === codigo && !p.deleted_at);
-        if (!pack) return NextResponse.json({ error: "Pack not found", codigo }, { status: 404 });
-        const movements = mockMovements.filter((m) => m.pack_id === pack.id).slice(0, 5);
-        return NextResponse.json({ pack, movements });
-    }
 
     const { data: pack } = await supabase
         .from("packs")

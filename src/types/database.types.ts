@@ -1623,6 +1623,62 @@ export type Database = {
           },
         ]
       }
+      poa_lines: {
+        Row: {
+          budgeted_amount: number
+          concept: string
+          created_by: string | null
+          id: string
+          month: number
+          notes: string | null
+          org_id: string
+          real_amount: number | null
+          section: string
+          sort_order: number
+          source: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          budgeted_amount?: number
+          concept: string
+          created_by?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          org_id: string
+          real_amount?: number | null
+          section?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          budgeted_amount?: number
+          concept?: string
+          created_by?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          org_id?: string
+          real_amount?: number | null
+          section?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poa_lines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null

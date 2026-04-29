@@ -22,7 +22,7 @@ import {
 import {
     Plus, Search, Download, Loader2, Check, X,
     MoreHorizontal, Trash2, FileSpreadsheet, Pencil,
-    LayoutList, KanbanSquare, FileCheck, ExternalLink, Mail, ChevronLeft, ChevronRight, Upload
+    LayoutList, KanbanSquare, FileCheck, Eye, Mail, ChevronLeft, ChevronRight, Upload
 } from "lucide-react";
 import {
     DndContext, DragOverlay, closestCorners, KeyboardSensor,
@@ -910,6 +910,7 @@ function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; sea
     const [sendDialog, setSendDialog] = useState<{ id: string; email: string } | null>(null);
     const [sendEmail, setSendEmail] = useState("");
     const [isSending, setIsSending] = useState(false);
+    const [pdfViewer, setPdfViewer] = useState<{ url: string; nombre: string } | null>(null);
 
     const handleSendOpen = (c: CenniCase) => {
         setSendEmail(c.correo ?? "");
@@ -965,7 +966,7 @@ function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; sea
         setUploadingId(null);
     }, [uploadingId, onUpdate]);
 
-    const handleOpen = async (id: string) => {
+    const handleOpen = async (id: string, nombre: string) => {
         const res = await fetch(`/api/v1/cenni/${id}/certificate-url`);
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
@@ -973,7 +974,7 @@ function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; sea
             return;
         }
         const { url } = await res.json();
-        window.open(url, "_blank", "noopener,noreferrer");
+        setPdfViewer({ url, nombre });
     };
 
     const handleDownload = async (id: string, folio: string) => {
@@ -1078,8 +1079,8 @@ function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; sea
                                     </td>
                                     <td className="px-3 py-2 text-center whitespace-nowrap">
                                         <div className="flex justify-center gap-1.5">
-                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleOpen(c.id)} title="Ver PDF">
-                                                <ExternalLink className="h-3.5 w-3.5" />
+                                            <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleOpen(c.id, c.cliente_estudiante)} title="Ver PDF">
+                                                <Eye className="h-3.5 w-3.5" />
                                             </Button>
                                             <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleDownload(c.id, c.folio_cenni)} title="Descargar">
                                                 <Download className="h-3.5 w-3.5" />
@@ -1105,6 +1106,25 @@ function CertificadosView({ cases, search, onUpdate }: { cases: CenniCase[]; sea
                     onChange={handleCertReplace}
                 />
             </CardContent>
+
+            <Dialog open={!!pdfViewer} onOpenChange={(open) => { if (!open) setPdfViewer(null); }}>
+                <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
+                        <DialogTitle className="text-sm font-medium truncate">
+                            {pdfViewer?.nombre}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 min-h-0 p-4">
+                        {pdfViewer?.url && (
+                            <iframe
+                                src={pdfViewer.url}
+                                className="w-full h-full rounded border"
+                                title="Certificado PDF"
+                            />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 }

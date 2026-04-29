@@ -308,8 +308,6 @@ export function AddEventSessionDialog({ eventId, onSessionAdded, initialData, op
     };
 
     const watchExamType = form.watch("exam_type");
-    const watchStaff = form.watch("staff");
-
     const certifiedApplicators = watchExamType
         ? applicators.filter(a => isCertifiedForExam(a, watchExamType))
         : applicators;

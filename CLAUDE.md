@@ -2,12 +2,23 @@
 
 ## Proyecto
 
-SaaS multi-tenant para gestión académica y administrativa de centros de evaluación de inglés
-(TOEFL, CENNI, Cambridge) en México. Cada cliente = una `org_id`. Módulos operativos +
-finanzas (Caja Chica y Presupuesto).
+SaaS multi-tenant para gestión académica y administrativa de centros de evaluación de idiomas
+(Cambridge, TOEFL, CENNI) en México. Empresa: **Languages Education Consulting (LEC)**.
+Cada cliente = una `org_id`. Módulos operativos + finanzas (Caja Chica y Presupuesto POA).
+
+**Ingreso principal:** Exámenes Cambridge institucionales — LEC aplica en escuelas, IH (International House) paga a LEC por alumno/examen. Gap crítico: $245K en CxC sin módulo en plataforma → Sprint 2.
 
 **Repo canónico:** `lec-orb` (los proyectos `lec-orb-develop` y `lec-orb-finance` son
 referencias históricas — no modificar).
+
+**Contexto de negocio completo:**
+```
+C:\Users\luuis\.claude\projects\C--Users-luuis-Downloads-Proyectos-LEC-lecorb\memory\
+|- MEMORY.md                   <- Indice — leer primero en sesión nueva
+|- project_lec_business.md     <- Negocio, organigrama, flujos Cambridge
+|- project_ih_billing.md       <- IH Billing: CxC, Excels analizados, modelo de datos
+|- project_event_logistics.md  <- Logística de eventos: roles, nómina, P&L por sesión
+```
 
 ## Stack
 
@@ -321,7 +332,7 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 
 ```
 Vitest   → unit/integration (src/tests/)
-           27 archivos, ~170 tests — 22/22 módulos API cubiertos
+           26 archivos, 164 tests — 22/22 módulos API cubiertos
            cenni.test.ts: 27 tests (GET, POST, PATCH, DELETE, bulk, cert-upload, send-cert)
 Playwright → E2E contra servidor demo local (npm run dev)
            Cobertura: flows de finanzas e invitaciones
@@ -359,18 +370,191 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 - [ ] Toda tabla nueva tiene RLS habilitado
 - [ ] Si se regeneró `database.types.ts`: confirmar UTF-8 (no UTF-16) — `file src/types/database.types.ts` debe decir "ASCII text" o "UTF-8"
 
+## Módulo IH Billing — Sprint 2 (ANALIZADO, pendiente implementar)
+
+Ver contexto completo en `memory/project_ih_billing.md`.
+
+### Qué hace
+
+Reemplaza los Excels `DESGLOSE 2025-2026.xlsx` y `PAGOS IH LEC v1.xlsx`.
+Registra sesiones aplicadas, facturas emitidas a IH, pagos recibidos y calcula saldo pendiente.
+
+### Tablas propuestas
+
+```sql
+ih_sessions   (org_id, school_name, exam_type, session_date, students_applied, tariff,
+               students_paid_ih, amount_paid_ih, balance, status, ih_invoice_id)
+ih_invoices   (org_id, invoice_number, region, period_label, total_amount, status)
+ih_payments   (org_id, payment_date, amount, region, reference)
+ih_tariffs    (org_id, year, exam_type, tariff)  -- editable, historial 2023-2026 disponible
+```
+
+### Endpoints propuestos
+
+```
+GET/POST  /api/v1/finance/ih/sessions
+POST      /api/v1/finance/ih/sessions/import   <- import masivo desde Excel
+PATCH     /api/v1/finance/ih/sessions/[id]
+GET/POST  /api/v1/finance/ih/invoices
+GET/POST  /api/v1/finance/ih/payments
+GET       /api/v1/finance/ih/summary            <- dashboard CxC: ejecutado/pagado/saldo/alertas
+GET/POST  /api/v1/finance/ih/tariffs/[year]
+```
+
+### Tarifas IH → LEC por alumno (historial completo)
+
+| Examen | 2023 | 2024 | 2025 | 2026 |
+|--------|------|------|------|------|
+| YLE Starters | $250.80 | $270.69 | $275.69 | $332 |
+| YLE Movers | $267.60 | $288.79 | $293.79 | $354 |
+| YLE Flyers | $276.00 | $298.28 | $303.28 | $366 |
+| KEY FS | $382.50 | $409.14 | $543.14 | $499 |
+| PET FS | $394.80 | $422.93 | $556.93 | $516 |
+| FCE FS | $614.80 | $663.10 | $787.10 | $812 |
+
+### Tarifas LEC → Aplicadores por hora
+
+| Rol | 2024 (YLE/general) | 2024 (KEY/KET) | 2026 (todos) |
+|-----|-------------------|----------------|-------------|
+| SE (Speaking Examiner) | $285 | $285 | **$300** |
+| SE-Remoto | $285 | $285 | **$300** |
+| ADMIN | $285 | $335 | **$300** |
+| INVIGILATOR | $165 | $215 | **$300** |
+| SUPER | $165 | $165 | **$200** |
+
+Notas: En 2024 KET tenía tarifa especial (ADMIN $335, INVIG $215). En 2026 se homologó todo a $300 (excepto SUPER $200). Marisela Castillo en 2024 tenía cuota fija $1,850 por evento como SE-YLE en Larrea.
+
+### Estado CxC al 15/abril/2026
+
+- Total pendiente: **$245,425** (Sonora $179,488 + BC $65,937)
+- Alerta urgente: Colegio Larrea **$149,672** — 6+ semanas vencido
+
+---
+
+## Módulo Logística de Eventos — Sprint 3 (ANALIZADO, pendiente implementar)
+
+Ver contexto completo en `memory/project_event_logistics.md`.
+
+### Qué hace
+
+Reemplaza `LOGISTICA_UNOi 2026.xlsx`. Asigna aplicadores por rol a cada evento,
+calcula nómina automática y genera P&L por sesión.
+
+### Roles de aplicadores por evento
+
+| Rol | Descripción |
+|-----|-------------|
+| SE | Speaking Examiner (debe estar certificado para ese nivel) |
+| SE-Remoto | Speaking Examiner vía Zoom |
+| ADMIN | Administra examen escrito |
+| INVIGILATOR | Vigila sala durante escrito |
+| SUPER | Supervisor del evento completo |
+
+### Tablas propuestas
+
+```sql
+applicator_event_roles   (event_session_id, applicator_id, role, hours, tariff_per_hour,
+                          viatics_amount, subtotal)
+duration_lookup          (exam_type, students_min, students_max, se_count, hours_speaking)
+applicator_role_tariffs  (org_id, year, role, tariff_per_hour)
+```
+
+### P&L por sesión
+
+```
+Ingreso IH (alumnos × tarifa)
+- Nómina aplicadores (horas × tarifa por rol)
+- Viáticos (transporte + hospedaje + alimentación)
+= Comisión LEC
+```
+
+---
+
+## Módulo Viáticos — Sprint 2
+
+Basado en formato oficial `SOLICITUD DE GASTOS DE VIAJE O VIATICOS (1).xlsx` Rev.02.
+
+```sql
+viaticos (
+  org_id, applicator_id, event_session_id,
+  fecha, motivo, unidad_responsable,
+  ruta_salida, ruta_regreso,
+  tipo_transporte TEXT CHECK ('AEREO','TERRESTRE','VEHICULO_PROPIO'),
+  -- Presupuestado
+  ppto_aereos, ppto_gasolina, ppto_taxis, ppto_casetas,
+  ppto_hospedaje, ppto_alimentacion, ppto_otros,
+  -- Real (con factura)
+  real_aereos, real_gasolina, real_taxis, real_casetas,
+  real_hospedaje, real_alimentacion, real_otros,
+  comprobante_path,  -- Storage bucket 'viaticos-receipts'
+  status TEXT CHECK ('SOLICITADO','APROBADO','COMPROBADO','RECHAZADO'),
+  aprobado_por UUID
+)
+```
+
+**Regla operativa:** Las diferencias de viáticos no comprobadas se descuentan de la nómina del empleado (campo `Dif Viáticos` en `REPORTE SEMANAL DE NOMINA.xlsx`).
+
+**Pendiente de decisión:**
+- ¿Por aplicador (campo event_session_id nullable) o siempre ligado a evento?
+- ¿Módulo separado o tab dentro de Eventos?
+
+---
+
+## Ecosistema paralelo — Dashboard 360 HR
+
+**No es parte de LEC Orb.** Es una herramienta HR interna construida con Antigravity AI (Gemini).
+
+| Componente | Ruta |
+|-----------|------|
+| Generador Node.js | `C:\Users\luuis\.gemini\antigravity\scratch\hr_parser\build_app.js` |
+| Output HTML | `LISTA MAESTRA DOCUMENTOS\02_RRHH_Recursos_Humanos\dashboard_perfiles.html` |
+| Tablas Supabase que usa | `kpi_metrics`, `risk_assessments` (mismo Supabase que LEC Orb) |
+
+**Gap actual:** El dashboard no consume datos de Supabase — usa seeds hardcodeados. `SGC_SYNC_WORKFLOW.json` (n8n) ya puebla `kpi_metrics` y `risk_assessments` pero el HTML no las lee.
+
+**Oportunidad (Sprint 5):** El dashboard de LEC Orb podría consumir las mismas tablas `kpi_metrics` y `risk_assessments` que ya alimenta el workflow n8n.
+
+---
+
 ## Próximos Pasos Documentados
 
-**Prioridad Alta:**
-1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
+### Sprint 2 — Dinero que falta rastrear ← SIGUIENTE
 
-**Prioridad Media:**
-4. KPI cards y gráficas en Caja Chica.
-5. Staging environment con org de prueba dedicada.
+**Pendiente de decisión antes de codificar (Luis decide):**
+- ¿IH Billing: import Excel o captura manual?
+- ¿Adjuntar Excel/PDF de IH como comprobante del pago (Storage)?
+- ¿LEC genera PDF de factura desde la plataforma?
+- ¿Viáticos: módulo separado o ligado a nómina?
 
-**Prioridad Baja:**
-6. ADR formales para decisiones de arquitectura.
-7. E2E tests actualizados con flujo de invitaciones real.
+### Pendientes técnicos (cualquier sprint)
+
+1. **UI `/join/[token]?expired=1`:** CTA "pedir nueva invitación" — backend listo, falta el componente
+2. **Cron `fn_expire_old_invitations()`:** Vercel Cron diario — listo para conectar
+3. **PR #20:** Verificar CI verde → squash merge
+4. **Fix nombre empresa:** "Language Evaluation Center" → "Languages Education Consulting" en código, emails y UI
+5. **Backfill CENNI SOLICITADO:** `python backfill_certificates.py --status SOLICITADO` en cenni-bot
+6. **CURP faltante:** Silvia Selene Moreno Carrasco (folio CENNI-CF57JA)
+7. **Retry timeout:** MARCO GASTELUM folio 336225
+
+### Prioridad media/baja
+
+- KPI cards y gráficas en Caja Chica
+- Dashboard CENNI: cards por estatus + gráfica (Sprint 5, el endpoint ya retorna `cenni.byStatus`)
+- Permisos por puesto (9 grupos propuestos en Obsidian — pendiente validación con gerencia)
+- Staging environment con org de prueba dedicada
+- Portal de aplicadores (construido, no terminado)
+- DMS: control de revisiones y versiones
+- IELTS / OOPT: sin módulo en plataforma
+
+---
+
+**Completado — Sprint 1 (abril 2026):**
+- ✅ `DEMO_MODE` eliminado de todos los archivos de producción (10 archivos)
+- ✅ Bug `event_sessions` sin `org_id` en `dashboard/stats/route.ts` — corregido con JOIN `events!inner`
+- ✅ `login/page.tsx` sin botón "Modo Demo"
+- ✅ `lib/supabase/proxy.ts` sin early return de DEMO_MODE
+- ✅ Build limpio + 26 archivos test + 164 tests verdes
+- ⚠️ `lib/demo/config.ts` y `lib/demo/data.ts` **NO eliminar** — los tests los usan con mock `DEMO_MODE=false`
 
 **Completado abril 2026 (Sentry):**
 - ✅ `@sentry/nextjs` v10 instalado y configurado
@@ -388,6 +572,7 @@ Monitorear uso de Supabase Storage (bucket `petty-cash-receipts` y documentos).
 - ✅ Import masivo desde Excel con upsert por folio
 - ✅ UNIQUE(org_id, folio_cenni) constraint aplicada en DB
 - ✅ UI: folio sin prefijo, columna CURP, columnas Recepción/Revisión eliminadas
+- ✅ Visor PDF integrado: botón ojo en tabla Certificados abre Dialog con iframe (signed URL 300s). Ícono: `Eye`. Dialog: max-w-4xl / 90vh.
 
 ---
 

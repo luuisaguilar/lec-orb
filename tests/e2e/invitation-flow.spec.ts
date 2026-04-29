@@ -4,7 +4,8 @@ import { installDemoApiMocks } from "./support/demo-api";
 /**
  * Invitation Flow E2E Tests
  * -------------------------
- * Verifies the full "Invitar Usuario" flow against the local demo harness.
+ * Verifies the full "Invitar Usuario" flow after authenticating with a real
+ * local session while keeping API responses deterministic via browser mocks.
  */
 
 const INVITE_EMAIL = "qa.invite@lec.mx";

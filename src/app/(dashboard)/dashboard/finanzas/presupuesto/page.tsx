@@ -1,315 +1,782 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { 
-    PieChart, 
-    Save, 
-    ChevronLeft, 
-    ChevronRight, 
-    TrendingUp, 
-    TrendingDown,
-    AlertCircle,
-    Info
-} from "lucide-react";
-import { format, addMonths, subMonths } from "date-fns";
-import { es } from "date-fns/locale";
-import useSWR from "swr";
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useCallback, useEffect } from "react";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+    ChevronLeft, ChevronRight, Save, Plus, Trash2,
+    PieChart, LayoutGrid, Columns3, Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Source = "CAJA_CHICA" | "CUENTA_BAC";
+
+interface PoaLine {
+    id?:              string;
+    org_id?:          string;
+    year:             number;
+    month:            number;
+    source:           Source;
+    section:          string;
+    concept:          string;
+    budgeted_amount:  number;
+    real_amount:      number | null;
+    notes?:           string | null;
+    sort_order:       number;
+}
+
+// Grouped structure: section → concept → month(1-12) → PoaLine
+type Grouped = Record<string, Record<string, Record<number, PoaLine>>>;
+
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const fmt = (n: number | null | undefined) =>
+    n == null ? "—" : new Intl.NumberFormat("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+
+const fmtInput = (n: number | null | undefined) =>
+    n == null || n === 0 ? "" : String(n);
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PresupuestoPage() {
-    const { data: userData, error: userError, isLoading: userLoading } = useSWR("/api/v1/users/me", fetcher);
-    const orgId = userData?.organization?.id || userData?.member?.org_id;
+    const [year,   setYear]   = useState(new Date().getFullYear());
+    const [source, setSource] = useState<Source>("CAJA_CHICA");
+    const [view,   setView]   = useState<"annual" | "monthly">("annual");
+    const [month,  setMonth]  = useState(new Date().getMonth() + 1); // 1-12
 
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [categories, setCategories] = useState<any[]>([]);
-    const [budgets, setBudgets] = useState<any[]>([]);
-    const [comparative, setComparative] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [editedBudgets, setEditedBudgets] = useState<Record<string, number>>({});
+    const [lines,   setLines]   = useState<PoaLine[]>([]);
+    const [grouped, setGrouped] = useState<Grouped>({});
+    const [loading, setLoading] = useState(true);
+    const [saving,  setSaving]  = useState(false);
 
-    const month = currentDate.getMonth() + 1;
-    const year = currentDate.getFullYear();
+    // Local edits: key = `${section}||${concept}||${month}` → { budgeted, real }
+    const [edits, setEdits] = useState<Record<string, { budgeted: string; real: string }>>({});
 
-    // Load Data
+    // New concept / section form
+    const [newConcept, setNewConcept] = useState("");
+    const [addingTo,   setAddingTo]   = useState<string | null>(null); // section name being added to
+    const [newSectionName, setNewSectionName] = useState("");
+
     const loadData = useCallback(async () => {
-        if (!orgId) return;
+        setLoading(true);
         try {
-            setIsLoading(true);
-            const [catRes, budRes, compRes] = await Promise.all([
-                fetch("/api/v1/finance/petty-cash/categories"),
-                fetch(`/api/v1/finance/budget?org_id=${orgId}&month=${month}&year=${year}`), // Explicit org scoping
-                fetch(`/api/v1/finance/budget/comparative?month=${month}&year=${year}`)
-            ]);
-
-            if (catRes.ok) {
-                const { categories } = await catRes.json();
-                setCategories(categories);
+            const res = await fetch(`/api/v1/finance/poa?year=${year}&source=${source}`);
+            if (!res.ok) throw new Error("Error al cargar presupuesto");
+            const { lines: data, grouped: g } = await res.json();
+            setLines(data);
+            setGrouped(g ?? {});
+            // Seed edits from existing data
+            const initial: Record<string, { budgeted: string; real: string }> = {};
+            for (const line of data as PoaLine[]) {
+                const key = `${line.section}||${line.concept}||${line.month}`;
+                initial[key] = {
+                    budgeted: fmtInput(line.budgeted_amount),
+                    real:     fmtInput(line.real_amount),
+                };
             }
-
-            if (budRes.ok) {
-                const { budgets } = await budRes.json();
-                setBudgets(budgets || []);
-                // Initialize edited values
-                const initial: Record<string, number> = {};
-                budgets.forEach((b: any) => {
-                    initial[b.category_id] = b.amount;
-                });
-                setEditedBudgets(initial);
-            }
-
-            if (compRes.ok) {
-                const { comparative } = await compRes.json();
-                setComparative(comparative || []);
-            }
-        } catch (err) {
-            console.error("Error loading budget data", err);
+            setEdits(initial);
+        } catch {
             toast.error("Error al cargar datos del presupuesto");
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
-    }, [month, year, orgId]);
+    }, [year, source]);
 
-    useEffect(() => {
-        if (orgId) {
-            loadData();
-        }
-    }, [loadData, orgId]);
+    useEffect(() => { loadData(); }, [loadData]);
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    const getEdit = (section: string, concept: string, m: number) =>
+        edits[`${section}||${concept}||${m}`] ?? { budgeted: "", real: "" };
+
+    const setEdit = (section: string, concept: string, m: number, field: "budgeted" | "real", value: string) => {
+        const key = `${section}||${concept}||${m}`;
+        setEdits(prev => ({ ...prev, [key]: { ...prev[key] ?? { budgeted: "", real: "" }, [field]: value } }));
+    };
+
+    const totalBudgeted = (section: string, concept: string) =>
+        MONTHS.reduce((acc, _, i) => acc + (parseFloat(getEdit(section, concept, i + 1).budgeted) || 0), 0);
+
+    const totalReal = (section: string, concept: string) =>
+        MONTHS.reduce((acc, _, i) => acc + (parseFloat(getEdit(section, concept, i + 1).real) || 0), 0);
+
+    const sectionTotalBudgeted = (section: string) =>
+        Object.keys(grouped[section] ?? {}).reduce((a, c) => a + totalBudgeted(section, c), 0);
+
+    const sectionTotalReal = (section: string) =>
+        Object.keys(grouped[section] ?? {}).reduce((a, c) => a + totalReal(section, c), 0);
+
+    // ── Sections & Concepts (all from grouped + any newly added) ────────────
+    const [localSections, setLocalSections] = useState<Record<string, string[]>>({});
+
+    // Merge grouped keys with local additions
+    const allSections = Array.from(new Set([
+        ...Object.keys(grouped),
+        ...Object.keys(localSections),
+    ]));
+
+    const conceptsOf = (section: string) => Array.from(new Set([
+        ...Object.keys(grouped[section] ?? {}),
+        ...(localSections[section] ?? []),
+    ]));
+
+    // ── Save ─────────────────────────────────────────────────────────────────
 
     const handleSave = async () => {
-        if (!orgId) {
-            toast.error("Contexto de organización no disponible");
-            return;
-        }
-
+        setSaving(true);
         try {
-            setIsSaving(true);
-            const entries = Object.entries(editedBudgets).map(([category_id, amount]) => ({
-                org_id: orgId,
-                category_id,
-                month,
-                year,
-                amount
-            }));
+            const payload: Omit<PoaLine, "id" | "org_id">[] = [];
 
-            const res = await fetch("/api/v1/finance/budget", {
-                method: "POST",
+            for (const section of allSections) {
+                for (const concept of conceptsOf(section)) {
+                    for (let m = 1; m <= 12; m++) {
+                        const e = getEdit(section, concept, m);
+                        const budgeted = parseFloat(e.budgeted) || 0;
+                        const real     = e.real !== "" ? parseFloat(e.real) : null;
+                        // Only send if there's something to save
+                        if (budgeted > 0 || real != null) {
+                            payload.push({
+                                year,
+                                month:            m,
+                                source,
+                                section,
+                                concept,
+                                budgeted_amount:  budgeted,
+                                real_amount:      real,
+                                sort_order:       0,
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (payload.length === 0) {
+                toast.info("No hay cambios con montos para guardar");
+                return;
+            }
+
+            const res = await fetch("/api/v1/finance/poa", {
+                method:  "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(entries),
+                body:    JSON.stringify(payload),
             });
 
-            if (res.ok) {
-                toast.success("Presupuesto guardado correctamente");
-                loadData();
-            } else {
-                const error = await res.json();
-                toast.error(error.error || "Error al guardar");
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error ?? "Error al guardar");
             }
-        } catch (err) {
-            console.error("Error saving budget", err);
-            toast.error("Error al guardar presupuesto");
+
+            toast.success(`${payload.length} líneas guardadas`);
+            setLocalSections({});
+            loadData();
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Error al guardar");
         } finally {
-            setIsSaving(false);
+            setSaving(false);
         }
     };
 
-    if (userError) {
-        return (
-            <div className="p-6">
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error de Conexión</AlertTitle>
-                    <AlertDescription>
-                        No se pudo cargar el contexto de la organización. Por favor, intente de nuevo más tarde.
-                    </AlertDescription>
-                </Alert>
+    // ── Add concept ───────────────────────────────────────────────────────────
+
+    const addConcept = (section: string) => {
+        const trimmed = newConcept.trim();
+        if (!trimmed) return;
+        if (conceptsOf(section).includes(trimmed)) {
+            toast.error("Ese concepto ya existe en esta sección");
+            return;
+        }
+        setLocalSections(prev => ({
+            ...prev,
+            [section]: [...(prev[section] ?? []), trimmed],
+        }));
+        setNewConcept("");
+        setAddingTo(null);
+    };
+
+    const addSection = () => {
+        const trimmed = newSectionName.trim();
+        if (!trimmed) return;
+        if (allSections.includes(trimmed)) {
+            toast.error("Esa sección ya existe");
+            return;
+        }
+        setLocalSections(prev => ({ ...prev, [trimmed]: [] }));
+        setNewSectionName("");
+    };
+
+    // ── Delete concept (only local unsaved ones) ─────────────────────────────
+
+    const deleteLocalConcept = (section: string, concept: string) => {
+        setLocalSections(prev => ({
+            ...prev,
+            [section]: (prev[section] ?? []).filter(c => c !== concept),
+        }));
+        // Clear edits
+        setEdits(prev => {
+            const next = { ...prev };
+            for (let m = 1; m <= 12; m++) delete next[`${section}||${concept}||${m}`];
+            return next;
+        });
+    };
+
+    const deleteSavedConcept = async (section: string, concept: string) => {
+        const toDelete = lines.filter(l => l.section === section && l.concept === concept && l.id);
+        for (const l of toDelete) {
+            await fetch(`/api/v1/finance/poa/${l.id}`, { method: "DELETE" });
+        }
+        // Clear local edits
+        setEdits(prev => {
+            const next = { ...prev };
+            for (let m = 1; m <= 12; m++) delete next[`${section}||${concept}||${m}`];
+            return next;
+        });
+        loadData();
+    };
+
+    // ─── Concentrado helpers (sum CAJA_CHICA + CUENTA_BAC) ────────────────────
+    // (computed client-side from current edits of both sources)
+    // Not implemented in this view — available as separate tab (read-only)
+
+    // ─── Render ───────────────────────────────────────────────────────────────
+
+    return (
+        <div className="space-y-6">
+            {/* ── Header ── */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                        <PieChart className="h-7 w-7 text-primary" />
+                        Presupuesto POA
+                    </h2>
+                    <p className="text-muted-foreground text-sm mt-1">
+                        Plan Operativo Anual — conceptos libres por fuente de fondos
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Year selector */}
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => setYear(y => y - 1)}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="font-bold px-3 min-w-[60px] text-center">{year}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => setYear(y => y + 1)}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* View toggle */}
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                        <Button
+                            variant={view === "annual" ? "secondary" : "ghost"}
+                            size="sm" className="h-8 gap-1.5"
+                            onClick={() => setView("annual")}>
+                            <Columns3 className="h-3.5 w-3.5" /> Anual
+                        </Button>
+                        <Button
+                            variant={view === "monthly" ? "secondary" : "ghost"}
+                            size="sm" className="h-8 gap-1.5"
+                            onClick={() => setView("monthly")}>
+                            <LayoutGrid className="h-3.5 w-3.5" /> Mensual
+                        </Button>
+                    </div>
+
+                    {/* Month picker (monthly view only) */}
+                    {view === "monthly" && (
+                        <Select value={String(month)} onValueChange={v => setMonth(Number(v))}>
+                            <SelectTrigger className="w-[110px] h-9">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {MONTHS.map((m, i) => (
+                                    <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    <Button onClick={handleSave} disabled={saving} size="sm" className="h-9">
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
+                        Guardar
+                    </Button>
+                </div>
             </div>
+
+            {/* ── Source tabs ── */}
+            <Tabs value={source} onValueChange={v => setSource(v as Source)}>
+                <div className="flex items-center justify-between">
+                    <TabsList>
+                        <TabsTrigger value="CAJA_CHICA">Caja Chica</TabsTrigger>
+                        <TabsTrigger value="CUENTA_BAC">Cuenta BAC</TabsTrigger>
+                    </TabsList>
+
+                    {/* Add section */}
+                    <div className="flex items-center gap-2">
+                        <Input
+                            placeholder="Nueva sección..."
+                            className="h-8 w-44 text-sm"
+                            value={newSectionName}
+                            onChange={e => setNewSectionName(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") addSection(); }}
+                        />
+                        <Button variant="outline" size="sm" className="h-8" onClick={addSection}>
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Sección
+                        </Button>
+                    </div>
+                </div>
+
+                {(["CAJA_CHICA", "CUENTA_BAC"] as Source[]).map(src => (
+                    <TabsContent key={src} value={src} className="mt-4 space-y-4">
+                        {loading ? (
+                            <div className="flex items-center justify-center py-16 text-muted-foreground">
+                                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Cargando...
+                            </div>
+                        ) : allSections.length === 0 ? (
+                            <Card>
+                                <CardContent className="py-12 text-center text-muted-foreground">
+                                    <PieChart className="h-8 w-8 mx-auto mb-3 opacity-30" />
+                                    <p className="font-medium">Sin líneas de presupuesto</p>
+                                    <p className="text-sm mt-1">Agrega una sección y conceptos para comenzar.</p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            allSections.map(section => (
+                                <SectionBlock
+                                    key={section}
+                                    section={section}
+                                    concepts={conceptsOf(section)}
+                                    view={view}
+                                    month={month}
+                                    lines={lines}
+                                    getEdit={getEdit}
+                                    setEdit={setEdit}
+                                    totalBudgeted={totalBudgeted}
+                                    totalReal={totalReal}
+                                    sectionTotalBudgeted={sectionTotalBudgeted}
+                                    sectionTotalReal={sectionTotalReal}
+                                    addingTo={addingTo}
+                                    setAddingTo={setAddingTo}
+                                    newConcept={newConcept}
+                                    setNewConcept={setNewConcept}
+                                    addConcept={addConcept}
+                                    deleteLocalConcept={deleteLocalConcept}
+                                    deleteSavedConcept={deleteSavedConcept}
+                                    localConcepts={localSections[section] ?? []}
+                                />
+                            ))
+                        )}
+                    </TabsContent>
+                ))}
+            </Tabs>
+        </div>
+    );
+}
+
+// ─── Section Block ────────────────────────────────────────────────────────────
+
+interface SectionBlockProps {
+    section:              string;
+    concepts:             string[];
+    view:                 "annual" | "monthly";
+    month:                number;
+    lines:                PoaLine[];
+    getEdit:              (s: string, c: string, m: number) => { budgeted: string; real: string };
+    setEdit:              (s: string, c: string, m: number, f: "budgeted" | "real", v: string) => void;
+    totalBudgeted:        (s: string, c: string) => number;
+    totalReal:            (s: string, c: string) => number;
+    sectionTotalBudgeted: (s: string) => number;
+    sectionTotalReal:     (s: string) => number;
+    addingTo:             string | null;
+    setAddingTo:          (v: string | null) => void;
+    newConcept:           string;
+    setNewConcept:        (v: string) => void;
+    addConcept:           (s: string) => void;
+    deleteLocalConcept:   (s: string, c: string) => void;
+    deleteSavedConcept:   (s: string, c: string) => Promise<void>;
+    localConcepts:        string[];
+}
+
+function SectionBlock({
+    section, concepts, view, month, lines,
+    getEdit, setEdit,
+    totalBudgeted, totalReal,
+    sectionTotalBudgeted, sectionTotalReal,
+    addingTo, setAddingTo, newConcept, setNewConcept, addConcept,
+    deleteLocalConcept, deleteSavedConcept, localConcepts,
+}: SectionBlockProps) {
+    const isLocal = (concept: string) => localConcepts.includes(concept);
+    const isSaved = (concept: string) => lines.some(l => l.section === section && l.concept === concept);
+
+    return (
+        <Card>
+            <CardHeader className="py-3 px-4 bg-muted/40 border-b">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        {section}
+                    </CardTitle>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>Pto: <span className="font-semibold text-foreground">${fmt(sectionTotalBudgeted(section))}</span></span>
+                        <span>Real: <span className="font-semibold text-foreground">${fmt(sectionTotalReal(section))}</span></span>
+                        <VariationBadge pto={sectionTotalBudgeted(section)} real={sectionTotalReal(section)} />
+                    </div>
+                </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+                {view === "annual" ? (
+                    <AnnualTable
+                        section={section}
+                        concepts={concepts}
+                        getEdit={getEdit}
+                        setEdit={setEdit}
+                        totalBudgeted={totalBudgeted}
+                        totalReal={totalReal}
+                        isLocal={isLocal}
+                        isSaved={isSaved}
+                        deleteLocalConcept={deleteLocalConcept}
+                        deleteSavedConcept={deleteSavedConcept}
+                    />
+                ) : (
+                    <MonthlyTable
+                        section={section}
+                        concepts={concepts}
+                        month={month}
+                        getEdit={getEdit}
+                        setEdit={setEdit}
+                        isLocal={isLocal}
+                        isSaved={isSaved}
+                        deleteLocalConcept={deleteLocalConcept}
+                        deleteSavedConcept={deleteSavedConcept}
+                    />
+                )}
+
+                {/* Add concept row */}
+                <div className="border-t px-4 py-2">
+                    {addingTo === section ? (
+                        <div className="flex items-center gap-2">
+                            <Input
+                                autoFocus
+                                placeholder="Nombre del concepto..."
+                                className="h-7 text-sm flex-1"
+                                value={newConcept}
+                                onChange={e => setNewConcept(e.target.value)}
+                                onKeyDown={e => {
+                                    if (e.key === "Enter") addConcept(section);
+                                    if (e.key === "Escape") { setAddingTo(null); setNewConcept(""); }
+                                }}
+                            />
+                            <Button size="sm" className="h-7 text-xs" onClick={() => addConcept(section)}>
+                                Agregar
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs"
+                                onClick={() => { setAddingTo(null); setNewConcept(""); }}>
+                                Cancelar
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button
+                            variant="ghost" size="sm"
+                            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => setAddingTo(section)}>
+                            <Plus className="h-3 w-3 mr-1" /> Agregar concepto
+                        </Button>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// ─── Annual Table ─────────────────────────────────────────────────────────────
+
+interface TableProps {
+    section:            string;
+    concepts:           string[];
+    getEdit:            (s: string, c: string, m: number) => { budgeted: string; real: string };
+    setEdit:            (s: string, c: string, m: number, f: "budgeted" | "real", v: string) => void;
+    totalBudgeted:      (s: string, c: string) => number;
+    totalReal:          (s: string, c: string) => number;
+    isLocal:            (c: string) => boolean;
+    isSaved:            (c: string) => boolean;
+    deleteLocalConcept: (s: string, c: string) => void;
+    deleteSavedConcept: (s: string, c: string) => Promise<void>;
+}
+
+function AnnualTable({
+    section, concepts, getEdit, setEdit,
+    totalBudgeted, totalReal,
+    isLocal, isSaved, deleteLocalConcept, deleteSavedConcept,
+}: TableProps) {
+    if (concepts.length === 0) {
+        return (
+            <p className="text-xs text-muted-foreground px-4 py-3">
+                Sin conceptos. Usa <span className="font-medium">+ Agregar concepto</span> para comenzar.
+            </p>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Presupuesto</h2>
-                    <p className="text-muted-foreground">
-                        Planificación y control de gastos mensuales.
-                    </p>
-                </div>
-                
-                <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
-                    <Button variant="ghost" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="px-4 font-bold capitalize min-w-[140px] text-center">
-                        {format(currentDate, "MMMM yyyy", { locale: es })}
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-
-            <Tabs defaultValue="grid" className="space-y-6">
-                <TabsList className="bg-muted/50 p-1">
-                    <TabsTrigger value="grid" className="px-6">Configuración</TabsTrigger>
-                    <TabsTrigger value="comparative" className="px-6">Comparativa Real</TabsTrigger>
-                </TabsList>
-
-                {/* --- CONFIGURATION GRID --- */}
-                <TabsContent value="grid" className="space-y-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Asignación de Presupuesto</CardTitle>
-                                <CardDescription>Define el monto máximo por categoría para este mes.</CardDescription>
-                            </div>
-                            <Button onClick={handleSave} disabled={isSaving}>
-                                <Save className="mr-2 h-4 w-4" />
-                                {isSaving ? "Guardando..." : "Guardar Cambios"}
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Categoría</TableHead>
-                                        <TableHead className="w-[300px]">Monto Presupuestado (MXN)</TableHead>
-                                        <TableHead>Estado</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {categories.map((cat) => (
-                                        <TableRow key={cat.id}>
-                                            <TableCell className="font-medium">{cat.name}</TableCell>
-                                            <TableCell>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
-                                                    <Input 
-                                                        type="number" 
-                                                        className="pl-6" 
-                                                        value={editedBudgets[cat.id] || 0}
-                                                        onChange={(e) => setEditedBudgets(prev => ({ ...prev, [cat.id]: Number(e.target.value) }))}
-                                                    />
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {(editedBudgets[cat.id] || 0) > 0 ? (
-                                                    <Badge className="bg-emerald-50 content-emerald-700 border-emerald-200">Asignado</Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="opacity-50">Sin asignar</Badge>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* --- COMPARATIVE VIEW --- */}
-                <TabsContent value="comparative" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">Cumplimiento Global</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">84%</div>
-                                <div className="flex items-center text-xs text-emerald-600 mt-1">
-                                    <TrendingUp className="h-3 w-3 mr-1" />
-                                    Dentro del límite
+        <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow className="text-xs bg-muted/20">
+                        <TableHead className="w-[200px] sticky left-0 bg-background z-10">Concepto</TableHead>
+                        {MONTHS.map(m => (
+                            <TableHead key={m} className="text-center min-w-[110px] px-1">
+                                <div>{m}</div>
+                                <div className="flex gap-1 text-[10px] font-normal text-muted-foreground justify-center">
+                                    <span className="w-[48px] text-center">Pto</span>
+                                    <span className="w-[48px] text-center">Real</span>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Análisis de Variación</CardTitle>
-                            <CardDescription>Comparación entre lo planeado y lo gastado realmente.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Categoría</TableHead>
-                                        <TableHead className="text-right">Presupuestado</TableHead>
-                                        <TableHead className="text-right">Real</TableHead>
-                                        <TableHead className="text-right">Variación</TableHead>
-                                        <TableHead className="text-right">%</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {comparative.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                                No hay datos comparativos para este período.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : comparative.map((row) => {
-                                        const isExceeded = row.variation < 0;
-                                        return (
-                                            <TableRow key={row.category_id}>
-                                                <TableCell className="font-medium">{row.category_name}</TableCell>
-                                                <TableCell className="text-right font-mono">${row.budgeted.toLocaleString()}</TableCell>
-                                                <TableCell className="text-right font-mono">${row.actual.toLocaleString()}</TableCell>
-                                                <TableCell className={cn(
-                                                    "text-right font-bold font-mono",
-                                                    isExceeded ? "text-rose-600" : "text-emerald-600"
-                                                )}>
-                                                    {isExceeded ? "" : "+"}${row.variation.toLocaleString()}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <span className={cn(
-                                                            "text-xs font-bold",
-                                                            isExceeded ? "text-rose-600" : "text-emerald-600"
-                                                        )}>
-                                                            {row.variation_pct.toFixed(1)}%
-                                                        </span>
-                                                        {isExceeded ? (
-                                                            <TrendingDown className="h-4 w-4 text-rose-600" />
-                                                        ) : (
-                                                            <TrendingUp className="h-4 w-4 text-emerald-600" />
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 text-blue-800">
-                        <Info className="h-5 w-5 shrink-0" />
-                        <p className="text-sm">
-                            <strong>Tip:</strong> Los valores positivos en variación indican ahorros respecto al presupuesto, mientras que los negativos indican gastos excedidos.
-                        </p>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                            </TableHead>
+                        ))}
+                        <TableHead className="text-center min-w-[120px]">Total</TableHead>
+                        <TableHead className="w-[40px]" />
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {concepts.map(concept => (
+                        <TableRow key={concept} className="hover:bg-muted/30">
+                            <TableCell className="font-medium text-sm sticky left-0 bg-background z-10 py-1">
+                                {concept}
+                                {isLocal(concept) && !isSaved(concept) && (
+                                    <span className="ml-2 text-[10px] text-amber-500 font-normal">nuevo</span>
+                                )}
+                            </TableCell>
+                            {MONTHS.map((_, i) => {
+                                const m = i + 1;
+                                const e = getEdit(section, concept, m);
+                                return (
+                                    <TableCell key={m} className="px-1 py-1">
+                                        <div className="flex gap-1">
+                                            <AmountInput
+                                                value={e.budgeted}
+                                                onChange={v => setEdit(section, concept, m, "budgeted", v)}
+                                                placeholder="0"
+                                                className="w-[48px] text-xs h-7"
+                                            />
+                                            <AmountInput
+                                                value={e.real}
+                                                onChange={v => setEdit(section, concept, m, "real", v)}
+                                                placeholder="—"
+                                                className="w-[48px] text-xs h-7 text-muted-foreground"
+                                            />
+                                        </div>
+                                    </TableCell>
+                                );
+                            })}
+                            <TableCell className="text-center py-1">
+                                <div className="text-xs space-y-0.5">
+                                    <div className="font-semibold">${fmt(totalBudgeted(section, concept))}</div>
+                                    <div className="text-muted-foreground">${fmt(totalReal(section, concept))}</div>
+                                    <VariationBadge pto={totalBudgeted(section, concept)} real={totalReal(section, concept)} small />
+                                </div>
+                            </TableCell>
+                            <TableCell className="py-1 pr-2">
+                                <Button
+                                    variant="ghost" size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    onClick={() => isLocal(concept) && !isSaved(concept)
+                                        ? deleteLocalConcept(section, concept)
+                                        : deleteSavedConcept(section, concept)
+                                    }
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
+    );
+}
+
+// ─── Monthly Table ────────────────────────────────────────────────────────────
+
+interface MonthlyTableProps {
+    section:            string;
+    concepts:           string[];
+    month:              number;
+    getEdit:            (s: string, c: string, m: number) => { budgeted: string; real: string };
+    setEdit:            (s: string, c: string, m: number, f: "budgeted" | "real", v: string) => void;
+    isLocal:            (c: string) => boolean;
+    isSaved:            (c: string) => boolean;
+    deleteLocalConcept: (s: string, c: string) => void;
+    deleteSavedConcept: (s: string, c: string) => Promise<void>;
+}
+
+function MonthlyTable({
+    section, concepts, month,
+    getEdit, setEdit,
+    isLocal, isSaved, deleteLocalConcept, deleteSavedConcept,
+}: MonthlyTableProps) {
+    if (concepts.length === 0) {
+        return (
+            <p className="text-xs text-muted-foreground px-4 py-3">
+                Sin conceptos. Usa <span className="font-medium">+ Agregar concepto</span> para comenzar.
+            </p>
+        );
+    }
+
+    const rows = concepts.map(concept => {
+        const e       = getEdit(section, concept, month);
+        const pto     = parseFloat(e.budgeted) || 0;
+        const real    = e.real !== "" ? parseFloat(e.real) : null;
+        const diff    = real != null ? pto - real : null;
+        const pct     = pto > 0 && real != null ? ((pto - real) / pto) * 100 : null;
+        return { concept, pto, real, diff, pct, e };
+    });
+
+    const totalPto  = rows.reduce((a, r) => a + r.pto,  0);
+    const totalReal = rows.reduce((a, r) => a + (r.real ?? 0), 0);
+
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow className="text-xs bg-muted/20">
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right w-[130px]">Presupuestado</TableHead>
+                    <TableHead className="text-right w-[130px]">Real</TableHead>
+                    <TableHead className="text-right w-[110px]">Variación</TableHead>
+                    <TableHead className="text-right w-[70px]">%</TableHead>
+                    <TableHead className="w-[40px]" />
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {rows.map(({ concept, diff, pct, e }) => (
+                    <TableRow key={concept} className="hover:bg-muted/30">
+                        <TableCell className="font-medium text-sm py-1.5">
+                            {concept}
+                            {isLocal(concept) && !isSaved(concept) && (
+                                <span className="ml-2 text-[10px] text-amber-500 font-normal">nuevo</span>
+                            )}
+                        </TableCell>
+                        <TableCell className="py-1.5">
+                            <AmountInput
+                                value={e.budgeted}
+                                onChange={v => setEdit(section, concept, month, "budgeted", v)}
+                                placeholder="0"
+                                className="w-full text-sm h-8 text-right"
+                            />
+                        </TableCell>
+                        <TableCell className="py-1.5">
+                            <AmountInput
+                                value={e.real}
+                                onChange={v => setEdit(section, concept, month, "real", v)}
+                                placeholder="—"
+                                className="w-full text-sm h-8 text-right"
+                            />
+                        </TableCell>
+                        <TableCell className={cn(
+                            "text-right font-mono text-sm py-1.5",
+                            diff == null ? "text-muted-foreground" :
+                            diff < 0     ? "text-rose-600 font-semibold" : "text-emerald-600 font-semibold"
+                        )}>
+                            {diff == null ? "—" : `${diff >= 0 ? "+" : ""}$${fmt(diff)}`}
+                        </TableCell>
+                        <TableCell className="text-right py-1.5">
+                            {pct != null ? (
+                                <Badge variant="outline" className={cn(
+                                    "text-xs",
+                                    pct < 0
+                                        ? "border-rose-200 text-rose-600 bg-rose-50"
+                                        : "border-emerald-200 text-emerald-700 bg-emerald-50"
+                                )}>
+                                    {pct.toFixed(1)}%
+                                </Badge>
+                            ) : "—"}
+                        </TableCell>
+                        <TableCell className="py-1.5 pr-2">
+                            <Button
+                                variant="ghost" size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                onClick={() => isLocal(concept) && !isSaved(concept)
+                                    ? deleteLocalConcept(section, concept)
+                                    : deleteSavedConcept(section, concept)
+                                }
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+            {/* Totals row */}
+            <tfoot>
+                <tr className="border-t bg-muted/30 font-semibold text-sm">
+                    <td className="px-4 py-2">Total</td>
+                    <td className="text-right px-4 py-2 font-mono">${fmt(totalPto)}</td>
+                    <td className="text-right px-4 py-2 font-mono">${fmt(totalReal)}</td>
+                    <td className="text-right px-4 py-2 font-mono">
+                        <span className={cn(
+                            totalPto - totalReal >= 0 ? "text-emerald-600" : "text-rose-600"
+                        )}>
+                            {totalPto - totalReal >= 0 ? "+" : ""}${fmt(totalPto - totalReal)}
+                        </span>
+                    </td>
+                    <td colSpan={2} />
+                </tr>
+            </tfoot>
+        </Table>
+    );
+}
+
+// ─── Amount Input ─────────────────────────────────────────────────────────────
+
+function AmountInput({
+    value, onChange, placeholder, className,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+    className?: string;
+}) {
+    return (
+        <Input
+            type="number"
+            min={0}
+            step={1}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            className={cn("px-1.5", className)}
+        />
+    );
+}
+
+// ─── Variation Badge ──────────────────────────────────────────────────────────
+
+function VariationBadge({ pto, real, small }: { pto: number; real: number; small?: boolean }) {
+    if (real === 0) return null;
+    const diff = pto - real;
+    const pct  = pto > 0 ? (diff / pto) * 100 : 0;
+    const pos  = diff >= 0;
+    return (
+        <Badge
+            variant="outline"
+            className={cn(
+                small ? "text-[10px] px-1 py-0" : "text-xs",
+                pos
+                    ? "border-emerald-200 text-emerald-700 bg-emerald-50"
+                    : "border-rose-200 text-rose-600 bg-rose-50"
+            )}
+        >
+            {pos ? "+" : ""}{pct.toFixed(1)}%
+        </Badge>
     );
 }
