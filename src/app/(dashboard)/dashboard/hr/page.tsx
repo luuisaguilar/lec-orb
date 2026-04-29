@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Users, 
-  Target, 
-  Workflow, 
-  ClipboardCheck, 
-  Info,
-  ChevronRight
+import {
+  Users,
+  Workflow,
+  ClipboardCheck,
+  Info
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HROnboarding from "@/components/hr/hr-onboarding";
 import HRProfiles from "@/components/hr/hr-profiles";

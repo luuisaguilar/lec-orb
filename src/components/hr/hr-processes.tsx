@@ -1,21 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Workflow, 
-  Search, 
-  ChevronRight, 
-  AlertTriangle, 
-  Zap, 
-  Lightbulb, 
-  Users, 
-  ArrowRightLeft, 
-  HardDrive, 
+import { useState } from "react";
+import {
+  Workflow,
+  Search,
+  ChevronRight,
+  AlertTriangle,
+  Lightbulb,
+  Users,
+  ArrowRightLeft,
+  HardDrive,
   FileText,
   Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";

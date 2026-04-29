@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  ClipboardCheck, 
-  History, 
-  ShieldAlert, 
-  FileText,
+import {
+  ClipboardCheck,
+  History,
+  ShieldAlert,
   CheckCircle2,
   XCircle,
   AlertCircle,
   ChevronRight,
-  Plus,
   Save,
   Download,
   Calendar,
@@ -18,14 +16,15 @@ import {
   LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { AUDIT_CLAUSES, DEFAULT_AUDIT, AuditItem } from "@/lib/data/hr";
+
+let _carCounter = 0;
 
 export default function HRAudit() {
   const [auditState, setAuditState] = useState<AuditItem[]>(DEFAULT_AUDIT);
@@ -44,7 +43,7 @@ export default function HRAudit() {
       const item = auditState.find(a => a.id === id);
       if (item && !carList.find(c => c.findingId === id)) {
         const newCar = {
-          id: `CAR-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          id: `CAR-${String(++_carCounter).padStart(4, '0')}`,
           findingId: id,
           findingTitle: item.title,
           description: item.q,
@@ -240,7 +239,7 @@ export default function HRAudit() {
                       <CardContent className="p-5 space-y-4">
                         <div className="space-y-1">
                           <h4 className="text-sm font-bold text-white">{car.findingTitle}</h4>
-                          <p className="text-xs text-slate-400 italic">"{car.description}"</p>
+                          <p className="text-xs text-slate-400 italic">&quot;{car.description}&quot;</p>
                         </div>
                         
                         <div className="grid grid-cols-1 gap-4 mt-4">

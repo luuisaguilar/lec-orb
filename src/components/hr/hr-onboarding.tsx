@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { 
   Target, 
   Eye, 
@@ -30,7 +31,7 @@ export default function HROnboarding() {
         </CardHeader>
         <CardContent>
           <p className="text-slate-300 leading-relaxed">
-            "Proveer soluciones lingüísticas y educativas de excelencia, integrando tecnología de vanguardia y metodologías internacionales para empoderar a nuestros estudiantes y clientes en un entorno global competitivo."
+            &quot;Proveer soluciones lingüísticas y educativas de excelencia, integrando tecnología de vanguardia y metodologías internacionales para empoderar a nuestros estudiantes y clientes en un entorno global competitivo.&quot;
           </p>
         </CardContent>
       </Card>
@@ -44,7 +45,7 @@ export default function HROnboarding() {
         </CardHeader>
         <CardContent>
           <p className="text-slate-300 leading-relaxed">
-            "Ser la consultoría educativa líder en México, reconocida por nuestra innovación tecnológica y por ser el referente nacional en certificaciones internacionales de idiomas bajo el estándar de calidad ISO 9001/21001."
+            &quot;Ser la consultoría educativa líder en México, reconocida por nuestra innovación tecnológica y por ser el referente nacional en certificaciones internacionales de idiomas bajo el estándar de calidad ISO 9001/21001.&quot;
           </p>
         </CardContent>
       </Card>
