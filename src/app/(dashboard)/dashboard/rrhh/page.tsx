@@ -5,13 +5,15 @@ import {
   Users,
   Info,
   Workflow,
-  Sparkles
+  Sparkles,
+  ClipboardCheck,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
 import HROnboarding from "@/components/hr/hr-onboarding";
 import HRProfiles from "@/components/hr/hr-profiles";
 import HROrgChart from "@/components/hr/hr-org-chart";
+import HRAudit from "@/components/hr/hr-audit";
 
 export default function RRHHDashboard() {
   const [activeTab, setActiveTab] = useState("onboarding");
@@ -66,6 +68,13 @@ export default function RRHHDashboard() {
               />
               Organigrama
             </TabsTrigger>
+            <TabsTrigger
+              value="audit"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+            >
+              <ClipboardCheck className="w-4 h-4 mr-2" />
+              Auditoria
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -80,6 +89,10 @@ export default function RRHHDashboard() {
 
           <TabsContent value="chart">
             <HROrgChart />
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <HRAudit />
           </TabsContent>
         </div>
       </Tabs>
