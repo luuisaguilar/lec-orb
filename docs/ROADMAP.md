@@ -10,6 +10,7 @@ Ultima actualizacion: 2026-05-02
 - `npm test`: pass (`26` archivos, `164` tests)
 - `npm run lint`: pass
 - `npm run test:e2e`: pass (`10/10`)
+- Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 
 Diagnostico E2E actual:
 
@@ -46,6 +47,11 @@ Diagnostico E2E actual:
 
 Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.ts` con `APPLICATOR_ID` hardcoded. Estan construidas, pero no integradas a datos reales.
 
+### 3. SGC crash en flujo basico
+
+- RRHH ya valida lectura/alta/edicion sin alertas de seguridad.
+- SGC fix en progreso via PR #32; pendiente validacion final post-merge.
+
 ---
 
 ## Prioridad alta
@@ -59,6 +65,12 @@ Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.
 ### 2. Cron para expirar invitaciones
 
 - conectar `fn_expire_old_invitations()` a Vercel Cron diario
+
+### 3. Validar cierre tecnico SGC + Sidebar
+
+- merge PR #32 (hardening SGC + scroll vertical sidebar)
+- smoke test manual en `/dashboard/sgc` (tabs procesos/auditoria/riesgos)
+- validar navegacion completa de modulos en desktop y mobile
 
 ---
 

@@ -36,8 +36,10 @@ export function AppHeader({ variant }: AppHeaderProps) {
                         <span className="sr-only">Menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-64 p-4 pt-8">
-                    <SidebarNav variant={variant} />
+                <SheetContent side="left" className="w-64 p-0 pt-8 overflow-hidden">
+                    <div className="h-full min-h-0 overflow-y-auto px-4 pb-4">
+                        <SidebarNav variant={variant} />
+                    </div>
                 </SheetContent>
             </Sheet>
 

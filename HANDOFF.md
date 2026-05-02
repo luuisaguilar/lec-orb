@@ -23,6 +23,8 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | TOEFL | Administraciones + codigos |
 | Eventos / Aplicadores / Escuelas | Operativos en produccion real |
 | Inventario / Scan / Nomina | Operativos en produccion real |
+| RRHH (perfiles y auditoria) | Operativo en flujo basico (lectura/alta/edicion) |
+| SGC (checklist auditoria) | **INCIDENCIA ABIERTA** - crash en navegacion de dashboard |
 | Sentry | Activo (project `orb-lec`) |
 | Portal de aplicadores | Datos placeholder desde `src/lib/demo/data.ts` — no terminado |
 
@@ -126,6 +128,8 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 - [ ] Merge PR #29 de Viaticos
 - [ ] Aplicar migracion `20260503_travel_expenses.sql` en Supabase productivo
 - [ ] Smoke test funcional de Viaticos en dashboard
+- [ ] Merge PR #32 (fix SGC + scroll sidebar)
+- [ ] Smoke test de SGC en `/dashboard/sgc` (procesos/auditoria/riesgos)
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion (backend listo)
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 
@@ -137,6 +141,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Deuda tecnica
 
+- [ ] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica
 - [ ] Staging environment con org de prueba

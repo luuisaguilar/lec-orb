@@ -230,7 +230,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <nav className={cn("flex flex-col gap-1", className)}>
+        <nav className={cn("h-full min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-1", className)}>
             {navGroups.map((group, idx) => {
                 const GroupIcon = getIcon(group.icon);
 

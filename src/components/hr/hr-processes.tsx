@@ -33,36 +33,36 @@ import { createClient } from "@/lib/supabase/client";
 // Define DB Types based on the 20260429_sgc_tables migration
 interface SgcProcess {
   id: string;
-  title: string;
-  improvements: string;
-  actors: string;
-  inputs_outputs: string;
-  resources: string;
-  documents: string;
-  mermaid_code: string;
-  responsible_area: string;
-  version: string;
-  last_review_date: string;
+  title: string | null;
+  improvements: string | null;
+  actors: string | null;
+  inputs_outputs: string | null;
+  resources: string | null;
+  documents: string | null;
+  mermaid_code: string | null;
+  responsible_area: string | null;
+  version: string | null;
+  last_review_date: string | null;
 }
 
 interface KpiMetric {
   id: string;
   process_id: string;
-  metric_name: string;
-  target_value: string;
-  current_value: string;
-  frequency: string;
-  evidence_source: string;
+  metric_name: string | null;
+  target_value: string | null;
+  current_value: string | null;
+  frequency: string | null;
+  evidence_source: string | null;
 }
 
 interface RiskAssessment {
   id: string;
   process_id: string;
-  risk_name: string;
-  severity: string;
-  probability: string;
-  mitigation_plan: string;
-  status: string;
+  risk_name: string | null;
+  severity: string | null;
+  probability: string | null;
+  mitigation_plan: string | null;
+  status: string | null;
 }
 
 export default function HRProcesses() {
@@ -70,7 +70,7 @@ export default function HRProcesses() {
   const [search, setSearch] = useState("");
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
 
-  const { data, isLoading } = useSWR("sgc-processes-dashboard", async () => {
+  const { data, isLoading, error } = useSWR("sgc-processes-dashboard", async () => {
     const [procRes, kpiRes, riskRes] = await Promise.all([
       supabase.from("sgc_processes").select("*").order("id"),
       supabase.from("kpi_metrics").select("*"),
@@ -100,23 +100,27 @@ export default function HRProcesses() {
     return processes.find((p) => p.id === id) ?? null;
   }, [processes, selectedProcessId]);
 
-  const filteredProcesses = processes.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredProcesses = processes.filter((p) => {
+    const title = (p.title ?? "").toLowerCase();
+    const id = (p.id ?? "").toLowerCase();
+    return title.includes(normalizedSearch) || id.includes(normalizedSearch);
+  });
 
   const processKpis = kpis.filter(k => k.process_id === selectedProcess?.id);
   const processRisks = risks.filter(r => r.process_id === selectedProcess?.id);
 
   // Helper to render text with "Intelligent Links"
-  const renderIntelligentLinks = (text: string) => {
-    if (!text) return null;
+  const renderIntelligentLinks = (text: string | null) => {
+    if (!text?.trim()) {
+      return <span className="text-slate-500">Sin información registrada.</span>;
+    }
     
     // Simple logic: if text contains a process ID or name, make it a link
     // For now, we'll just split by spaces and check if it's a known process ID
     const words = text.split(/(\s+)/);
     return words.map((word, i) => {
-      const match = processes.find(p => p.id === word || p.title === word);
+      const match = processes.find((p) => p.id === word || p.title === word);
       if (match && match.id !== selectedProcess?.id) {
         return (
           <button
@@ -137,6 +141,16 @@ export default function HRProcesses() {
       <div className="flex flex-col items-center justify-center h-64 text-slate-400">
         <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
         <p className="text-lg font-medium text-slate-300">Sincronizando con Supabase...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-red-400">
+        <AlertTriangle className="w-8 h-8 mb-4" />
+        <p className="text-lg font-medium">No se pudieron cargar los procesos SGC.</p>
+        <p className="text-sm text-slate-400 mt-2">Verifica permisos y estado de tablas SGC en Supabase.</p>
       </div>
     );
   }
@@ -182,7 +196,9 @@ export default function HRProcesses() {
                   <Workflow className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-semibold truncate", selectedProcess?.id === p.id ? "text-white" : "text-slate-200")}>{p.title}</p>
+                  <p className={cn("text-sm font-semibold truncate", selectedProcess?.id === p.id ? "text-white" : "text-slate-200")}>
+                    {p.title ?? "Proceso sin título"}
+                  </p>
                   <p className={cn("text-[11px] font-medium uppercase tracking-wider", selectedProcess?.id === p.id ? "text-white/80" : "text-slate-500 group-hover:text-slate-400")}>{p.responsible_area || 'SGC'}</p>
                 </div>
                 <ChevronRight className={cn(
@@ -223,7 +239,9 @@ export default function HRProcesses() {
                         <History className="w-3 h-3" /> v{selectedProcess.version || '1.0'}
                       </Badge>
                     </div>
-                    <h2 className="text-3xl font-bold text-white font-outfit tracking-tight">{selectedProcess.title}</h2>
+                    <h2 className="text-3xl font-bold text-white font-outfit tracking-tight">
+                      {selectedProcess.title ?? "Proceso sin título"}
+                    </h2>
                     <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-3xl">
                       Mapa detallado de interacciones, riesgos y métricas del sistema. Datos sincronizados dinámicamente.
                     </p>
@@ -250,13 +268,13 @@ export default function HRProcesses() {
                       <div className="space-y-4">
                         {processKpis.map(kpi => (
                           <div key={kpi.id} className="bg-slate-950/80 p-4 rounded-lg border border-slate-700 shadow-sm">
-                            <p className="text-sm font-semibold text-slate-100 mb-3">{kpi.metric_name}</p>
+                            <p className="text-sm font-semibold text-slate-100 mb-3">{kpi.metric_name ?? "Métrica sin nombre"}</p>
                             <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
                               <span className="flex items-center gap-1.5 text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-md">
-                                <Target className="w-3.5 h-3.5 text-slate-400" /> Meta: <span className="text-white">{kpi.target_value}</span>
+                                <Target className="w-3.5 h-3.5 text-slate-400" /> Meta: <span className="text-white">{kpi.target_value ?? "N/D"}</span>
                               </span>
                               <span className="flex items-center gap-1.5 text-slate-300 bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Actual: <span className="text-white">{kpi.current_value}</span>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Actual: <span className="text-white">{kpi.current_value ?? "N/D"}</span>
                               </span>
                             </div>
                           </div>
@@ -286,17 +304,17 @@ export default function HRProcesses() {
                         {processRisks.map(risk => (
                           <div key={risk.id} className="bg-slate-950/80 p-4 rounded-lg border border-slate-700 shadow-sm">
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
-                              <p className="text-sm font-semibold text-slate-100 pr-2">{risk.risk_name}</p>
+                              <p className="text-sm font-semibold text-slate-100 pr-2">{risk.risk_name ?? "Riesgo sin descripción"}</p>
                               <Badge variant="outline" className={cn(
                                 "text-[10px] font-bold uppercase px-2 py-0.5 whitespace-nowrap self-start",
                                 risk.severity === 'Crítica' ? "text-red-400 border-red-500/50 bg-red-500/10" : "text-amber-400 border-amber-500/50 bg-amber-500/10"
                               )}>
-                                {risk.severity}
+                                {risk.severity ?? "Sin severidad"}
                               </Badge>
                             </div>
                             <p className="text-xs text-slate-300 leading-relaxed bg-slate-900 p-2.5 rounded border border-slate-800">
                               <span className="text-slate-500 font-semibold block mb-1">Plan de Mitigación:</span>
-                              {risk.mitigation_plan}
+                              {risk.mitigation_plan ?? "Sin plan definido"}
                             </p>
                           </div>
                         ))}
@@ -317,7 +335,9 @@ export default function HRProcesses() {
                   <div className="flex-1 w-full">
                     <p className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-2">Oportunidades de Mejora</p>
                     <div className="bg-slate-950/50 p-4 rounded-lg border border-slate-800">
-                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{selectedProcess.improvements}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                        {selectedProcess.improvements ?? "Sin oportunidades registradas."}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -359,7 +379,7 @@ export default function HRProcesses() {
                   </CardHeader>
                   <CardContent className="p-4 flex-1">
                     <p className="text-sm text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-lg border border-slate-800 whitespace-pre-line h-full">
-                      {selectedProcess.resources}
+                      {selectedProcess.resources ?? "Sin recursos registrados."}
                     </p>
                   </CardContent>
                 </Card>
@@ -372,16 +392,23 @@ export default function HRProcesses() {
                   </CardHeader>
                   <CardContent className="p-4 flex-1">
                     <div className="space-y-2">
-                      {selectedProcess.documents.split('\n').filter(d => d.trim()).map((doc, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-950/60 border border-slate-800 rounded-lg hover:border-primary/30 transition-colors group">
-                          <span className="text-sm text-slate-300 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-slate-500 group-hover:text-primary" /> {doc}
-                          </span>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-primary">
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
+                      {(selectedProcess.documents ?? "")
+                        .split('\n')
+                        .map((doc) => doc.trim())
+                        .filter(Boolean)
+                        .map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-950/60 border border-slate-800 rounded-lg hover:border-primary/30 transition-colors group">
+                            <span className="text-sm text-slate-300 flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-slate-500 group-hover:text-primary" /> {doc}
+                            </span>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-primary">
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      {!(selectedProcess.documents ?? "").trim() && (
+                        <p className="text-sm text-slate-400">Sin documentación relacionada.</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -397,7 +424,7 @@ export default function HRProcesses() {
                     <Workflow className="w-12 h-12 text-slate-600 mx-auto opacity-50" />
                     <div className="space-y-2 w-full max-w-4xl mx-auto">
                       <p className="text-slate-300 text-sm font-mono whitespace-pre text-left bg-slate-900 p-5 rounded-lg border border-slate-700 overflow-auto max-h-64 shadow-sm leading-relaxed">
-                        {selectedProcess.mermaid_code}
+                        {selectedProcess.mermaid_code ?? "Sin diagrama registrado."}
                       </p>
                       <p className="text-xs text-slate-500 italic mt-3 font-medium">
                         (Diagrama renderizado vía Mermaid.js)
