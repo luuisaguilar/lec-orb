@@ -6,12 +6,12 @@ Digital platform for multi-tenant operational and financial management across LE
 
 ## Project Snapshot
 
-Verified on **2026-04-29**:
+Verified on **2026-05-02**:
 
 - Build / typecheck: passing (`npm run build`)
 - Vitest: passing (`26` files, `164` tests)
-- ESLint: passing with warnings (`0` errors, `62` warnings)
-- Playwright E2E: currently failing (`9/9`) because the legacy demo harness still expects dashboard access before auth, while the app now redirects to `/login`
+- ESLint: passing (`0` errors)
+- Playwright E2E: passing (`10/10`)
 - Sentry: active (`orb-lec`)
 - `DEMO_MODE`: removed from production auth/API flow; `src/lib/demo/*` remains for tests and placeholder portal data
 

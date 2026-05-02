@@ -38,6 +38,20 @@ type DemoBudget = {
     };
 };
 
+type DemoPoaLine = {
+    id: string;
+    org_id: string;
+    year: number;
+    month: number;
+    source: "CAJA_CHICA" | "CUENTA_BAC";
+    section: string;
+    concept: string;
+    budgeted_amount: number;
+    real_amount: number | null;
+    notes: string | null;
+    sort_order: number;
+};
+
 type DemoInvitation = {
     id: string;
     org_id: string;
@@ -161,6 +175,22 @@ function createDemoState() {
         },
     }));
 
+    const poaLines: DemoPoaLine[] = [
+        {
+            id: "poa-001",
+            org_id: ORG.id,
+            year,
+            month,
+            source: "CAJA_CHICA",
+            section: "Operaciones",
+            concept: "Papeleria",
+            budgeted_amount: 3000,
+            real_amount: 1200,
+            notes: null,
+            sort_order: 0,
+        },
+    ];
+
     const invitations: DemoInvitation[] = [
         {
             id: "invite-001",
@@ -251,6 +281,7 @@ function createDemoState() {
         year,
         movements,
         budgets,
+        poaLines,
         invitations,
         members,
         modules,
@@ -614,6 +645,70 @@ export async function installDemoApiMocks(page: Page) {
                     year
                 ),
             });
+        }
+
+        if (matchesPath(pathname, "/api/v1/finance/poa") && method === "GET") {
+            const year = Number(url.searchParams.get("year") ?? state.year);
+            const source = (url.searchParams.get("source") ?? "CAJA_CHICA") as "CAJA_CHICA" | "CUENTA_BAC";
+            const lines = state.poaLines.filter((line) => line.year === year && line.source === source);
+
+            const grouped: Record<string, Record<string, Record<number, DemoPoaLine>>> = {};
+            for (const line of lines) {
+                if (!grouped[line.section]) grouped[line.section] = {};
+                if (!grouped[line.section][line.concept]) grouped[line.section][line.concept] = {};
+                grouped[line.section][line.concept][line.month] = line;
+            }
+
+            return json(route, { lines, grouped });
+        }
+
+        if (matchesPath(pathname, "/api/v1/finance/poa") && method === "POST") {
+            const body = parseBody(route) as Array<Omit<DemoPoaLine, "id" | "org_id" | "notes">> | null;
+            if (!Array.isArray(body)) {
+                return json(route, { error: "Validation failed" }, 400);
+            }
+
+            for (const entry of body) {
+                const existing = state.poaLines.find(
+                    (line) =>
+                        line.year === entry.year &&
+                        line.month === entry.month &&
+                        line.source === entry.source &&
+                        line.section === entry.section &&
+                        line.concept === entry.concept
+                );
+
+                if (existing) {
+                    existing.budgeted_amount = entry.budgeted_amount;
+                    existing.real_amount = entry.real_amount ?? null;
+                    existing.sort_order = entry.sort_order;
+                } else {
+                    state.poaLines.push({
+                        id: `poa-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+                        org_id: ORG.id,
+                        year: entry.year,
+                        month: entry.month,
+                        source: entry.source,
+                        section: entry.section,
+                        concept: entry.concept,
+                        budgeted_amount: entry.budgeted_amount,
+                        real_amount: entry.real_amount ?? null,
+                        notes: null,
+                        sort_order: entry.sort_order,
+                    });
+                }
+            }
+
+            return json(route, { lines: state.poaLines });
+        }
+
+        if (/\/api\/v1\/finance\/poa\/[^/]+$/.test(pathname) && method === "DELETE") {
+            const id = pathname.split("/").pop();
+            const index = state.poaLines.findIndex((line) => line.id === id);
+            if (index >= 0) {
+                state.poaLines.splice(index, 1);
+            }
+            return json(route, { success: true });
         }
 
         return route.continue();

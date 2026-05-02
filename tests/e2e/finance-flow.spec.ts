@@ -41,15 +41,13 @@ test.describe("Finance Module Operations", () => {
 
     test("should navigate to Budget and update a value", async ({ page }) => {
         await page.goto("/dashboard/finanzas/presupuesto");
-        await expect(page.getByRole("heading", { name: "Presupuesto" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: /Presupuesto/i })).toBeVisible();
 
         const firstInput = page.locator('input[type="number"]').first();
         await firstInput.fill("5000");
-        await page.getByRole("button", { name: /Guardar Cambios/i }).click();
+        await page.getByRole("button", { name: /^Guardar$/i }).click();
 
-        await expect(page.getByText("Presupuesto guardado correctamente")).toBeVisible();
-        await page.getByRole("tab", { name: /Comparativa Real/i }).click();
-        await expect(page.getByText(/Analisis de Variacion|Análisis de Variación/i)).toBeVisible();
+        await expect(page.getByText(/lineas guardadas|líneas guardadas/i)).toBeVisible();
     });
 
     test("should export data to Excel", async ({ page }) => {

@@ -8,16 +8,15 @@ Ultima actualizacion: 2026-05-02
 
 - `npm run build`: pass
 - `npm test`: pass (`26` archivos, `164` tests)
-- `npm run lint`: pass con `62` warnings
-- `npm run test:e2e`: fail (`9/9`)
+- `npm run lint`: pass
+- `npm run test:e2e`: pass (`10/10`)
 - Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 
 Diagnostico E2E actual:
 
-- `playwright.config.ts` sigue arrancando `npm run dev` con `NEXT_PUBLIC_DEMO_MODE=true`
-- `tests/e2e/support/demo-api.ts` intercepta llamadas API en el navegador
-- `src/lib/supabase/proxy.ts` ya no hace bypass de auth por `DEMO_MODE`
-- resultado: las rutas `/dashboard/*` redirigen a `/login`, asi que el harness actual quedo desalineado
+- `playwright.config.ts` y el harness E2E quedaron alineados al flujo real de autenticacion
+- `tests/e2e/support/demo-api.ts` cubre mocks requeridos para escenarios de finanzas
+- los flujos de invitations y finance ya validan correctamente en navegador
 
 ---
 
@@ -27,26 +26,22 @@ Diagnostico E2E actual:
 - Flujo completo de invitaciones con RPC atomica y expiracion por `expires_at`
 - CENNI con 5 estatus canonicos y campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
 - Caja Chica y Presupuesto operativos
-- Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll
+- Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll, SGC, RRHH, IH Billing
 - Audit log, notificaciones y DMS
 - Sentry activo en Next.js (`orb-lec`)
 - Audit logging migrado a `logAudit()` / `enrichAudit`
 - Vitest extendido a `22/22` modulos API cubiertos
+- Viaticos MVP implementado (PR #29 abierto)
 
 ---
 
 ## Advertencias activas
 
-### 1. Playwright / auth realignment
+### 1. Cierre Sprint 2
 
-Los E2E ya no reflejan un estado verde del proyecto. La app compila y los tests unitarios pasan, pero el harness de navegador todavia depende de una estrategia demo que ya no existe en el runtime.
-
-Decision tecnica pendiente:
-
-- sembrar sesion real para un usuario de prueba, o
-- crear bootstrap explicito y solo de testing para la sesion E2E
-
-No se recomienda restaurar el bypass implicito en `src/lib/supabase/proxy.ts`.
+- Hacer merge de PR #29 (Viaticos)
+- Aplicar migracion `20260503_travel_expenses.sql` en Supabase productivo
+- Smoke test funcional de flujo Viaticos en dashboard
 
 ### 2. Portal de aplicadores
 
@@ -55,62 +50,51 @@ Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.
 ### 3. SGC crash en flujo basico
 
 - RRHH ya valida lectura/alta/edicion sin alertas de seguridad.
-- SGC presenta crash en dashboard durante navegacion y requiere triage con logs de navegador + server.
+- SGC fix en progreso via PR #32; pendiente validacion final post-merge.
 
 ---
 
 ## Prioridad alta
 
-### 1. Corregir crash de SGC en dashboard
+### 1. Cerrar Sprint 2 (IH Billing + Viaticos)
 
-- reproducir con pasos exactos y capturar stacktrace (browser console + server logs)
-- validar endpoints SGC y manejo de null/undefined en UI
-- cerrar con prueba manual de lectura/alta/edicion
+- merge PR #29
+- aplicar migracion de Viaticos
+- validar alta de solicitudes, aprobacion y comprobantes en entorno real
 
-### 2. UX sidebar: habilitar scroll vertical en menu lateral
-
-- agregar `overflow-y-auto` y altura acotada para resoluciones pequenas
-- validar navegacion completa de modulos en desktop y mobile
-
-### 3. Realinear Playwright con auth real o bootstrap de test
-
-- login/sesion reproducible para E2E
-- flujo `/dashboard/users`
-- flujo `/dashboard/finanzas/caja-chica`
-- flujo `/dashboard/finanzas/presupuesto`
-
-### 4. Dashboard CENNI por estatus
-
-- cards por cada uno de los 5 estatus
-- grafica de distribucion
-- filtro rapido por estatus
-
-### 5. Cron para expirar invitaciones
+### 2. Cron para expirar invitaciones
 
 - conectar `fn_expire_old_invitations()` a Vercel Cron diario
+
+### 3. Validar cierre tecnico SGC + Sidebar
+
+- merge PR #32 (hardening SGC + scroll vertical sidebar)
+- smoke test manual en `/dashboard/sgc` (tabs procesos/auditoria/riesgos)
+- validar navegacion completa de modulos en desktop y mobile
 
 ---
 
 ## Prioridad media
 
-### 4. Sprint 2 - IH Billing + Viaticos
+### 3. Sprint 3 - Logistica de eventos + Nomina real
 
-- definir si IH Billing entra por import Excel o captura manual
-- definir si Viaticos vive como modulo propio o como extension de Nomina
+- rol por aplicador por evento (SE/ADMIN/INVIGILATOR/SUPER)
+- nomina dinamica por rol y tabla de duracion
+- P&L por sesion (IH - nomina - viaticos)
 
-### 5. KPI cards y graficas en Caja Chica
+### 4. KPI cards y graficas en Caja Chica
 
 - resumen ingresos vs egresos por mes
 - tendencia de balance
 - preview inline de comprobantes
 
-### 6. Staging environment
+### 5. Staging environment
 
 - proyecto Supabase separado
 - org de prueba con seed data
 - preview deployment con variables de staging
 
-### 7. Regenerar `database.types.ts` despues de cambios de schema
+### 6. Regenerar `database.types.ts` despues de cambios de schema
 
 Si se regeneran tipos desde Supabase CLI en PowerShell:
 
@@ -122,11 +106,11 @@ npx supabase gen types typescript --project-id <project-id> | Out-File -Encoding
 
 ## Prioridad baja
 
-### 8. ADRs adicionales
+### 7. ADRs adicionales
 
 Continuar `docs/adr/` para decisiones nuevas.
 
-### 9. Limpieza de marca y placeholders
+### 8. Limpieza de marca y placeholders
 
 - cambiar los restos de "Language Evaluation Center" por "Languages Education Consulting"
 - migrar el portal de aplicadores fuera de `src/lib/demo/data.ts`

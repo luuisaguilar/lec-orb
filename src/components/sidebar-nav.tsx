@@ -66,6 +66,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "petty-cash": "/dashboard/finanzas/caja-chica",
     "budget": "/dashboard/finanzas/presupuesto",
     "ih-billing": "/dashboard/finanzas/ih-billing",
+    "travel-expenses": "/dashboard/finanzas/viaticos",
     "users": "/dashboard/users",
     "audit-log": "/dashboard/actividad",
     "documentos": "/dashboard/documentos",
@@ -84,6 +85,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const MODULE_PERMISSION_ALIAS: Record<string, string> = {
+    "travel-expenses": "finanzas",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Portal nav (static — no module registry needed for applicator portal)
@@ -147,7 +152,8 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             if (isAdmin) return true;
             if (slug === "dashboard" || slug === "audit-log") return true;
             if (slug === "catalog") return true; // always readable
-            const perm = perms.find((p) => p.module === slug);
+            const permissionSlug = MODULE_PERMISSION_ALIAS[slug] ?? slug;
+            const perm = perms.find((p) => p.module === permissionSlug);
             return perm?.can_view ?? false;
         };
 

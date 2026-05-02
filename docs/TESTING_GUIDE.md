@@ -4,12 +4,12 @@ Stack: **Vitest** (unit/integration) + **Playwright** (E2E).
 
 ## Current status
 
-Verified on **2026-04-29**:
+Verified on **2026-05-02**:
 
 - `npm run build`: pass
 - `npm test`: pass (`26` files, `164` tests)
-- `npm run lint`: pass with `62` warnings
-- `npm run test:e2e`: fail (`9/9`)
+- `npm run lint`: pass
+- `npm run test:e2e`: pass (`10/10`)
 
 ## Commands
 
@@ -53,31 +53,17 @@ See `docs/TESTING_PATTERNS.md` for:
 ### What the runner does today
 
 - `playwright.config.ts` starts `npm run dev` automatically through `webServer`
-- that dev server is launched with `NEXT_PUBLIC_DEMO_MODE=true`
-- browser tests also intercept `/api/v1/*` requests via `tests/e2e/support/demo-api.ts`
+- auth bootstrap is handled in `tests/e2e/auth.setup.ts`
+- browser tests mock selected `/api/v1/*` endpoints via `tests/e2e/support/demo-api.ts` when needed
 
-### Why E2E is currently red
+### Current E2E status
 
-As of **2026-04-29**, the app redirects `/dashboard/*` routes to `/login` because auth is real again and `src/lib/supabase/proxy.ts` no longer bypasses auth when `DEMO_MODE` is set.
+- invitations flow: pass
+- finance flow (petty cash + budget): pass
+- full suite status: `10/10` pass
 
-The current Playwright harness still assumes the old behavior:
-
-- open dashboard directly
-- mock API in the browser
-- skip real auth/session bootstrap
-
-Result: `9/9` tests fail before reaching the expected dashboard UI.
-
-### Recommended next fix
-
-Choose one of these strategies:
-
-1. seed a real authenticated session for an E2E test user
-2. add an explicit test-only auth bootstrap
-
-Do **not** restore the old implicit demo bypass in production middleware.
-
-See `docs/DEMO_MODE.md` for the current status of demo fixtures.
+Current risk:
+- tests still depend on controlled fixtures/mocks for deterministic data, so any major schema contract change should update `tests/e2e/support/demo-api.ts`.
 
 ---
 
@@ -89,7 +75,7 @@ Minimum gate for any backend or schema change:
 npm run build && npm run test
 ```
 
-If the change touches auth, navigation, forms, or browser flows, also re-run:
+If the change touches auth, navigation, forms, browser flows, or API payload contracts, also re-run:
 
 ```bash
 npm run test:e2e

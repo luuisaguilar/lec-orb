@@ -1,6 +1,6 @@
 # DEMO_MODE - current status
 
-Verified on **2026-04-29**.
+Verified on **2026-05-02**.
 
 `DEMO_MODE` still exists in the repo, but its role changed.
 
@@ -12,7 +12,7 @@ Verified on **2026-04-29**.
 - `src/lib/demo/data.ts` still contains in-memory fixtures
 - `NEXT_PUBLIC_DEMO_MODE=true` no longer unlocks dashboard routes by itself
 - production API routes no longer branch on `DEMO_MODE`
-- the current Playwright harness still assumes the old behavior, so E2E is red
+- Playwright uses explicit auth bootstrap; no implicit dashboard bypass via `DEMO_MODE`
 
 ---
 
@@ -47,7 +47,7 @@ Some tests still mock `@/lib/demo/config` because modules import demo exports in
 
 ### Production API handlers
 
-As verified on `2026-04-29`, there are no active `/api/v1/*` route branches keyed off `DEMO_MODE`.
+As verified on `2026-05-02`, there are no active `/api/v1/*` route branches keyed off `DEMO_MODE`.
 
 ---
 
@@ -86,19 +86,18 @@ Important: include all exports because `src/lib/demo/data.ts` imports them at mo
 
 Current behavior:
 
-- `playwright.config.ts` starts the dev server with `NEXT_PUBLIC_DEMO_MODE=true`
-- browser tests mock `/api/v1/*`
-- dashboard routes still require auth
+- `playwright.config.ts` starts the dev server for E2E
+- `tests/e2e/auth.setup.ts` seeds authenticated browser state
+- browser tests mock selected `/api/v1/*` calls for deterministic fixtures
 
 Current result:
 
-- the browser lands on `/login`
-- expected dashboard headings never render
-- `9/9` E2E tests fail
+- suite passes `10/10`
+- auth and dashboard navigation are aligned with runtime behavior
 
 Recommended next step:
 
-- seed a real session for a test user, or
-- add an explicit test-only session bootstrap
+- keep fixture contracts synchronized with backend payload changes
+- extend E2E coverage to new modules (for example, Viaticos)
 
 Do not reintroduce the old implicit demo bypass into production middleware.
