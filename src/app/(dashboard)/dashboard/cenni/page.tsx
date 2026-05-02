@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +98,13 @@ interface CenniCase {
     certificate_sent_to: string | null;
 }
 
+interface DashboardStatsResponse {
+    cenni?: {
+        byStatus?: Record<string, number>;
+        total?: number;
+    };
+}
+
 // ── DocDisplay — read-only indicator ────────────────────────────────────────
 const DocDisplay = ({ checked }: { checked: boolean }) => (
     <span className={`w-6 h-6 rounded flex items-center justify-center mx-auto ${checked
@@ -139,8 +147,41 @@ export default function CENNIPage() {
     }, [debouncedSearch]);
 
     const { data, isLoading, mutate } = useSWR(swrUrl, fetcher);
-    const allCases: CenniCase[] = data?.cases || [];
+    const { data: dashboardStats } = useSWR<DashboardStatsResponse>("/api/v1/dashboard/stats", fetcher);
+    const allCases = useMemo<CenniCase[]>(() => data?.cases || [], [data?.cases]);
     const userRole = data?.role || "operador";
+
+    const fallbackStatusCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const status of STATUSES) counts[status] = 0;
+        for (const c of allCases) {
+            counts[c.estatus] = (counts[c.estatus] || 0) + 1;
+        }
+        return counts;
+    }, [allCases]);
+
+    const useGlobalStats = debouncedSearch.length === 0;
+
+    const statusCounts = useMemo(() => {
+        const fromStats = dashboardStats?.cenni?.byStatus || {};
+        const result: Record<string, number> = {};
+        for (const status of STATUSES) {
+            result[status] = useGlobalStats
+                ? (fromStats[status] ?? fallbackStatusCounts[status] ?? 0)
+                : (fallbackStatusCounts[status] ?? 0);
+        }
+        return result;
+    }, [dashboardStats?.cenni?.byStatus, fallbackStatusCounts, useGlobalStats]);
+
+    const totalCasesForStats = useMemo(() => {
+        if (!useGlobalStats) return allCases.length;
+        return dashboardStats?.cenni?.total ?? allCases.length;
+    }, [useGlobalStats, dashboardStats?.cenni?.total, allCases.length]);
+
+    const maxStatusCount = useMemo(
+        () => Math.max(1, ...STATUSES.map((status) => statusCounts[status] || 0)),
+        [statusCounts]
+    );
 
     const filteredCases = allCases.filter(
         (c) => statusFilter === "all" || c.estatus === statusFilter,
@@ -229,6 +270,57 @@ export default function CENNIPage() {
                 </div>
             </div>
 
+            <div className="grid gap-4 lg:grid-cols-3">
+                <Card className="lg:col-span-2">
+                    <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Resumen por estatus</h3>
+                            <Badge variant="outline" className="font-mono">Total: {totalCasesForStats}</Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                            {STATUSES.map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}
+                                    className={cn(
+                                        "rounded-xl border p-3 text-left transition-all hover:shadow-sm",
+                                        statusFilter === status
+                                            ? "border-primary bg-primary/10"
+                                            : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40"
+                                    )}
+                                >
+                                    <p className={cn("text-[10px] uppercase tracking-widest font-semibold mb-1", statusColors[status])}>{status}</p>
+                                    <p className="text-2xl font-bold">{statusCounts[status] || 0}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Distribucion</h3>
+                        <div className="space-y-2">
+                            {STATUSES.map((status) => {
+                                const value = statusCounts[status] || 0;
+                                const width = `${Math.round((value / maxStatusCount) * 100)}%`;
+                                return (
+                                    <div key={status} className="space-y-1">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-slate-500">{status}</span>
+                                            <span className="font-semibold">{value}</span>
+                                        </div>
+                                        <div className="h-2 rounded bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                                            <div className={cn("h-full rounded", statusColors[status])} style={{ width }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* Filters */}
             <div className="flex gap-3 items-center flex-wrap">
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -237,11 +329,11 @@ export default function CENNIPage() {
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                     <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>
-                        Todos ({allCases.length})
+                        Todos ({totalCasesForStats})
                     </Button>
                     {STATUSES.map((s) => (
                         <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)}>
-                            {s} ({allCases.filter((c) => c.estatus === s).length})
+                            {s} ({statusCounts[s] || 0})
                         </Button>
                     ))}
                 </div>
