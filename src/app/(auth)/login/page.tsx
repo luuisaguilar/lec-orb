@@ -144,7 +144,7 @@ function LoginForm() {
 
                             <Button
                                 type="submit"
-                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-lg shadow-[0_10px_20px_rgba(59,130,246,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] mt-4 group"
+                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] mt-4 group border-none"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (

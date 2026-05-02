@@ -6,11 +6,13 @@ Ultima actualizacion: 2026-05-02
 
 ## Estado verificado el 2026-05-02
 
-- `npm run build`: pass
+- `npm run build`: pass (Exit code: 0)
 - `npm test`: pass (`26` archivos, `164` tests)
 - `npm run lint`: pass
 - `npm run test:e2e`: pass (`10/10`)
 - Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
+- **UI/UX Audit**: Pass (Refinamiento "Premium SaaS" completado)
+- **SGC Navigation**: Resuelto (Fix aplicado y validado)
 
 Diagnostico E2E actual:
 
@@ -32,6 +34,9 @@ Diagnostico E2E actual:
 - Audit logging migrado a `logAudit()` / `enrichAudit`
 - Vitest extendido a `22/22` modulos API cubiertos
 - Viaticos MVP implementado (PR #29 abierto)
+- Refinamiento Visual "Premium SaaS" completado en toda la plataforma
+- Calculadora de Tiempos 2.0 con temas dinámicos por examen
+- Fix de navegación SGC y scroll de sidebar unificado
 
 ---
 
@@ -46,11 +51,6 @@ Diagnostico E2E actual:
 ### 2. Portal de aplicadores
 
 Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.ts` con `APPLICATOR_ID` hardcoded. Estan construidas, pero no integradas a datos reales.
-
-### 3. SGC crash en flujo basico
-
-- RRHH ya valida lectura/alta/edicion sin alertas de seguridad.
-- SGC fix en progreso via PR #32; pendiente validacion final post-merge.
 
 ---
 

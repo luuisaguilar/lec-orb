@@ -60,7 +60,7 @@ export default function ToeflAdminisPage() {
         <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
             <div className="flex items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-[#ff3000]">Administraciones TOEFL</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary font-outfit">Administraciones TOEFL</h2>
                     <p className="text-muted-foreground font-medium">
                         Catálogo de administraciones (sesiones) master para vincular códigos TOEFL.
                     </p>
@@ -70,10 +70,10 @@ export default function ToeflAdminisPage() {
                 </div>
             </div>
 
-            <Card className="shadow-sm border-t-4 border-t-[#ff3000]">
+            <Card className="shadow-lg border-t-4 border-t-primary/60 bg-slate-900/40 backdrop-blur-sm">
                 <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center">
-                        <Calendar className="mr-2 h-5 w-5 text-[#ff3000]" /> Lista de Administraciones
+                    <CardTitle className="text-lg font-bold flex items-center text-white tracking-tight">
+                        <Calendar className="mr-2 h-5 w-5 text-primary" /> Lista de Administraciones
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -100,8 +100,8 @@ export default function ToeflAdminisPage() {
                                 <TableBody>
                                     {administrations.map((admin) => {
                                         return (
-                                            <TableRow key={admin.id} className="hover:bg-muted/30">
-                                                <TableCell className="font-semibold text-[#1e293b]">
+                                            <TableRow key={admin.id} className="hover:bg-slate-800/40 border-slate-800/60 transition-colors">
+                                                <TableCell className="font-bold text-slate-200">
                                                     {admin.name}
                                                 </TableCell>
                                                 <TableCell>

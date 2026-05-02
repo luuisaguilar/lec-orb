@@ -117,7 +117,6 @@ export default function HRProcesses() {
     }
     
     // Simple logic: if text contains a process ID or name, make it a link
-    // For now, we'll just split by spaces and check if it's a known process ID
     const words = text.split(/(\s+)/);
     return words.map((word, i) => {
       const match = processes.find((p) => p.id === word || p.title === word);
@@ -158,7 +157,7 @@ export default function HRProcesses() {
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Sidebar List */}
-      <Card className="w-full lg:w-80 bg-slate-900/80 border-slate-700 backdrop-blur-md flex flex-col overflow-hidden shadow-xl">
+      <Card className="w-full lg:w-80 bg-slate-900/80 border-slate-700/50 backdrop-blur-md flex flex-col overflow-hidden shadow-xl">
         <CardHeader className="p-4 pb-2 border-b border-slate-800/50">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-outfit text-white">Mapa de Procesos</CardTitle>
@@ -183,27 +182,40 @@ export default function HRProcesses() {
                 key={p.id}
                 onClick={() => setSelectedProcessId(p.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all group border border-transparent",
+                  "w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all group border relative overflow-hidden",
                   selectedProcess?.id === p.id 
-                    ? "bg-primary text-primary-foreground shadow-md border-primary/20" 
-                    : "hover:bg-slate-800/80 hover:border-slate-700 text-slate-300"
+                    ? "bg-primary/10 border-primary/30 text-primary shadow-sm" 
+                    : "bg-transparent border-transparent hover:bg-slate-800/40 hover:border-slate-700/50 text-slate-400 hover:text-slate-200"
                 )}
               >
+                {selectedProcess?.id === p.id && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
+                )}
                 <div className={cn(
-                  "p-2 rounded-md transition-colors",
-                  selectedProcess?.id === p.id ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:bg-slate-700"
+                  "p-2.5 rounded-lg transition-all duration-300",
+                  selectedProcess?.id === p.id 
+                    ? "bg-primary text-white shadow-md scale-110" 
+                    : "bg-slate-800/80 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-300"
                 )}>
                   <Workflow className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-semibold truncate", selectedProcess?.id === p.id ? "text-white" : "text-slate-200")}>
+                  <p className={cn(
+                    "text-sm font-bold truncate transition-colors", 
+                    selectedProcess?.id === p.id ? "text-primary" : "text-slate-200"
+                  )}>
                     {p.title ?? "Proceso sin título"}
                   </p>
-                  <p className={cn("text-[11px] font-medium uppercase tracking-wider", selectedProcess?.id === p.id ? "text-white/80" : "text-slate-500 group-hover:text-slate-400")}>{p.responsible_area || 'SGC'}</p>
+                  <p className={cn(
+                    "text-[10px] font-bold uppercase tracking-widest transition-colors mt-0.5", 
+                    selectedProcess?.id === p.id ? "text-primary/70" : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    {p.responsible_area || 'SGC'}
+                  </p>
                 </div>
                 <ChevronRight className={cn(
-                  "w-4 h-4 shrink-0 transition-transform",
-                  selectedProcess?.id === p.id ? "translate-x-1 text-white" : "opacity-0"
+                  "w-4 h-4 shrink-0 transition-all duration-300",
+                  selectedProcess?.id === p.id ? "translate-x-1 text-primary opacity-100" : "opacity-0 -translate-x-2"
                 )} />
               </button>
             ))}

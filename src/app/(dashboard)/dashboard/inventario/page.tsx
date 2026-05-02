@@ -28,6 +28,7 @@ import {
     Trash2,
     RefreshCcw,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AddPackDialog } from "@/components/inventory/add-pack-dialog";
 import { ScanDialog } from "@/components/inventory/scan-dialog";
 import { ExcelImportDialog } from "@/components/inventory/excel-import-dialog";
@@ -148,7 +149,7 @@ export default function InventoryPage() {
                 <div className="flex flex-wrap gap-2">
                     <Button
                         onClick={() => setShowScan(true)}
-                        className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700"
+                        className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                     >
                         <ScanBarcode className="mr-2 h-4 w-4" />
                         {t("inventory.scanBarcode")}
@@ -173,31 +174,37 @@ export default function InventoryPage() {
 
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
+                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-medium">{t("inventory.totalPacks")}</p>
-                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.totalPacks")}</p>
+                        <div className="p-2 bg-slate-800 rounded-lg text-slate-300">
+                            <Package className="h-4 w-4" />
+                        </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">{total}</div>
+                        <div className="text-3xl font-black text-white">{total}</div>
                     </div>
                 </Card>
-                <Card>
+                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-emerald-500/50">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-medium">{t("inventory.onSiteCount")}</p>
-                        <MapPin className="h-4 w-4 text-green-500" />
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.onSiteCount")}</p>
+                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
+                            <MapPin className="h-4 w-4" />
+                        </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold text-green-600">{onSiteCount}</div>
+                        <div className="text-3xl font-black text-emerald-500">{onSiteCount}</div>
                     </div>
                 </Card>
-                <Card>
+                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-amber-500/50">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-medium">{t("inventory.loanedCount")}</p>
-                        <ArrowRightLeft className="h-4 w-4 text-amber-500" />
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.loanedCount")}</p>
+                        <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+                            <ArrowRightLeft className="h-4 w-4" />
+                        </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold text-amber-600">{loanedCount}</div>
+                        <div className="text-3xl font-black text-amber-500">{loanedCount}</div>
                     </div>
                 </Card>
             </div>
@@ -213,28 +220,40 @@ export default function InventoryPage() {
                         className="pl-9"
                     />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 p-1 bg-slate-900/50 border border-slate-800 rounded-xl">
                     <Button
-                        variant={statusFilter === "" ? "default" : "outline"}
+                        variant="ghost"
                         size="sm"
                         onClick={() => setStatusFilter("")}
+                        className={cn(
+                            "rounded-lg px-4 transition-all",
+                            statusFilter === "" ? "bg-primary/10 text-primary border-primary/20 border" : "text-slate-400 hover:text-slate-200"
+                        )}
                     >
                         {t("inventory.allStatuses")}
                     </Button>
                     <Button
-                        variant={statusFilter === "EN_SITIO" ? "default" : "outline"}
+                        variant="ghost"
                         size="sm"
                         onClick={() => setStatusFilter("EN_SITIO")}
+                        className={cn(
+                            "rounded-lg px-4 transition-all",
+                            statusFilter === "EN_SITIO" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 border" : "text-slate-400 hover:text-slate-200"
+                        )}
                     >
-                        <MapPin className="mr-1 h-3 w-3" />
+                        <MapPin className="mr-1.5 h-3.5 w-3.5" />
                         En Sitio
                     </Button>
                     <Button
-                        variant={statusFilter === "PRESTADO" ? "default" : "outline"}
+                        variant="ghost"
                         size="sm"
                         onClick={() => setStatusFilter("PRESTADO")}
+                        className={cn(
+                            "rounded-lg px-4 transition-all",
+                            statusFilter === "PRESTADO" ? "bg-amber-500/10 text-amber-500 border-amber-500/20 border" : "text-slate-400 hover:text-slate-200"
+                        )}
                     >
-                        <ArrowRightLeft className="mr-1 h-3 w-3" />
+                        <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
                         Prestado
                     </Button>
                 </div>

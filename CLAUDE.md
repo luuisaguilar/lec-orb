@@ -6,6 +6,7 @@ SaaS multi-tenant para gestión académica y administrativa de centros de evalua
 (Cambridge, TOEFL, CENNI) en México. Empresa: **Languages Education Consulting (LEC)**.
 Cada cliente = una `org_id`. Módulos operativos + finanzas (Caja Chica y Presupuesto POA).
 
+**Estética Visual:** Premium SaaS (Dark mode, glassmorphism, temas dinámicos por examen).
 **Ingreso principal:** Exámenes Cambridge institucionales — LEC aplica en escuelas, IH (International House) paga a LEC por alumno/examen. Gap crítico: $245K en CxC sin módulo en plataforma → Sprint 2.
 
 **Repo canónico:** `lec-orb` (los proyectos `lec-orb-develop` y `lec-orb-finance` son
@@ -188,6 +189,14 @@ rompe el sample rate.
 | `src/instrumentation-client.ts` | Browser — equivalente moderno de `sentry.client.config.ts` |
 | `sentry.server.config.ts` / `sentry.edge.config.ts` | Sólo `Sentry.init` |
 | `next.config.ts` | Envuelto con `withSentryConfig` (source maps, Vercel Cron Monitors) |
+
+### Estética Premium SaaS — Reglas de Oro
+
+1. **Glassmorphism**: Usar `bg-slate-900/60` o similar con `backdrop-blur-md` y bordes `border-slate-700/50`.
+2. **Jerarquía Visual**: Los valores principales (KPIs) deben ser el foco, con iconos sutiles (generalmente alineados abajo o arriba del título).
+3. **Temas Dinámicos**: En módulos de exámenes (Cambridge, TOEFL), usar el objeto `EXAM_THEMES` para aplicar colores de acento, sombras (*glow*) y anillos de enfoque específicos por nivel (ej. Starters=Purple, FCE=Blue).
+4. **Interactividad**: Todo elemento interactivo debe tener transiciones suaves (`duration-300`) y estados hover/focus refinados.
+5. **Legibilidad**: Mantener contrastes altos (texto blanco o slate-200 sobre fondos oscuros). Evitar grises lavados en CTAs principales.
 
 Sample rate: 10% en prod, 100% en dev. Project: `orb-lec` (org `luis-aguilar-aguila`).
 
@@ -518,7 +527,12 @@ viaticos (
 
 ## Próximos Pasos Documentados
 
-### Sprint 2 — Dinero que falta rastrear ← SIGUIENTE
+### Sprint 2 — Completado y Cierres Técnicos
+
+**Hitos Recientes:**
+- ✅ **Auditoría Visual Premium**: Refinamiento estético completado en toda la plataforma (Mayo 2026).
+- ✅ **Calculadora 2.0**: Layout simétrico y temas dinámicos por examen.
+- ✅ **Fix SGC**: Resuelto crash de navegación y scroll de sidebar.
 
 **Prioridad Alta:**
 1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).

@@ -29,8 +29,10 @@ Generar el SQL → Luis lo aplica en Supabase Dashboard o CLI.
 
 1. Revisar `src/components/` — puede existir algo reutilizable
 2. Usar primitivos de Radix UI + Tailwind CSS 4
-3. Formularios: React Hook Form + Zod
-4. Notificaciones: `sonner`
+3. **Estética Premium**: Seguir el patrón de "Premium SaaS" (glassmorphism, bordes sutiles, contrastes altos).
+4. **Temas Dinámicos**: Si el componente depende de un nivel de examen, usar el patrón `EXAM_THEMES` (visto en `calculadora-tiempos`) para aplicar colores y glows específicos.
+5. Formularios: React Hook Form + Zod
+6. Notificaciones: `sonner`
 
 ---
 

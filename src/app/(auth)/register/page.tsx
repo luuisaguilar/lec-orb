@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
     Card,
     CardContent,
@@ -90,78 +91,78 @@ function RegisterForm() {
                 </div>
 
                 {/* Register Card */}
-                <Card className="border shadow-lg backdrop-blur">
-                    <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl">{t("auth.registerTitle" as any) || "Crea tu cuenta"}</CardTitle>
-                        <CardDescription>{t("auth.registerSubtitle" as any) || "Ingresa tus datos para registrarte"}</CardDescription>
+                <Card className="border-none shadow-card bg-card/80 backdrop-blur-xl rounded-[2rem] overflow-hidden">
+                    <CardHeader className="space-y-1 text-center pt-8">
+                        <CardTitle className="text-3xl font-outfit font-black tracking-tight">{t("auth.registerTitle" as any) || "Crea tu cuenta"}</CardTitle>
+                        <CardDescription className="text-muted-foreground font-medium">{t("auth.registerSubtitle" as any) || "Ingresa tus datos para registrarte"}</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 px-8 pb-10">
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="fullName">{t("auth.fullName" as any) || "Nombre Completo"}</Label>
+                                <Label htmlFor="fullName" className="text-[10px] uppercase tracking-widest font-bold opacity-70 ml-1">{t("auth.fullName" as any) || "Nombre Completo"}</Label>
                                 <Input
                                     id="fullName"
                                     type="text"
                                     placeholder="Juan Pérez"
                                     {...register("fullName")}
-                                    className={errors.fullName ? "border-destructive" : ""}
+                                    className={cn("h-12 rounded-xl bg-muted/20 border-transparent focus:bg-background transition-all", errors.fullName ? "border-destructive" : "")}
                                 />
                                 {errors.fullName && (
-                                    <p className="text-xs text-destructive">
+                                    <p className="text-xs text-destructive font-semibold ml-1">
                                         {errors.fullName.message}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="email">{t("auth.email")}</Label>
+                                <Label htmlFor="email" className="text-[10px] uppercase tracking-widest font-bold opacity-70 ml-1">{t("auth.email")}</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     placeholder="tu@email.com"
                                     autoComplete="email"
                                     {...register("email")}
-                                    className={errors.email ? "border-destructive" : ""}
+                                    className={cn("h-12 rounded-xl bg-muted/20 border-transparent focus:bg-background transition-all", errors.email ? "border-destructive" : "")}
                                 />
                                 {errors.email && (
-                                    <p className="text-xs text-destructive">
+                                    <p className="text-xs text-destructive font-semibold ml-1">
                                         {errors.email.message}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password">{t("auth.password")}</Label>
+                                <Label htmlFor="password" id="password-label" className="text-[10px] uppercase tracking-widest font-bold opacity-70 ml-1">{t("auth.password")}</Label>
                                 <Input
                                     id="password"
                                     type="password"
                                     placeholder="••••••••"
                                     autoComplete="new-password"
                                     {...register("password")}
-                                    className={errors.password ? "border-destructive" : ""}
+                                    className={cn("h-12 rounded-xl bg-muted/20 border-transparent focus:bg-background transition-all", errors.password ? "border-destructive" : "")}
                                 />
                                 {errors.password && (
-                                    <p className="text-xs text-destructive">
+                                    <p className="text-xs text-destructive font-semibold ml-1">
                                         {errors.password.message}
                                     </p>
                                 )}
                             </div>
 
                             {error && (
-                                <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
-                                    <p className="text-sm text-destructive">{error}</p>
+                                <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4">
+                                    <p className="text-sm text-destructive font-bold text-center">{error}</p>
                                 </div>
                             )}
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] mt-4"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                                 ) : (
-                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    <UserPlus className="mr-2 h-6 w-6" />
                                 )}
                                 {t("auth.registerButton" as any) || "Registrarse"}
                             </Button>
