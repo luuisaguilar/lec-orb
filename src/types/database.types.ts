@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -360,6 +360,7 @@ export type Database = {
       documents: {
         Row: {
           created_at: string | null
+          document_type: string | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -370,9 +371,11 @@ export type Database = {
           record_id: string | null
           tags: string[] | null
           uploaded_by: string | null
+          version: string | null
         }
         Insert: {
           created_at?: string | null
+          document_type?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -383,9 +386,11 @@ export type Database = {
           record_id?: string | null
           tags?: string[] | null
           uploaded_by?: string | null
+          version?: string | null
         }
         Update: {
           created_at?: string | null
+          document_type?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
@@ -396,6 +401,7 @@ export type Database = {
           record_id?: string | null
           tags?: string[] | null
           uploaded_by?: string | null
+          version?: string | null
         }
         Relationships: [
           {
@@ -715,6 +721,338 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      ih_invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string
+          notes: string | null
+          org_id: string
+          period_label: string
+          region: string
+          status: string
+          total_amount: number
+          total_students: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number: string
+          notes?: string | null
+          org_id: string
+          period_label: string
+          region: string
+          status?: string
+          total_amount?: number
+          total_students?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string
+          notes?: string | null
+          org_id?: string
+          period_label?: string
+          region?: string
+          status?: string
+          total_amount?: number
+          total_students?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ih_invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ih_payment_sessions: {
+        Row: {
+          amount_applied: number
+          created_at: string
+          id: string
+          org_id: string
+          payment_id: string
+          session_id: string
+          students_paid: number
+        }
+        Insert: {
+          amount_applied: number
+          created_at?: string
+          id?: string
+          org_id: string
+          payment_id: string
+          session_id: string
+          students_paid?: number
+        }
+        Update: {
+          amount_applied?: number
+          created_at?: string
+          id?: string
+          org_id?: string
+          payment_id?: string
+          session_id?: string
+          students_paid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ih_payment_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ih_payment_sessions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "ih_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ih_payment_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ih_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ih_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          payment_date: string
+          proof_path: string | null
+          reference: string | null
+          region: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          payment_date: string
+          proof_path?: string | null
+          reference?: string | null
+          region: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          payment_date?: string
+          proof_path?: string | null
+          reference?: string | null
+          region?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ih_payments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ih_sessions: {
+        Row: {
+          amount_paid_ih: number
+          balance: number | null
+          created_at: string
+          created_by: string | null
+          exam_type: string
+          id: string
+          ih_invoice_id: string | null
+          notes: string | null
+          org_id: string
+          region: string
+          school_id: string | null
+          school_name: string
+          session_date: string
+          status: string
+          students_applied: number
+          students_paid_ih: number
+          subtotal_lec: number | null
+          tariff: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid_ih?: number
+          balance?: number | null
+          created_at?: string
+          created_by?: string | null
+          exam_type: string
+          id?: string
+          ih_invoice_id?: string | null
+          notes?: string | null
+          org_id: string
+          region?: string
+          school_id?: string | null
+          school_name: string
+          session_date: string
+          status?: string
+          students_applied?: number
+          students_paid_ih?: number
+          subtotal_lec?: number | null
+          tariff: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid_ih?: number
+          balance?: number | null
+          created_at?: string
+          created_by?: string | null
+          exam_type?: string
+          id?: string
+          ih_invoice_id?: string | null
+          notes?: string | null
+          org_id?: string
+          region?: string
+          school_id?: string | null
+          school_name?: string
+          session_date?: string
+          status?: string
+          students_applied?: number
+          students_paid_ih?: number
+          subtotal_lec?: number | null
+          tariff?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ih_sessions_ih_invoice_id_fkey"
+            columns: ["ih_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "ih_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ih_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ih_sessions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ih_tariffs: {
+        Row: {
+          exam_type: string
+          id: string
+          org_id: string
+          tariff: number
+          year: number
+        }
+        Insert: {
+          exam_type: string
+          id?: string
+          org_id: string
+          tariff: number
+          year: number
+        }
+        Update: {
+          exam_type?: string
+          id?: string
+          org_id?: string
+          tariff?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ih_tariffs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_metrics: {
+        Row: {
+          created_at: string | null
+          current_value: string | null
+          evidence_source: string | null
+          frequency: string | null
+          id: string
+          metric_name: string
+          org_id: string | null
+          process_id: string | null
+          recorded_at: string | null
+          target_value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_value?: string | null
+          evidence_source?: string | null
+          frequency?: string | null
+          id?: string
+          metric_name: string
+          org_id?: string | null
+          process_id?: string | null
+          recorded_at?: string | null
+          target_value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_value?: string | null
+          evidence_source?: string | null
+          frequency?: string | null
+          id?: string
+          metric_name?: string
+          org_id?: string | null
+          process_id?: string | null
+          recorded_at?: string | null
+          target_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_metrics_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_metrics_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "sgc_processes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lots: {
         Row: {
@@ -1819,6 +2157,60 @@ export type Database = {
           },
         ]
       }
+      risk_assessments: {
+        Row: {
+          created_at: string | null
+          id: string
+          mitigation_plan: string | null
+          org_id: string | null
+          probability: string | null
+          process_id: string | null
+          risk_name: string
+          severity: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mitigation_plan?: string | null
+          org_id?: string | null
+          probability?: string | null
+          process_id?: string | null
+          risk_name: string
+          severity?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mitigation_plan?: string | null
+          org_id?: string | null
+          probability?: string | null
+          process_id?: string | null
+          risk_name?: string
+          severity?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_assessments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_assessments_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "sgc_processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           address: string | null
@@ -1907,6 +2299,56 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      sgc_processes: {
+        Row: {
+          actors: string | null
+          created_at: string | null
+          documents: string | null
+          id: string
+          improvements: string | null
+          inputs_outputs: string | null
+          mermaid_code: string | null
+          org_id: string | null
+          resources: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actors?: string | null
+          created_at?: string | null
+          documents?: string | null
+          id: string
+          improvements?: string | null
+          inputs_outputs?: string | null
+          mermaid_code?: string | null
+          org_id?: string | null
+          resources?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actors?: string | null
+          created_at?: string | null
+          documents?: string | null
+          id?: string
+          improvements?: string | null
+          inputs_outputs?: string | null
+          mermaid_code?: string | null
+          org_id?: string | null
+          resources?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sgc_processes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
@@ -2111,6 +2553,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_leads: {
+        Row: {
+          course_interest: string | null
+          created_at: string | null
+          details: string | null
+          full_name: string | null
+          id: string
+          phone: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_interest?: string | null
+          created_at?: string | null
+          details?: string | null
+          full_name?: string | null
+          id?: string
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_interest?: string | null
+          created_at?: string | null
+          details?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

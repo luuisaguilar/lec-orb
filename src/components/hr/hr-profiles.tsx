@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
 import {
   Users,
   Search,
@@ -10,101 +11,267 @@ import {
   GraduationCap,
   FileText,
   UserCircle2,
-  TrendingUp,
+  ListChecks,
+  Link2,
+  FolderKanban,
   FileCheck,
-  Target,
-  Star
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { HR_PROFILES, JobProfile } from "@/lib/data/hr";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type HrProfileRow = {
+  id: string;
+  node_id: string;
+  role_title: string;
+  holder_name: string | null;
+  area: string | null;
+  role_type: "directive" | "coordination" | "operative" | null;
+  mission: string | null;
+  responsibilities: string[] | string | null;
+  requirements: {
+    education?: string;
+    experience?: string;
+    specialty?: string;
+    languages?: string;
+    knowledge?: string;
+    skills?: string;
+    travel?: string;
+    sex?: string;
+    desiredExp?: string;
+    attributes?: string;
+    otherRoles?: string;
+  } | null;
+  parent_node_id: string | null;
+  process_id: string | null;
+  last_pdf_path: string | null;
+};
+
+type HrProfileView = {
+  id: string;
+  title: string;
+  reportsTo: string[];
+  subordinates: string[];
+  mission: string;
+  sex?: string;
+  experience?: string;
+  travel?: string;
+  education?: string;
+  specialty?: string;
+  desiredExp?: string;
+  knowledge?: string;
+  skills?: string;
+  languages?: string;
+  responsibilities: string;
+  otherRoles?: string;
+  attributes?: string;
+  processId?: string;
+  file?: string;
+  holderName?: string;
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+function normalizeToString(value: unknown): string {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map((v) => String(v)).join("\n");
+  return String(value);
+}
+
+function mapProfiles(rows: HrProfileRow[]): HrProfileView[] {
+  const titleByNode = new Map(rows.map((row) => [row.node_id, row.role_title]));
+  const childrenByNode = new Map<string, string[]>();
+
+  for (const row of rows) {
+    if (!row.parent_node_id) continue;
+    const current = childrenByNode.get(row.parent_node_id) ?? [];
+    current.push(row.role_title);
+    childrenByNode.set(row.parent_node_id, current);
+  }
+
+  return rows.map((row) => {
+    const req = row.requirements ?? {};
+    const parentTitle =
+      row.parent_node_id && titleByNode.get(row.parent_node_id)
+        ? titleByNode.get(row.parent_node_id)!
+        : row.parent_node_id;
+
+    return {
+      id: row.node_id,
+      title: row.role_title,
+      reportsTo: parentTitle ? [parentTitle] : [],
+      subordinates: childrenByNode.get(row.node_id) ?? [],
+      mission: row.mission ?? "",
+      sex: req.sex ?? "",
+      experience: req.experience ?? "",
+      travel: req.travel ?? "",
+      education: req.education ?? "",
+      specialty: req.specialty ?? "",
+      desiredExp: req.desiredExp ?? "",
+      knowledge: req.knowledge ?? "",
+      skills: req.skills ?? "",
+      languages: req.languages ?? "",
+      responsibilities: normalizeToString(row.responsibilities),
+      otherRoles: req.otherRoles ?? "",
+      attributes: req.attributes ?? "",
+      processId: row.process_id ?? "",
+      file: row.last_pdf_path ?? "",
+      holderName: row.holder_name ?? "Vacante / Por asignar",
+    };
+  });
+}
 
 export default function HRProfiles() {
   const [search, setSearch] = useState("");
-  const [selectedProfile, setSelectedProfile] = useState<JobProfile | null>(HR_PROFILES[0]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filteredProfiles = HR_PROFILES.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.id.toLowerCase().includes(search.toLowerCase())
+  const { data, isLoading, error } = useSWR("/api/v1/hr/profiles", fetcher);
+
+  const profiles = useMemo(
+    () => mapProfiles((data?.profiles ?? []) as HrProfileRow[]),
+    [data]
   );
 
+  const effectiveSelectedId = useMemo(() => {
+    if (!profiles.length) return null;
+    if (selectedId && profiles.some((p) => p.id === selectedId)) return selectedId;
+    return profiles[0].id;
+  }, [profiles, selectedId]);
+
+  const filteredProfiles = useMemo(
+    () =>
+      profiles.filter(
+        (p) =>
+          p.title.toLowerCase().includes(search.toLowerCase()) ||
+          p.id.toLowerCase().includes(search.toLowerCase())
+      ),
+    [profiles, search]
+  );
+
+  const selectedProfile = useMemo(
+    () => profiles.find((p) => p.id === effectiveSelectedId) ?? null,
+    [profiles, effectiveSelectedId]
+  );
+
+  const getLines = (value?: string) =>
+    (value || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+  const renderInfoBlock = (label: string, value?: string, multiline?: boolean) => (
+    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
+      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">{label}</h4>
+      <p className={cn("text-xs text-slate-200 leading-relaxed", multiline && "whitespace-pre-line")}>
+        {value?.trim() || "No especificado"}
+      </p>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="h-[calc(100vh-220px)] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-slate-300">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Cargando perfiles de RRHH...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[calc(100vh-220px)] flex items-center justify-center">
+        <p className="text-sm text-red-400">No se pudieron cargar los perfiles de RRHH.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-250px)] animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Sidebar List */}
-      <Card className="w-full lg:w-80 bg-slate-900/40 border-slate-800 backdrop-blur-sm flex flex-col overflow-hidden">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-lg font-outfit text-white">Perfiles de Puesto</CardTitle>
-          <div className="relative mt-2">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="bg-slate-900/40 border-slate-800 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 w-full lg:w-80 min-h-0">
+        <div className="p-3 border-b border-slate-800 shrink-0 bg-slate-900/85 backdrop-blur-sm">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
             <Input
-              placeholder="Buscar puesto..."
-              className="pl-9 bg-slate-950/50 border-slate-800 text-white"
+              placeholder="Buscar perfil..."
+              className="pl-8 h-8 text-xs bg-slate-950/50 border-slate-800 text-white"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-        </CardHeader>
-        <ScrollArea className="flex-1 px-4 pb-4">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mt-2 px-1">
+            {filteredProfiles.length} perfiles
+          </p>
+        </div>
+
+        <ScrollArea className="flex-1 min-h-0 px-3 pb-3">
           <div className="space-y-1 py-2">
             {filteredProfiles.map((p) => (
               <button
                 key={p.id}
-                onClick={() => setSelectedProfile(p)}
+                onClick={() => setSelectedId(p.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all group",
-                  selectedProfile?.id === p.id 
-                    ? "bg-primary text-white shadow-lg" 
-                    : "hover:bg-slate-800/50 text-slate-400"
+                  "w-full flex items-start gap-2.5 rounded-lg text-left transition-all group p-2.5",
+                  selectedProfile?.id === p.id
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "hover:bg-slate-800/60 text-slate-300"
                 )}
               >
-                <div className={cn(
-                  "p-2 rounded-md",
-                  selectedProfile?.id === p.id ? "bg-white/20" : "bg-slate-800 group-hover:bg-slate-700"
-                )}>
-                  <Briefcase className="w-4 h-4" />
+                <div
+                  className={cn(
+                    "p-1.5 rounded-md shrink-0 mt-0.5",
+                    selectedProfile?.id === p.id ? "bg-white/20" : "bg-slate-800 group-hover:bg-slate-700"
+                  )}
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{p.title}</p>
-                  <p className="text-[10px] opacity-70 uppercase tracking-wider">{p.id}</p>
+                  <p className="text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
+                  <p className="text-[9px] opacity-70 uppercase tracking-wider mt-0.5 line-clamp-1">{p.id}</p>
                 </div>
-                <ChevronRight className={cn(
-                  "w-4 h-4 shrink-0 transition-transform",
-                  selectedProfile?.id === p.id ? "translate-x-1" : "opacity-0"
-                )} />
+                <ChevronRight
+                  className={cn(
+                    "w-3.5 h-3.5 shrink-0 mt-1.5 transition-transform",
+                    selectedProfile?.id === p.id ? "translate-x-1" : "opacity-0"
+                  )}
+                />
               </button>
             ))}
           </div>
         </ScrollArea>
       </Card>
 
-      {/* Profile Detail View */}
-      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
         {selectedProfile ? (
-          <ScrollArea className="flex-1">
-            <div className="space-y-6 pr-4">
-              {/* Header Card */}
-              <Card className="bg-slate-900/40 border-slate-800 border-l-4 border-l-primary backdrop-blur-sm overflow-hidden">
+          <ScrollArea className="flex-1 min-h-0 pr-1">
+            <div className="space-y-6 pr-3 pb-12">
+              <Card className="bg-slate-900/60 border-slate-800 border-l-4 border-l-blue-500 backdrop-blur-sm overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5 uppercase text-[10px]">
+                    <div className="space-y-2 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-blue-300 border-blue-500/40 bg-blue-500/10 uppercase text-[10px]">
                           {selectedProfile.id}
                         </Badge>
                         {selectedProfile.processId && (
-                          <Badge variant="outline" className="text-blue-400 border-blue-400/30 bg-blue-400/5 uppercase text-[10px]">
+                          <Badge variant="outline" className="text-emerald-300 border-emerald-500/40 bg-emerald-500/10 uppercase text-[10px]">
                             PROCESO: {selectedProfile.processId}
                           </Badge>
                         )}
                       </div>
-                      <h2 className="text-3xl font-bold text-white font-outfit">{selectedProfile.title}</h2>
+                      <h2 className="text-2xl xl:text-3xl font-bold text-white font-outfit leading-tight break-words whitespace-normal">
+                        {selectedProfile.title}
+                      </h2>
+                      <p className="text-sm text-slate-400">Titular actual: {selectedProfile.holderName}</p>
                       <div className="flex flex-wrap gap-4 text-sm text-slate-400">
                         <span className="flex items-center gap-1.5">
-                          <GraduationCap className="w-4 h-4" /> {selectedProfile.education}
+                          <GraduationCap className="w-4 h-4" /> {selectedProfile.education || "N/A"}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <MapPin className="w-4 h-4" /> Viajes: {selectedProfile.travel || "N/A"}
@@ -118,13 +285,15 @@ export default function HRProfiles() {
                       <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Reporta a:</div>
                       <div className="flex flex-wrap gap-2">
                         {selectedProfile.reportsTo.length > 0 ? (
-                          selectedProfile.reportsTo.map(r => (
+                          selectedProfile.reportsTo.map((r) => (
                             <Badge key={r} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
                               {r}
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="secondary" className="bg-slate-800 text-slate-400">Nivel Raíz</Badge>
+                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                            Nivel raiz
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -132,65 +301,147 @@ export default function HRProfiles() {
                 </CardContent>
               </Card>
 
-              {/* Sections Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest border-b border-primary/20 pb-2">
-                    <Target className="w-4 h-4" /> Misión del Puesto
-                  </div>
-                  <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/20 p-4 rounded-xl border border-slate-800">
-                    {selectedProfile.mission}
-                  </p>
-                </section>
+              <Tabs defaultValue="resumen" className="w-full">
+                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-slate-900/50 border border-slate-800 p-1">
+                  <TabsTrigger value="resumen" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Resumen</TabsTrigger>
+                  <TabsTrigger value="funciones" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Funciones</TabsTrigger>
+                  <TabsTrigger value="requisitos" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Requisitos</TabsTrigger>
+                  <TabsTrigger value="relaciones" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Relaciones</TabsTrigger>
+                  <TabsTrigger value="documento" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Documento</TabsTrigger>
+                </TabsList>
 
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest border-b border-primary/20 pb-2">
-                    <TrendingUp className="w-4 h-4" /> Responsabilidades
+                <TabsContent value="resumen" className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {renderInfoBlock("Mision del Puesto", selectedProfile.mission, true)}
+                    {renderInfoBlock("Responsabilidades (resumen)", selectedProfile.responsibilities, true)}
                   </div>
-                  <div className="text-slate-300 text-sm leading-relaxed bg-slate-900/20 p-4 rounded-xl border border-slate-800 whitespace-pre-line">
-                    {selectedProfile.responsibilities}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {renderInfoBlock("Educacion", selectedProfile.education)}
+                    {renderInfoBlock("Experiencia", selectedProfile.experience)}
+                    {renderInfoBlock("Especialidad", selectedProfile.specialty)}
+                    {renderInfoBlock("Idiomas", selectedProfile.languages, true)}
+                    {renderInfoBlock("Sexo", selectedProfile.sex)}
+                    {renderInfoBlock("Viajes", selectedProfile.travel)}
                   </div>
-                </section>
+                </TabsContent>
 
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-widest border-b border-blue-400/20 pb-2">
-                    <GraduationCap className="w-4 h-4" /> Requisitos de Perfil
+                <TabsContent value="funciones" className="mt-4 space-y-4">
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-widest border-b border-blue-400/20 pb-2">
+                      <ListChecks className="w-4 h-4" /> Responsabilidades
+                    </div>
+                    <div className="space-y-2">
+                      {getLines(selectedProfile.responsibilities).map((item, idx) => (
+                        <div key={`${selectedProfile.id}-responsabilidad-${idx}`} className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-200 whitespace-pre-line">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase tracking-widest border-b border-emerald-400/20 pb-2">
+                      <Briefcase className="w-4 h-4" /> Otros Roles
+                    </div>
+                    <div className="space-y-2">
+                      {getLines(selectedProfile.otherRoles).length > 0 ? (
+                        getLines(selectedProfile.otherRoles).map((item, idx) => (
+                          <div key={`${selectedProfile.id}-rol-${idx}`} className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-200 whitespace-pre-line">
+                            {item}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-400">
+                          No especificado
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </TabsContent>
+
+                <TabsContent value="requisitos" className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {renderInfoBlock("Educacion", selectedProfile.education)}
+                    {renderInfoBlock("Experiencia", selectedProfile.experience)}
+                    {renderInfoBlock("Especialidad", selectedProfile.specialty)}
+                    {renderInfoBlock("Experiencia Deseada", selectedProfile.desiredExp, true)}
+                    {renderInfoBlock("Conocimientos", selectedProfile.knowledge, true)}
+                    {renderInfoBlock("Habilidades", selectedProfile.skills, true)}
+                    {renderInfoBlock("Idiomas", selectedProfile.languages, true)}
+                    {renderInfoBlock("Atributos", selectedProfile.attributes, true)}
+                    {renderInfoBlock("Sexo", selectedProfile.sex)}
+                    {renderInfoBlock("Disponibilidad para Viajar", selectedProfile.travel)}
                   </div>
-                  <div className="grid grid-cols-1 gap-4">
+                </TabsContent>
+
+                <TabsContent value="relaciones" className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2">CONOCIMIENTOS</h4>
-                      <p className="text-xs text-slate-300 leading-relaxed">{selectedProfile.knowledge || "No especificado"}</p>
+                      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Reporta a</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProfile.reportsTo.length > 0 ? (
+                          selectedProfile.reportsTo.map((report) => (
+                            <Badge key={`${selectedProfile.id}-${report}`} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
+                              {report}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                            Nivel raiz
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2">HABILIDADES</h4>
-                      <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{selectedProfile.skills || "No especificado"}</p>
+                      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Subordinados</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProfile.subordinates.length > 0 ? (
+                          selectedProfile.subordinates.map((subordinate) => (
+                            <Badge key={`${selectedProfile.id}-${subordinate}`} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
+                              {subordinate}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                            Sin subordinados directos
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </section>
+                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
+                    <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Proceso SGC Relacionado</h4>
+                    <p className="text-sm text-slate-200">{selectedProfile.processId || "Sin proceso asignado"}</p>
+                  </div>
+                </TabsContent>
 
-                <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-purple-400 font-bold text-sm uppercase tracking-widest border-b border-purple-400/20 pb-2">
-                    <Star className="w-4 h-4" /> Competencias y Otros
-                  </div>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2">IDIOMAS</h4>
-                      <p className="text-xs text-slate-300 leading-relaxed">{selectedProfile.languages || "N/A"}</p>
+                <TabsContent value="documento" className="mt-4 space-y-4">
+                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50 space-y-2">
+                    <div className="flex items-center gap-2 text-blue-300">
+                      <FolderKanban className="w-4 h-4" />
+                      <p className="text-xs uppercase tracking-wider font-bold">Archivo fuente</p>
                     </div>
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2">ATRIBUTOS</h4>
-                      <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{selectedProfile.attributes || "N/A"}</p>
-                    </div>
+                    <p className="text-sm text-slate-200 break-words">
+                      {selectedProfile.file || "Sin documento PDF vinculado"}
+                    </p>
                   </div>
-                </section>
-              </div>
+                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50 space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-300">
+                      <Link2 className="w-4 h-4" />
+                      <p className="text-xs uppercase tracking-wider font-bold">Referencia</p>
+                    </div>
+                    <p className="text-sm text-slate-300">
+                      Datos cargados desde la tabla <code>hr_profiles</code> por API.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
 
-              {/* Action Bar */}
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" className="border-slate-700 text-slate-400 hover:text-white">
                   <FileText className="w-4 h-4 mr-2" /> PDF / Excel
                 </Button>
-                <Button className="bg-primary hover:bg-primary/90 text-white">
+                <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold">
                   <FileCheck className="w-4 h-4 mr-2" /> Editar Perfil
                 </Button>
               </div>
@@ -199,7 +450,7 @@ export default function HRProfiles() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
             <Users className="w-16 h-16 mb-4 opacity-20" />
-            <p>Selecciona un perfil para ver los detalles</p>
+            <p>No hay perfiles de RRHH disponibles para esta organizacion</p>
           </div>
         )}
       </div>

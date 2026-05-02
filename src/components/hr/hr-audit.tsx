@@ -81,7 +81,7 @@ export default function HRAudit() {
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between",
                   activeClause === c.id 
-                    ? "bg-primary text-white" 
+                    ? "bg-primary text-primary-foreground" 
                     : "text-slate-400 hover:bg-slate-800/50"
                 )}
               >
@@ -143,7 +143,7 @@ export default function HRAudit() {
                     </div>
                   </div>
                   <div className="flex items-end">
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-white text-xs h-9">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9">
                       <Download className="w-3.5 h-3.5 mr-2" /> Generar Reporte PDF
                     </Button>
                   </div>
