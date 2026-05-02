@@ -61,7 +61,8 @@ const NATIVE_ROUTES: Record<string, string> = {
     "purchase-orders": "/dashboard/ordenes",
     "payments": "/dashboard/pagos",
     "payroll": "/dashboard/nomina",
-    "hr": "/dashboard/hr",
+    "rrhh": "/dashboard/rrhh",
+    "sgc": "/dashboard/sgc",
     "petty-cash": "/dashboard/finanzas/caja-chica",
     "budget": "/dashboard/finanzas/presupuesto",
     "ih-billing": "/dashboard/finanzas/ih-billing",
@@ -242,7 +243,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                             href={item.href}
                             title={isCollapsed ? item.label : undefined}
                             className={cn(
-                                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all",
+                                "group flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all",
                                 isCollapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-3",
                                 "hover:bg-accent hover:text-accent-foreground",
                                 isActive
@@ -250,7 +251,12 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                     : "text-muted-foreground"
                             )}
                         >
-                            <ItemIcon className={cn("shrink-0", isCollapsed ? "h-5 w-5" : "h-4 w-4")} />
+                            <ItemIcon className={cn(
+                                "shrink-0 transition-transform duration-300",
+                                isCollapsed ? "h-5 w-5" : "h-4 w-4",
+                                "group-hover:scale-125 group-hover:rotate-6",
+                                isActive && "animate-pulse-once",
+                            )} />
                             {!isCollapsed && <span className="truncate">{item.label}</span>}
                         </Link>
                     );
@@ -274,7 +280,10 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <GroupIcon className={cn("shrink-0", isCollapsed ? "h-5 w-5" : "h-4 w-4")} />
+                                    <GroupIcon className={cn(
+                                        "shrink-0 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-6",
+                                        isCollapsed ? "h-5 w-5" : "h-4 w-4",
+                                    )} />
                                     {!isCollapsed && (
                                         <span className="truncate">{group.label ?? group.items[0]?.label}</span>
                                     )}
@@ -299,14 +308,14 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                             key={item.href}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                                                "group/sub flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                                                 "hover:bg-accent hover:text-accent-foreground",
                                                 isActive
                                                     ? "bg-primary text-primary-foreground shadow-sm"
                                                     : "text-muted-foreground"
                                             )}
                                         >
-                                            <SubIcon className="h-4 w-4 shrink-0" />
+                                            <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:rotate-6" />
                                             <span className="truncate">{item.label}</span>
                                         </Link>
                                     );

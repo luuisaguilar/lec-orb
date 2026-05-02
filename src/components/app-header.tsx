@@ -20,8 +20,6 @@ export function AppHeader({ variant }: AppHeaderProps) {
     const router = useRouter();
     const [mobileOpen, setMobileOpen] = useState(false);
 
-
-
     async function handleLogout() {
         const supabase = createClient();
         await supabase.auth.signOut();

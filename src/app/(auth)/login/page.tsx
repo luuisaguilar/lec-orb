@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
     Card,
     CardContent,
@@ -26,6 +27,8 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+import { GlobeBackground } from "@/components/auth/globe-background";
 
 function LoginForm() {
     const router = useRouter();
@@ -60,96 +63,109 @@ function LoginForm() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
+        <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+            <GlobeBackground />
 
-            <div className="w-full max-w-md space-y-8">
+            <div className="w-full max-w-md space-y-8 relative z-10 animate-in fade-in zoom-in duration-1000">
                 {/* Logo */}
-                <div className="text-center space-y-2 flex flex-col items-center">
-                    <Image
-                        src="/lec_logo_pack/lec_logo_full.png"
-                        alt="LEC Logo"
-                        width={200}
-                        height={56}
-                        className="h-14 w-auto object-contain"
-                    />
-                    <p className="text-sm text-muted-foreground mt-2">
-                        Languages Education Consulting
-                    </p>
+                <div className="text-center space-y-4 flex flex-col items-center">
+                    <div className="p-6 rounded-[2.5rem] bg-white/5 backdrop-blur-2xl border border-white/20 shadow-[0_0_40px_rgba(59,130,246,0.2)] mb-2 group transition-all hover:scale-110 duration-500">
+                        <Image
+                            src="/lec_logo_pack/lec_logo_full.png"
+                            alt="LEC Logo"
+                            width={240}
+                            height={65}
+                            className="h-16 w-auto object-contain"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <h2 className="text-white font-outfit text-2xl font-black tracking-tight drop-shadow-lg">LEC PLATFORM</h2>
+                        <p className="text-xs text-blue-400 font-bold tracking-[0.3em] uppercase">
+                            Languages Education Consulting
+                        </p>
+                    </div>
                 </div>
 
                 {/* Login Card */}
-                <Card className="border shadow-lg backdrop-blur">
-                    <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl">{t("auth.loginTitle")}</CardTitle>
-                        <CardDescription>{t("auth.loginSubtitle")}</CardDescription>
+                <Card className="bg-slate-950/40 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl ring-1 ring-white/20 rounded-[2rem] overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+                    <CardHeader className="space-y-1 text-center pb-8 pt-10">
+                        <CardTitle className="text-3xl font-outfit font-black text-white tracking-tight">{t("auth.loginTitle")}</CardTitle>
+                        <CardDescription className="text-slate-400 font-medium text-base">{t("auth.loginSubtitle")}</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6 pb-12 px-8">
                         {/* Login Form */}
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <div className="space-y-2">
-                                <Label htmlFor="email">{t("auth.email")}</Label>
+                                <Label htmlFor="email" className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] ml-1">{t("auth.email")}</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     placeholder="tu@email.com"
                                     autoComplete="email"
                                     {...register("email")}
-                                    className={errors.email ? "border-destructive" : ""}
+                                    className={cn(
+                                        "bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300",
+                                        errors.email ? "border-destructive focus:ring-destructive/50" : ""
+                                    )}
                                 />
                                 {errors.email && (
-                                    <p className="text-xs text-destructive">
+                                    <p className="text-xs text-destructive font-bold mt-1 ml-1 animate-pulse">
                                         {errors.email.message}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password">{t("auth.password")}</Label>
+                                <Label htmlFor="password" id="password-label" className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] ml-1">{t("auth.password")}</Label>
                                 <Input
                                     id="password"
                                     type="password"
                                     placeholder="••••••••"
                                     autoComplete="current-password"
                                     {...register("password")}
-                                    className={errors.password ? "border-destructive" : ""}
+                                    className={cn(
+                                        "bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300",
+                                        errors.password ? "border-destructive focus:ring-destructive/50" : ""
+                                    )}
                                 />
                                 {errors.password && (
-                                    <p className="text-xs text-destructive">
+                                    <p className="text-xs text-destructive font-bold mt-1 ml-1 animate-pulse">
                                         {errors.password.message}
                                     </p>
                                 )}
                             </div>
 
                             {error && (
-                                <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
-                                    <p className="text-sm text-destructive">{error}</p>
+                                <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-4 animate-in shake-1 duration-500">
+                                    <p className="text-sm text-destructive font-bold text-center">{error}</p>
                                 </div>
                             )}
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-lg shadow-[0_10px_20px_rgba(59,130,246,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] mt-4 group"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                                 ) : (
-                                    <LogIn className="mr-2 h-4 w-4" />
+                                    <LogIn className="mr-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
                                 )}
                                 {t("auth.loginButton")}
                             </Button>
                         </form>
 
-                        <div className="text-center mt-4">
-                            <a href="/register" className="text-sm text-primary hover:underline">
+                        <div className="text-center pt-4">
+                            <a href="/register" className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
                                 {t("auth.noAccount" as any) || "¿No tienes cuenta? Regístrate"}
                             </a>
                         </div>
                     </CardContent>
                 </Card>
 
-                <p className="text-center text-xs text-muted-foreground">
-                    © {new Date().getFullYear()} Languages Education Consulting
+                <p className="text-center text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase opacity-50">
+                    © {new Date().getFullYear()} LEC • Languages Education Consulting
                 </p>
             </div>
         </div>
