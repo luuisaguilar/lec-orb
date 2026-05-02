@@ -29,32 +29,36 @@ export default function SGCDashboard() {
 
       <Tabs defaultValue="processes" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-4 overflow-x-auto">
-          <TabsList className="bg-slate-900/50 border border-slate-800 p-1 h-auto flex-wrap">
+          <TabsList className="bg-slate-900/40 border border-slate-800/60 p-1 h-auto flex-wrap backdrop-blur-sm shadow-inner">
             <TabsTrigger 
               value="processes" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 border border-transparent transition-all px-4 py-2 relative overflow-hidden group"
             >
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transform scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300" />
               <Workflow className="w-4 h-4 mr-2" />
               Mapa de Procesos
             </TabsTrigger>
             <TabsTrigger 
               value="documents" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 border border-transparent transition-all px-4 py-2 relative overflow-hidden group"
             >
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transform scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300" />
               <FileText className="w-4 h-4 mr-2" />
               Lista Maestra
             </TabsTrigger>
             <TabsTrigger 
               value="audit" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 border border-transparent transition-all px-4 py-2 relative overflow-hidden group"
             >
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transform scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300" />
               <ClipboardCheck className="w-4 h-4 mr-2" />
               Auditoría Interna
             </TabsTrigger>
             <TabsTrigger 
               value="risks" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 border border-transparent transition-all px-4 py-2 relative overflow-hidden group"
             >
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transform scale-x-0 group-data-[state=active]:scale-x-100 transition-transform duration-300" />
               <AlertTriangle className="w-4 h-4 mr-2" />
               Matriz de Riesgos (AMEF)
             </TabsTrigger>

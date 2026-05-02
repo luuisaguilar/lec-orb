@@ -164,13 +164,12 @@ export default function UsersPage() {
             />
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 border-b">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-[#002e5d]">
-                        <Users className="h-8 w-8 text-[#002e5d]" />
-                        Usuarios y Accesos
+                <div className="space-y-1">
+                    <h2 className="text-3xl font-black tracking-tight text-white font-outfit">
+                        Usuarios y <span className="text-primary italic">Accesos</span>
                     </h2>
-                    <p className="text-muted-foreground font-medium">
-                        Administra los miembros de la organización y sus permisos.
+                    <p className="text-muted-foreground font-semibold">
+                        Administración centralizada de miembros y matriz de permisos.
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">

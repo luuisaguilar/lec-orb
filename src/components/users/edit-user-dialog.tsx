@@ -213,40 +213,40 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                                     <tbody className="divide-y">
                                         {Object.keys(modulesByCategory).map((category) => (
                                             <Fragment key={category}>
-                                                <tr className="bg-slate-50">
-                                                    <td colSpan={5} className="p-2 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-left">
+                                                <tr className="bg-slate-900/60 border-y border-slate-800">
+                                                    <td colSpan={5} className="p-2.5 px-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-left bg-slate-950/30">
                                                         {category}
                                                     </td>
                                                 </tr>
                                                 {modulesByCategory[category].map((mod: any) => (
-                                                    <tr key={mod.slug} className="hover:bg-muted/20 transition-colors">
-                                                        <td className="p-2 p-3 font-medium text-[#002e5d] text-left">{mod.name}</td>
+                                                    <tr key={mod.slug} className="hover:bg-slate-800/40 border-b border-slate-800/50 transition-colors group">
+                                                        <td className="p-3 px-4 font-bold text-slate-100 text-left group-hover:text-primary transition-colors">{mod.name}</td>
                                                         <td className="p-3 text-center">
                                                             <Checkbox
                                                                 checked={getPermission(mod.slug, 'can_view')}
                                                                 onCheckedChange={() => togglePermission(mod.slug, 'can_view')}
-                                                                className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
+                                                                className="data-[state=checked]:bg-blue-500 border-slate-600 data-[state=checked]:border-blue-500"
                                                             />
                                                         </td>
                                                         <td className="p-3 text-center">
                                                             <Checkbox
                                                                 checked={getPermission(mod.slug, 'can_edit')}
                                                                 onCheckedChange={() => togglePermission(mod.slug, 'can_edit')}
-                                                                className="data-[state=checked]:bg-[#002e5d] border-muted-foreground"
+                                                                className="data-[state=checked]:bg-indigo-500 border-slate-600 data-[state=checked]:border-indigo-500"
                                                             />
                                                         </td>
                                                         <td className="p-3 text-center">
                                                             <Checkbox
                                                                 checked={getPermission(mod.slug, 'can_delete')}
                                                                 onCheckedChange={() => togglePermission(mod.slug, 'can_delete')}
-                                                                className="data-[state=checked]:bg-red-500 border-muted-foreground"
+                                                                className="data-[state=checked]:bg-red-600 border-slate-600 data-[state=checked]:border-red-600"
                                                             />
                                                         </td>
                                                         <td className="p-3 text-center">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="h-7 px-2 text-[10px] uppercase font-bold"
+                                                                className="h-7 px-3 text-[10px] uppercase font-black tracking-wider text-slate-500 hover:text-white hover:bg-slate-800 rounded-full"
                                                                 onClick={() => toggleAllForModule(mod.slug)}
                                                             >
                                                                 {getPermission(mod.slug, 'can_view') && getPermission(mod.slug, 'can_edit') && getPermission(mod.slug, 'can_delete') ? 'Ninguno' : 'Todos'}

@@ -45,8 +45,8 @@ export function AppHeader({ variant }: AppHeaderProps) {
 
             {/* Title */}
             <div className="flex-1">
-                <span className="font-semibold text-primary tracking-tight hidden sm:inline-block">Languages Education Consulting</span>
-                <span className="font-semibold text-primary tracking-tight sm:hidden">LEC</span>
+                <span className="font-semibold text-primary tracking-tight hidden sm:inline-block font-outfit text-lg">Languages Education Consulting</span>
+                <span className="font-semibold text-primary tracking-tight sm:hidden font-outfit">LEC</span>
             </div>
 
             {/* Actions */}
