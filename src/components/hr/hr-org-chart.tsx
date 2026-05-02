@@ -40,7 +40,6 @@ import { buildHierarchy, OrgNode } from "@/lib/data/hr";
 import { generateJobProfilePDF, uploadPDFToSGC } from "@/lib/utils/pdf-generator";
 import { Cloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import useSWR, { mutate } from "swr";
 import { 
   Form, 
   FormControl, 
@@ -60,6 +59,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import useSWR from "swr";
 
 const profileSchema = z.object({
   role_title: z.string().min(1, "El título es requerido"),
@@ -77,9 +77,13 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-import { logAudit } from "@/lib/audit/log";
-
 const NO_PROCESS_VALUE = "__none__";
+
+async function parseApiResponse(response: Response) {
+  if (response.ok) return response.json();
+  const payload = await response.json().catch(() => ({}));
+  throw new Error(payload?.error || "Error en la solicitud");
+}
 
 export default function HROrgChart() {
 
@@ -198,42 +202,32 @@ export default function HROrgChart() {
       const normalizedProcessId =
         values.process_id && values.process_id !== NO_PROCESS_VALUE ? values.process_id : null;
 
-      const { error } = await supabase
-        .from('hr_profiles')
-        .update({
+      const response = await fetch("/api/v1/hr/profiles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          node_id: selectedNode.id,
           role_title: values.role_title,
-          holder_name: values.holder_name,
+          holder_name: values.holder_name || null,
           area: values.area,
-          mission: values.mission,
-          responsibilities: typeof values.responsibilities === 'string' 
-            ? values.responsibilities.split('\n').filter(r => r.trim()) 
+          mission: values.mission || null,
+          responsibilities: typeof values.responsibilities === "string"
+            ? values.responsibilities.split("\n").filter((r) => r.trim())
             : values.responsibilities,
           role_type: values.role_type,
           requirements: {
-            education: values.education,
-            experience: values.experience,
-            languages: values.languages,
-            knowledge: values.knowledge,
+            education: values.education || null,
+            experience: values.experience || null,
+            languages: values.languages || null,
+            knowledge: values.knowledge || null,
           },
-          process_id: normalizedProcessId
-        })
-        .eq('node_id', selectedNode.id)
-        .eq('org_id', orgId);
-
-      if (error) throw error;
-
-      // 4. Log Audit
-      await logAudit(supabase, {
-        org_id: orgId,
-        table_name: "hr_profiles",
-        record_id: selectedNode.id,
-        action: "UPDATE",
-        new_data: { ...values, process_id: normalizedProcessId },
-        performed_by: (userData as any)?.user?.id || "unknown",
+          process_id: normalizedProcessId,
+        }),
       });
+      await parseApiResponse(response);
 
       toast.success("Perfil actualizado correctamente", { id: toastId });
-      mutate([`hr_profiles`, orgId]);
+      await mutateProfiles();
       setIsEditing(false);
     } catch (error: any) {
       toast.error(error.message || "Error al guardar cambios", { id: toastId });
@@ -286,23 +280,16 @@ export default function HROrgChart() {
       if (shouldSaveToSGC) {
         const path = `profiles/${selectedNode.id}_${new Date().getTime()}.pdf`;
         await uploadPDFToSGC(supabase, blob, path);
-        
-        const { error: updatePathError } = await supabase
-          .from('hr_profiles')
-          .update({ last_pdf_path: path })
-          .eq('node_id', selectedNode.id)
-          .eq('org_id', orgId);
 
-        if (updatePathError) throw updatePathError;
-
-        await logAudit(supabase, {
-          org_id: orgId,
-          table_name: "hr_profiles",
-          record_id: selectedNode.id,
-          action: "UPDATE",
-          new_data: { last_pdf_path: path },
-          performed_by: (userData as any)?.user?.id || "unknown",
+        const updatePathResponse = await fetch("/api/v1/hr/profiles", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            node_id: selectedNode.id,
+            last_pdf_path: path,
+          }),
         });
+        await parseApiResponse(updatePathResponse);
 
         await mutateProfiles();
 
