@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-04-29
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-02
 
 ---
 
@@ -21,6 +21,8 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | TOEFL | Administraciones + codigos |
 | Eventos / Aplicadores / Escuelas | Operativos en produccion real |
 | Inventario / Scan / Nomina | Operativos en produccion real |
+| RRHH (perfiles y auditoria) | Operativo en flujo basico (lectura/alta/edicion) |
+| SGC (checklist auditoria) | **INCIDENCIA ABIERTA** - crash en navegacion de dashboard |
 | Sentry | Activo (project `orb-lec`) |
 | Portal de aplicadores | Datos placeholder desde `src/lib/demo/data.ts` — no terminado |
 | IH Billing | **PENDIENTE** — analizado, listo para Sprint 2 |
@@ -122,6 +124,8 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
+- [ ] Corregir crash del modulo SGC (triage + fix + validacion manual)
+- [ ] Agregar scroll vertical en sidebar para no cortar modulos en pantallas pequenas
 - [ ] Definir con Luis las preguntas de diseno de Sprint 2 (ver arriba)
 - [ ] Implementar modulo IH Billing: tablas + endpoints + UI
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion (backend listo)
@@ -135,6 +139,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Deuda tecnica
 
+- [ ] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
 - [ ] Realinear Playwright: auth real sembrada o bootstrap explicito de sesion de test
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica

@@ -1,15 +1,16 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-04-29
+Ultima actualizacion: 2026-05-02
 
 ---
 
-## Estado verificado el 2026-04-29
+## Estado verificado el 2026-05-02
 
 - `npm run build`: pass
 - `npm test`: pass (`26` archivos, `164` tests)
 - `npm run lint`: pass con `62` warnings
 - `npm run test:e2e`: fail (`9/9`)
+- Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 
 Diagnostico E2E actual:
 
@@ -51,24 +52,40 @@ No se recomienda restaurar el bypass implicito en `src/lib/supabase/proxy.ts`.
 
 Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.ts` con `APPLICATOR_ID` hardcoded. Estan construidas, pero no integradas a datos reales.
 
+### 3. SGC crash en flujo basico
+
+- RRHH ya valida lectura/alta/edicion sin alertas de seguridad.
+- SGC presenta crash en dashboard durante navegacion y requiere triage con logs de navegador + server.
+
 ---
 
 ## Prioridad alta
 
-### 1. Realinear Playwright con auth real o bootstrap de test
+### 1. Corregir crash de SGC en dashboard
+
+- reproducir con pasos exactos y capturar stacktrace (browser console + server logs)
+- validar endpoints SGC y manejo de null/undefined en UI
+- cerrar con prueba manual de lectura/alta/edicion
+
+### 2. UX sidebar: habilitar scroll vertical en menu lateral
+
+- agregar `overflow-y-auto` y altura acotada para resoluciones pequenas
+- validar navegacion completa de modulos en desktop y mobile
+
+### 3. Realinear Playwright con auth real o bootstrap de test
 
 - login/sesion reproducible para E2E
 - flujo `/dashboard/users`
 - flujo `/dashboard/finanzas/caja-chica`
 - flujo `/dashboard/finanzas/presupuesto`
 
-### 2. Dashboard CENNI por estatus
+### 4. Dashboard CENNI por estatus
 
 - cards por cada uno de los 5 estatus
 - grafica de distribucion
 - filtro rapido por estatus
 
-### 3. Cron para expirar invitaciones
+### 5. Cron para expirar invitaciones
 
 - conectar `fn_expire_old_invitations()` a Vercel Cron diario
 

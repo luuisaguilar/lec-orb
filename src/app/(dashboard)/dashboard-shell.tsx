@@ -17,7 +17,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {/* Desktop sidebar */}
             <aside
                 className={cn(
-                    "relative hidden lg:flex lg:flex-col lg:border-r bg-card transition-all duration-300",
+                    "relative hidden lg:flex lg:flex-col lg:min-h-0 lg:border-r bg-card transition-all duration-300",
                     isCollapsed ? "lg:w-[72px]" : "lg:w-64"
                 )}
             >
@@ -39,7 +39,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                     {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
                     <span className="sr-only">Toggle Sidebar</span>
                 </Button>
-                <div className="flex-1 overflow-y-auto px-2 py-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-2 py-4">
                     <SidebarNav variant="dashboard" isCollapsed={isCollapsed} />
                 </div>
             </aside>
