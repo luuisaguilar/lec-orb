@@ -8,12 +8,12 @@ Stack: **Vitest** (unit/integration) + **Playwright** (E2E).
 
 ## Estado actual
 
-Verificado el **2026-04-29**:
+Verificado el **2026-05-02**:
 
 - `npm run build`: pass
 - `npm test`: pass (`26` archivos, `164` tests)
-- `npm run lint`: pass con warnings
-- `npm run test:e2e`: fail (`9/9`)
+- `npm run lint`: pass
+- `npm run test:e2e`: pass (`10/10`)
 
 ---
 
@@ -153,21 +153,21 @@ expect(mockSupabase.insert).toHaveBeenCalled();
 ### Runtime real actual
 
 - `playwright.config.ts` arranca `npm run dev` automaticamente
-- el runner inyecta `NEXT_PUBLIC_DEMO_MODE=true`
-- `tests/e2e/support/demo-api.ts` intercepta llamadas API en navegador
-- `src/lib/supabase/proxy.ts` ya no hace bypass de auth por `DEMO_MODE`
+- `tests/e2e/auth.setup.ts` siembra sesion autenticada para navegador
+- `tests/e2e/support/demo-api.ts` intercepta llamadas API en navegador para fixtures deterministas
+- `src/lib/supabase/proxy.ts` no hace bypass de auth por `DEMO_MODE`
 
 ### Implicacion
 
-El browser llega a `/login` antes de cargar la UI esperada del dashboard.
+El harness E2E ya esta alineado con auth real.
 
-Resultado verificado el `2026-04-29`:
+Resultado verificado el `2026-05-02`:
 
-- `9/9` tests fallan
+- `10/10` tests pasan
 
 ### Siguiente correccion recomendada
 
-- sembrar sesion real para E2E, o
-- crear bootstrap explicito solo para testing
+- mantener actualizado `tests/e2e/support/demo-api.ts` cuando cambien contratos API
+- agregar specs para modulos nuevos (ej. Viaticos)
 
 No reintroducir el bypass implicito de auth en middleware productivo.
