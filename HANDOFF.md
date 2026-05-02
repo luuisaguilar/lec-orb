@@ -21,10 +21,8 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Invitaciones | Flujo completo + Resend + `expires_at` + `joinUrl` fallback |
 | CENNI | CRUD + bulk import + certificados PDF + visor + email |
 | TOEFL | Administraciones + codigos |
-| Eventos / Aplicadores / Escuelas | Operativos en produccion real |
-| Inventario / Scan / Nomina | Operativos en produccion real |
-| RRHH (perfiles y auditoria) | Operativo en flujo basico (lectura/alta/edicion) |
-| SGC (checklist auditoria) | **INCIDENCIA ABIERTA** - crash en navegacion de dashboard |
+| SGC (checklist auditoria) | **OPERATIVO** - Fix de navegación aplicado |
+| Calculadora de Tiempos | **PREMIUM** - Versión 2.0 con temas dinámicos |
 | Sentry | Activo (project `orb-lec`) |
 | Portal de aplicadores | Datos placeholder desde `src/lib/demo/data.ts` — no terminado |
 
@@ -125,13 +123,11 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [ ] Merge PR #29 de Viaticos
-- [ ] Aplicar migracion `20260503_travel_expenses.sql` en Supabase productivo
-- [ ] Smoke test funcional de Viaticos en dashboard
-- [ ] Merge PR #32 (fix SGC + scroll sidebar)
-- [ ] Smoke test de SGC en `/dashboard/sgc` (procesos/auditoria/riesgos)
-- [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion (backend listo)
+- [ ] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
+- [ ] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
+- [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
+- [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
 
 ### Datos / operacion
 

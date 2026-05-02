@@ -4,12 +4,20 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
-## [2026-05-02] - sprint-2 sync: e2e green + viaticos mvp
+## [2026-05-02] - UI/UX Polish: Premium SaaS Refinement & Calculadora 2.0
 
-- test(e2e): suite Playwright estabilizada y en verde (`10/10`)
-- feat(finance): modulo Viaticos MVP con dashboard, API y migracion `20260503_travel_expenses.sql` (PR #29)
-- feat(finance): IH Billing ya operativo (sesiones, facturas, pagos, conciliacion e import)
-- docs(status): `HANDOFF.md`, `docs/ROADMAP.md` y `docs/TESTING_GUIDE.md` actualizados con estado real al 2026-05-02
+- feat(ui): major visual refinement pass focused on "Premium SaaS" aesthetics (glassmorphism, dark mode polish, consistent contrast).
+- feat(calculadora): implemented dynamic exam-based theming (Starters, Movers, Flyers, KEY, PET, FCE) with custom color tokens and glows.
+- feat(calculadora): refactored layout for visual symmetry, spacious glassmorphic containers, and reordered metric hierarchy (bottom-aligned icons).
+- fix(sgc): resolved critical navigation crash in `/dashboard/sgc` and improved sidebar scroll behavior.
+- fix(users): enhanced "Invitar Usuario" CTA visibility and permissions table readability.
+- fix(ui): hardened button contrast and text hierarchy across login, register, and dashboard forms.
+- feat(build): verified project stability with `npm run build` (Exit code: 0).
+- docs(status): updated `HANDOFF.md`, `ROADMAP.md`, and `CHANGELOG.md` to reflect the "Premium SaaS" state.
+
+---
+
+## [2026-05-02] - sprint-2 sync: e2e green + viaticos mvp
 
 ---
 
