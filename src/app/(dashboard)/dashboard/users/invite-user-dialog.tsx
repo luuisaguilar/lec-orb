@@ -156,8 +156,8 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button className="gap-2 bg-[#002e5d] hover:bg-[#001f3f]">
-                    <UserPlus className="h-4 w-4" />
+                <Button className="gap-2.5 bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 px-5">
+                    <UserPlus className="h-4.5 w-4.5" />
                     Invitar Usuario
                 </Button>
             </DialogTrigger>

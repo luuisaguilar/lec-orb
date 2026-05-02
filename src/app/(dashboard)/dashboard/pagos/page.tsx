@@ -13,7 +13,6 @@ import {
     User,
     Mail,
     Building2,
-    Wallet,
     Download,
     Loader2
 } from "lucide-react";
@@ -41,6 +40,7 @@ import { RegisterPaymentDialog } from "@/components/finance/register-payment-dia
 import { ImportPaymentsDialog } from "@/components/finance/import-payments-dialog";
 import { toast } from "sonner";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -65,11 +65,11 @@ interface Payment {
     } | null;
 }
 
-const statusConfig = {
-    PENDING: { label: "Pendiente", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-    PAID: { label: "Pagado", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-    EXPIRED: { label: "Vencido", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: XCircle },
-    CANCELLED: { label: "Cancelado", color: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400", icon: XCircle },
+const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
+    PAID: { label: "Pagado", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", icon: CheckCircle2 },
+    PENDING: { label: "Pendiente", className: "bg-amber-500/10 text-amber-500 border-amber-500/20", icon: Clock },
+    CANCELLED: { label: "Cancelado", className: "bg-slate-500/10 text-slate-400 border-slate-500/20", icon: XCircle },
+    EXPIRED: { label: "Vencido", className: "bg-red-500/10 text-red-500 border-red-500/20", icon: XCircle },
 };
 
 export default function PagosPage() {
@@ -134,7 +134,6 @@ export default function PagosPage() {
             const res = await fetch("/api/v1/payments/export");
             if (!res.ok) throw new Error("Error al general el reporte");
 
-            // Trigger download via Blob
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -171,166 +170,181 @@ export default function PagosPage() {
     };
 
     return (
-        <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-            <div className="flex items-center justify-between space-y-2">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Pagos con Referencia</h2>
-                    <p className="text-muted-foreground">
-                        Seguimiento de pagos por concepto de exámenes y otras certificaciones/libros.
+        <div className="flex-1 space-y-6 p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h2 className="text-3xl font-black tracking-tight text-white font-outfit">
+                        Pagos <span className="text-primary italic">Financieros</span>
+                    </h2>
+                    <p className="text-muted-foreground max-w-lg">
+                        Control de ingresos, conciliación de referencias y seguimiento de certificaciones.
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        {selectedKeys.size > 0 && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleBulkDelete}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                Eliminar Selección ({selectedKeys.size})
-                            </Button>
-                        )}
-                        <Button variant="outline" size="sm" onClick={handleExportExcel} className="hidden sm:flex" title="Exportar Vista a Excel">
-                            <Download className="mr-2 h-4 w-4" /> Exportar a Excel
+                <div className="flex flex-wrap items-center gap-2">
+                    {selectedKeys.size > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={isDeleting}
+                            className="shadow-lg shadow-red-500/20"
+                        >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            Borrar ({selectedKeys.size})
                         </Button>
-                        <ImportPaymentsDialog onSuccess={() => mutatePayments()} />
-                        <RegisterPaymentDialog mode="exam" onSuccess={() => mutatePayments()} />
-                        <RegisterPaymentDialog mode="other" onSuccess={() => mutatePayments()} />
-                    </div>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleExportExcel} className="bg-slate-900/50 border-slate-700 text-slate-300 hover:text-white">
+                        <Download className="mr-2 h-4 w-4" /> Exportar
+                    </Button>
+                    <ImportPaymentsDialog onSuccess={() => mutatePayments()} />
+                    <RegisterPaymentDialog mode="exam" onSuccess={() => mutatePayments()} />
+                    <RegisterPaymentDialog mode="other" onSuccess={() => mutatePayments()} />
                 </div>
             </div>
 
-            <Card className="shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-medium">Relación de Pagos</CardTitle>
+            <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-md shadow-2xl overflow-hidden">
+                <CardHeader className="border-b border-slate-800/50 bg-slate-950/30 p-4">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-primary" /> Historial de Transacciones
+                        </CardTitle>
+                        <div className="text-xs text-slate-500 font-mono">
+                            {payments.length} registros encontrados
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     {isLoading ? (
-                        <div className="flex h-24 items-center justify-center">
-                            <Clock className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <div className="flex h-64 flex-col items-center justify-center text-slate-400">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                            <p className="font-medium">Sincronizando con Ledger...</p>
                         </div>
                     ) : payments.length === 0 ? (
-                        <div className="flex h-32 flex-col items-center justify-center space-y-2 text-center">
-                            <CreditCard className="h-10 w-10 text-muted-foreground/50" />
-                            <p className="text-sm text-muted-foreground">No hay pagos registrados aún.</p>
+                        <div className="flex h-64 flex-col items-center justify-center space-y-4 text-center">
+                            <div className="p-4 rounded-full bg-slate-800/50 text-slate-600">
+                                <CreditCard className="h-12 w-12" />
+                            </div>
+                            <div>
+                                <p className="text-lg font-bold text-slate-300">Sin movimientos</p>
+                                <p className="text-sm text-slate-500 max-w-xs">No hay pagos registrados para el periodo actual.</p>
+                            </div>
                         </div>
                     ) : (
-                        <div className="rounded-md border overflow-x-auto">
+                        <div className="overflow-x-auto">
                             <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <TableHead className="w-[40px]">
+                                <TableHeader className="bg-slate-950/50">
+                                    <TableRow className="hover:bg-transparent border-slate-800">
+                                        <TableHead className="w-[50px] px-4">
                                             <Checkbox
                                                 checked={payments.length > 0 && selectedKeys.size === payments.length}
                                                 onCheckedChange={toggleAll}
+                                                className="border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                             />
                                         </TableHead>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Folio / Ref</TableHead>
-                                        <TableHead>Concepto</TableHead>
-                                        <TableHead>Cliente</TableHead>
-                                        <TableHead>Institución / Sede</TableHead>
-                                        <TableHead>Sede LEC</TableHead>
-                                        <TableHead>Total a Pagar</TableHead>
-                                        <TableHead>Método de Pago</TableHead>
-                                        <TableHead>Estatus</TableHead>
-                                        <TableHead className="text-right">Acciones</TableHead>
+                                        <TableHead className="min-w-[100px] font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fecha</TableHead>
+                                        <TableHead className="min-w-[120px] font-bold text-slate-400 uppercase tracking-widest text-[10px]">Folio</TableHead>
+                                        <TableHead className="min-w-[200px] font-bold text-slate-400 uppercase tracking-widest text-[10px]">Concepto</TableHead>
+                                        <TableHead className="min-w-[180px] font-bold text-slate-400 uppercase tracking-widest text-[10px]">Cliente / Alumno</TableHead>
+                                        <TableHead className="min-w-[150px] font-bold text-slate-400 uppercase tracking-widest text-[10px]">Institución</TableHead>
+                                        <TableHead className="min-w-[120px] font-bold text-slate-400 uppercase tracking-widest text-[10px] text-right">Monto</TableHead>
+                                        <TableHead className="min-w-[120px] font-bold text-slate-400 uppercase tracking-widest text-[10px] text-center">Estatus</TableHead>
+                                        <TableHead className="w-[60px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {payments.map((payment) => {
-                                        const StatusIcon = statusConfig[payment.status].icon;
+                                        const config = statusConfig[payment.status] || statusConfig.PENDING;
+                                        const StatusIcon = config.icon;
                                         return (
-                                            <TableRow key={payment.id}>
-                                                <TableCell>
+                                            <TableRow key={payment.id} className="hover:bg-slate-800/30 border-slate-800/60 transition-colors group">
+                                                <TableCell className="px-4">
                                                     <Checkbox
                                                         checked={selectedKeys.has(payment.id)}
                                                         onCheckedChange={() => toggleSelection(payment.id)}
+                                                        className="border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                     />
                                                 </TableCell>
-                                                <TableCell className="text-xs font-mono">
-                                                    {format(new Date(payment.created_at), "dd MMM yy", { locale: es })}
+                                                <TableCell className="text-[11px] font-bold text-slate-400 uppercase whitespace-nowrap">
+                                                    {format(new Date(payment.created_at), "dd MMM yyyy", { locale: es })}
                                                 </TableCell>
-                                                <TableCell className="font-semibold text-xs tracking-tight">{payment.folio}</TableCell>
-                                                <TableCell className="max-w-[200px]">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">
+                                                <TableCell className="font-mono text-[11px] font-bold text-primary tracking-tighter">
+                                                    {payment.folio}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col max-w-[250px]">
+                                                        <span className="text-sm font-bold text-slate-100 line-clamp-1">
                                                             {payment.payment_concepts ? payment.payment_concepts.description : payment.custom_concept || "Otro concepto"}
                                                         </span>
                                                         {payment.payment_concepts && (
-                                                            <span className="text-[10px] text-muted-foreground font-mono bg-muted inline-flex w-fit px-1 rounded mt-1">
-                                                                {payment.payment_concepts.concept_key}
+                                                            <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">
+                                                                REF: {payment.payment_concepts.concept_key}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm flex items-center font-medium">
-                                                            <User className="mr-1 h-3 w-3 text-muted-foreground" />
+                                                        <span className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                                                            <User className="w-3 h-3 text-slate-500" />
                                                             {payment.first_name ? `${payment.first_name} ${payment.last_name || ''}` : payment.person_name}
                                                         </span>
                                                         {payment.email && payment.email !== 'n/a' && (
-                                                            <span className="text-[11px] text-muted-foreground flex items-center mt-0.5">
-                                                                <Mail className="mr-1 h-3 w-3" /> {payment.email}
+                                                            <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5 lowercase font-medium">
+                                                                <Mail className="w-2.5 h-2.5" /> {payment.email}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {payment.institution ? (
-                                                        <span className="text-xs flex items-center text-slate-600 dark:text-slate-300">
-                                                            <Building2 className="mr-1 h-3 w-3" /> {payment.institution}
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-tight">
+                                                            <Building2 className="w-3 h-3 text-slate-500" /> 
+                                                            {payment.institution || "Personal"}
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground italic">N/A</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="text-xs font-medium text-[#002e5d]">{payment.location || "N/A"}</span>
-                                                </TableCell>
-                                                <TableCell className="font-bold text-emerald-600">
-                                                    ${Number(payment.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })} {payment.currency || 'MXN'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {payment.payment_method && payment.payment_method !== 'N/A' ? (
-                                                        <span className="text-xs flex items-center">
-                                                            <Wallet className="mr-1 h-3 w-3 text-slate-500" /> {payment.payment_method}
+                                                        <span className="text-[9px] text-slate-500 font-black uppercase">
+                                                            Sede: {payment.location || "N/A"}
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground">No definido</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={`${statusConfig[payment.status].color} border-none`}>
-                                                        <StatusIcon className="mr-1 h-3 w-3" />
-                                                        {statusConfig[payment.status].label}
-                                                    </Badge>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-sm font-black text-white whitespace-nowrap">
+                                                            ${Number(payment.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-slate-500 uppercase">{payment.currency || 'MXN'}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge className={cn(
+                                                        "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all",
+                                                        config.className
+                                                    )}>
+                                                        <StatusIcon className="mr-1.5 h-3 w-3" />
+                                                        {config.label}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right pr-4">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
                                                                 <MoreHorizontal className="h-4 w-4" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
+                                                        <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200">
                                                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "PAID")}>
-                                                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Marcar como Pagado
+                                                            <DropdownMenuSeparator className="bg-slate-800" />
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "PAID")} className="focus:bg-emerald-500/10 focus:text-emerald-500">
+                                                                <CheckCircle2 className="mr-2 h-4 w-4" /> Marcar como Pagado
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "EXPIRED")}>
-                                                                <Clock className="mr-2 h-4 w-4 text-amber-600" /> Marcar Vencido
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "EXPIRED")} className="focus:bg-amber-500/10 focus:text-amber-500">
+                                                                <Clock className="mr-2 h-4 w-4" /> Marcar Vencido
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "CANCELLED")}>
-                                                                <XCircle className="mr-2 h-4 w-4 text-red-600" /> Cancelar
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(payment.id, "CANCELLED")} className="focus:bg-red-500/10 focus:text-red-500">
+                                                                <XCircle className="mr-2 h-4 w-4" /> Cancelar
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => handleDelete(payment.id)} className="text-red-600">
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                            <DropdownMenuSeparator className="bg-slate-800" />
+                                                            <DropdownMenuItem onClick={() => handleDelete(payment.id)} className="text-red-500 focus:bg-red-500/10 focus:text-red-500 font-bold">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar Registro
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
