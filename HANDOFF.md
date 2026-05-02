@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-04-29
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-02
 
 ---
 
@@ -11,11 +11,13 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Area | Estado |
 |------|--------|
 | Build / Typecheck | Pass sin errores (`npm run build`) |
-| ESLint | `0` errores, `62` warnings |
+| ESLint | Pass (`0` errores) |
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
-| Playwright (E2E) | `9/9` fallando — harness asume DEMO_MODE, server redirige a `/login` |
+| Playwright (E2E) | Pass (`10/10`) |
 | Finance - Caja Chica | CRUD + balance RPC + Excel export/import + receipt upload |
 | Finance - Presupuesto (POA) | Tabla `poa_lines` libre por seccion/concepto, dos fuentes (CAJA_CHICA / CUENTA_BAC) |
+| Finance - IH Billing | Operativo: sesiones, tarifas, facturas, pagos, conciliacion e import |
+| Finance - Viaticos | MVP implementado (PR #29 abierto, pendiente merge) |
 | Invitaciones | Flujo completo + Resend + `expires_at` + `joinUrl` fallback |
 | CENNI | CRUD + bulk import + certificados PDF + visor + email |
 | TOEFL | Administraciones + codigos |
@@ -23,7 +25,6 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Inventario / Scan / Nomina | Operativos en produccion real |
 | Sentry | Activo (project `orb-lec`) |
 | Portal de aplicadores | Datos placeholder desde `src/lib/demo/data.ts` — no terminado |
-| IH Billing | **PENDIENTE** — analizado, listo para Sprint 2 |
 
 ---
 
@@ -58,7 +59,7 @@ Cambridge Assessment / Sistema Uno
 
 ```
 Sprint 1   - Estabilizacion funcional          -> COMPLETADO (abril 2026)
-Sprint 2   - IH Billing + Viaticos             -> SIGUIENTE
+Sprint 2   - IH Billing + Viaticos             -> EN CIERRE (falta merge PR #29)
 Sprint 3   - Logistica de eventos + Nomina     -> Diseñado, pendiente implementar
 Sprint 4   - Cursos + Ferias de libros         -> Pendiente
 Sprint 5   - Dashboard KPIs completo           -> Pendiente
@@ -89,12 +90,12 @@ ih_tariffs    -- catalogo de tarifas por examen/ano (editable)
 | DESGLOSE 2025-2026.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` |
 | PAGOS IH LEC v1.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` |
 
-### Decisiones pendientes de definir con Luis
+### Decisiones de Sprint 2 cerradas con Luis
 
-- Importar desde Excel de IH o captura manual?
-- Adjuntar PDF/Excel de IH como comprobante del pago (Storage)?
-- LEC genera PDF de factura desde la plataforma?
-- Conciliacion automatica de pagos vs sesiones o manual?
+- IH: import + captura manual
+- Adjuntar comprobantes IH (Excel/PDF)
+- PDF de factura en plataforma movido a Sprint 3
+- Viaticos como modulo separado, vinculado a Nomina
 
 ---
 
@@ -122,8 +123,9 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [ ] Definir con Luis las preguntas de diseno de Sprint 2 (ver arriba)
-- [ ] Implementar modulo IH Billing: tablas + endpoints + UI
+- [ ] Merge PR #29 de Viaticos
+- [ ] Aplicar migracion `20260503_travel_expenses.sql` en Supabase productivo
+- [ ] Smoke test funcional de Viaticos en dashboard
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion (backend listo)
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 
@@ -135,7 +137,6 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Deuda tecnica
 
-- [ ] Realinear Playwright: auth real sembrada o bootstrap explicito de sesion de test
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica
 - [ ] Staging environment con org de prueba
@@ -148,8 +149,6 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 | Proceso | Como se hace hoy | Sprint |
 |---------|-----------------|--------|
-| Cuentas por cobrar IH (Cambridge) | PAGOS IH LEC v1.xlsx | Sprint 2 |
-| Viaticos por evento/aplicador | Sin registro | Sprint 2 |
 | Rol de aplicador por evento (SE/ADMIN/INVIG/SUPER) | LOGISTICA_UNOi 2026.xlsx | Sprint 3 |
 | Nomina dinamica por rol | Tarifas hardcoded en Excel | Sprint 3 |
 | P&L por sesion (IH - nomina - viaticos) | Hoja PRESUPUESTO GASTOS en Excel | Sprint 3 |

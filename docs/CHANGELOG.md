@@ -4,6 +4,15 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-02] - sprint-2 sync: e2e green + viaticos mvp
+
+- test(e2e): suite Playwright estabilizada y en verde (`10/10`)
+- feat(finance): modulo Viaticos MVP con dashboard, API y migracion `20260503_travel_expenses.sql` (PR #29)
+- feat(finance): IH Billing ya operativo (sesiones, facturas, pagos, conciliacion e import)
+- docs(status): `HANDOFF.md`, `docs/ROADMAP.md` y `docs/TESTING_GUIDE.md` actualizados con estado real al 2026-05-02
+
+---
+
 ## [2026-04-29] - docs: sync project status after live verification
 
 - docs(status): `README.md`, `HANDOFF.md` y `docs/ROADMAP.md` actualizados para reflejar el estado verificado el 2026-04-29
