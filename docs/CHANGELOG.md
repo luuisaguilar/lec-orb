@@ -4,6 +4,45 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-03] - Sprint 4: Academic & Logistics Modules (Hardening)
+
+- feat(courses): implemented Course Simulator with financial projections (ROI, Break-even, CAC).
+- feat(courses): added persistence for course simulations (Draft/Published) and naming support.
+- feat(inventory): implemented real-time Inventory Dashboard connected to Supabase.
+- feat(inventory): added stock transfer workflow with a premium Dialog modal for moving items between warehouse and fairs.
+- feat(api): new endpoints for `api/v1/courses`, `api/v1/inventory`, `api/v1/inventory/locations`, and `api/v1/inventory/transfers`.
+- feat(db): new migration `20260510_sprint_4_courses_inventory.sql` with schema for courses, items, locations, stock, and transactions.
+- feat(ui): integrated `courses` and `inventory` modules into sidebar with dynamic reordering (Settings always at bottom).
+- fix(ui): resolved missing components issues by implementing a custom `Slider` and fixing icon imports.
+- refactor(api): unified audit logging and authentication handlers across new modules.
+
+
+## [2026-05-03] - SGC Phase 1: ISO/QMS data model + documentation
+
+- feat(db): nueva migracion `20260510_sgc_phase1.sql` con modelo SGC multi-tenant (NC, acciones, auditorias, revisiones, catalogos y tablas relacionales).
+- feat(db): RLS habilitado en todas las tablas SGC con lectura para miembros de la org y escritura para roles `admin/supervisor`.
+- feat(db): reglas de negocio en DB para flujo NC/CAPA (cierre de NC requiere evaluacion y acciones cerradas; control de transiciones de acciones).
+- feat(db): triggers de `updated_at` y `fn_audit_log` aplicados al bloque SGC para trazabilidad.
+- docs(sgc): nuevo documento `docs/SGC_MODULE.md` con alcance, arquitectura y roadmap de implementacion.
+- docs(sgc): nueva matriz de decision y trazabilidad `docs/SGC_MATRICES.md`.
+- docs(sgc): nuevo plan de ejecucion por sprint con estimaciones `docs/SGC_SPRINT_PLAN.md`.
+- docs(sgc): nuevo tablero operativo de ejecucion para Sprint 01 `docs/SGC_SPRINT01_EXECUTION_BOARD.md`.
+- docs(adr): nuevos ADRs `ADR-005` (modelo de dominio SGC) y `ADR-006` (reglas de workflow en DB).
+- docs(backlog): nuevo backlog operativo `docs/BACKLOG_SGC.md` con epicas, historias y criterios de aceptacion.
+- docs(roadmap): `docs/ROADMAP.md` actualizado con linea de ejecucion para convertir SGC Fase 1 en operacion real.
+- docs(schema): `docs/DATABASE_SCHEMA.md` actualizado con seccion SGC (tablas principales y reglas).
+- docs(erp): nueva matriz GAP ERP y funcionalidades por modulo `docs/ERP_GAP_MATRIX_AND_MODULES.md` (benchmark Odoo/ERPNext/ERPcafe).
+
+## [2026-05-03] - Phase 3: Event Payroll Engine & Financial P&L Integration
+
+- feat(payroll): implemented Phase 3 calculation engine via `fn_calculate_payroll_for_period` RPC for dynamic staff payments.
+- feat(payroll): added `payroll_line_items` table for granular tracking of applicator roles, hours, and payments per event.
+- feat(payroll): updated Dashboard with "Recalculate" workflow, toast notifications, and role-based breakdown.
+- feat(events): integrated real staff costs into the "Financials & P&L" tab, replacing static placeholders with live payroll data.
+- feat(api): updated `/api/v1/payroll` to support manual recalculation and detailed role aggregation.
+- fix(routes): resolved Next.js dynamic path conflict by consolidating event sub-routes under standard `[id]` slug.
+- feat(db): future-proofed payroll schema with `type` and `category` fields for upcoming administrative payroll integration.
+
 ## [2026-05-02] - UI/UX Polish: Premium SaaS Refinement & Calculadora 2.0
 
 - feat(ui): major visual refinement pass focused on "Premium SaaS" aesthetics (glassmorphism, dark mode polish, consistent contrast).

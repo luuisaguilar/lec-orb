@@ -652,7 +652,106 @@ Bucket: `org-documents`.
 
 ---
 
-## 12. Auditoría
+## 12. SGC (ISO/QMS) - Fase 1
+
+### `sgc_nonconformities`
+No conformidades (NC) con estado, análisis y evaluación de cierre.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `ref` | text | Formato `NC-YYYY-######` |
+| `title` | text | nullable |
+| `description` | text | Requerido |
+| `stage_id` | uuid | FK → `sgc_nc_stages` |
+| `status` | text | `draft`, `analysis`, `pending`, `open`, `done`, `cancel` |
+| `responsible_user_id` | uuid | FK → `auth.users` |
+| `manager_user_id` | uuid | FK → `auth.users` |
+| `severity_id` | uuid | FK → `sgc_nc_severities` |
+| `analysis` | text | |
+| `action_plan_comments` | text | |
+| `evaluation_comments` | text | Obligatorio al cerrar |
+| `opened_at` | timestamptz | |
+| `closed_at` | timestamptz | |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### `sgc_actions`
+Acciones de respuesta (inmediata/correctiva/preventiva/mejora) ligadas a NC y auditorías.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `ref` | text | Formato `ACT-YYYY-######` |
+| `title` | text | |
+| `type_action` | text | `immediate`, `correction`, `prevention`, `improvement` |
+| `stage_id` | uuid | FK → `sgc_action_stages` |
+| `status` | text | `draft`, `open`, `in_progress`, `done`, `cancel` |
+| `deadline_at` | date | |
+| `opened_at` | timestamptz | |
+| `closed_at` | timestamptz | |
+| `responsible_user_id` | uuid | FK → `auth.users` |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### `sgc_audits`
+Auditorías con checklist de verificación, NC detectadas y oportunidades de mejora.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `ref` | text | Formato `AUD-YYYY-######` |
+| `audit_date` | timestamptz | |
+| `state` | text | `open`, `done` |
+| `audit_manager_id` | uuid | FK → `auth.users` |
+| `strong_points` | text | |
+| `to_improve_points` | text | |
+| `closing_date` | timestamptz | |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### `sgc_reviews`
+Revisión gerencial del SGC con decisiones sobre acciones/NC.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `ref` | text | Formato `REV-YYYY-######` |
+| `title` | text | |
+| `review_date` | timestamptz | |
+| `state` | text | `open`, `done` |
+| `policy` | text | |
+| `changes` | text | |
+| `conclusion` | text | |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### Tablas relacionales SGC
+
+- `sgc_nonconformity_actions`
+- `sgc_nonconformity_origins`
+- `sgc_nonconformity_causes`
+- `sgc_audit_auditors`
+- `sgc_audit_auditees`
+- `sgc_audit_checks`
+- `sgc_audit_nonconformities`
+- `sgc_audit_improvement_actions`
+- `sgc_review_participants`
+- `sgc_review_items`
+
+Reglas clave:
+
+- Cierre de NC exige `evaluation_comments` y acciones vinculadas cerradas.
+- RLS habilitado en todas las tablas SGC.
+- Escritura restringida a `admin/supervisor`.
+
+---
+
+## 13. Auditoría
 
 ### `audit_log`
 Bitácora de mutaciones en la base de datos.

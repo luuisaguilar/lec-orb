@@ -16,6 +16,7 @@ import {
     CheckCircle,
     Clock,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -41,11 +42,11 @@ export default function PayrollPage() {
     const { t } = useI18n();
     const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
 
-    const { data: periodsData, isLoading: loadingPeriods } = useSWR(
+    const { data: periodsData, isLoading: loadingPeriods, mutate: mutatePeriods } = useSWR(
         "/api/v1/payroll",
         fetcher
     );
-    const { data: detailData, isLoading: loadingDetail } = useSWR(
+    const { data: detailData, isLoading: loadingDetail, mutate: mutateDetail } = useSWR(
         selectedPeriod ? `/api/v1/payroll?periodId=${selectedPeriod}` : null,
         fetcher
     );
@@ -61,6 +62,10 @@ export default function PayrollPage() {
                 entries={entries}
                 loading={loadingDetail}
                 onBack={() => setSelectedPeriod(null)}
+                onRefresh={() => {
+                    mutateDetail();
+                    mutatePeriods();
+                }}
             />
         );
     }
@@ -155,6 +160,7 @@ function PayrollDetail({
     entries,
     loading,
     onBack,
+    onRefresh,
 }: {
     period: {
         id: string;
@@ -162,23 +168,35 @@ function PayrollDetail({
         status: string;
         total_amount: number;
     };
-    entries: {
-        id: string;
-        applicator_name: string;
-        hours_worked: number;
-        rate_per_hour: number;
-        events_count: number;
-        slots_count: number;
-        subtotal: number;
-        adjustments: number;
-        total: number;
-        status: string;
-        notes: string | null;
-    }[];
+    entries: any[];
     loading: boolean;
     onBack: () => void;
+    onRefresh: () => void;
 }) {
     const { t } = useI18n();
+    const [isCalculating, setIsCalculating] = useState(false);
+
+    const handleRecalculate = async () => {
+        try {
+            setIsCalculating(true);
+            const res = await fetch("/api/v1/payroll", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ periodId: period.id }),
+            });
+
+            if (!res.ok) throw new Error("Failed to recalculate");
+
+            toast.success("Nómina recalculada exitosamente");
+            onRefresh();
+        } catch (err) {
+            console.error(err);
+            toast.error("Error al calcular la nómina");
+        } finally {
+            setIsCalculating(false);
+        }
+    };
+
     const totalAmount = entries.reduce((sum, e) => sum + e.total, 0);
     const totalHours = entries.reduce((sum, e) => sum + e.hours_worked, 0);
 
@@ -190,12 +208,30 @@ function PayrollDetail({
                     {t("payroll.title")}
                 </Button>
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight">
-                        {period.name}
-                    </h2>
-                    <Badge className={statusColors[period.status] || statusColors.open}>
-                        {statusLabels[period.status] || period.status}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {period.name}
+                        </h2>
+                        <Badge className={statusColors[period.status] || statusColors.open}>
+                            {statusLabels[period.status] || period.status}
+                        </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleRecalculate}
+                            disabled={isCalculating}
+                            className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+                        >
+                            {isCalculating ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <DollarSign className="mr-2 h-4 w-4" />
+                            )}
+                            Recalcular Nómina
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -259,6 +295,7 @@ function PayrollDetail({
                                 <thead>
                                     <tr className="border-b bg-muted/50">
                                         <th className="px-4 py-3 text-left font-medium">Aplicador</th>
+                                        <th className="px-4 py-3 text-left font-medium">Roles</th>
                                         <th className="px-4 py-3 text-center font-medium">Eventos</th>
                                         <th className="px-4 py-3 text-center font-medium">Turnos</th>
                                         <th className="px-4 py-3 text-center font-medium">Horas</th>
@@ -282,6 +319,15 @@ function PayrollDetail({
                                                         {entry.notes}
                                                     </span>
                                                 )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {entry.roles?.map((role: string) => (
+                                                        <Badge key={role} variant="outline" className="text-[10px] px-1.5 py-0 h-4 uppercase">
+                                                            {role}
+                                                        </Badge>
+                                                    )) || <span className="text-muted-foreground text-xs">—</span>}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">{entry.events_count}</td>
                                             <td className="px-4 py-3 text-center">{entry.slots_count}</td>
@@ -313,6 +359,7 @@ function PayrollDetail({
                                 <tfoot>
                                     <tr className="bg-muted/50 font-bold">
                                         <td className="px-4 py-3">Total</td>
+                                        <td className="px-4 py-3"></td>
                                         <td className="px-4 py-3 text-center">
                                             {entries.reduce((s, e) => s + e.events_count, 0)}
                                         </td>

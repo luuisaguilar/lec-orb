@@ -533,25 +533,18 @@ viaticos (
 - ✅ **Auditoría Visual Premium**: Refinamiento estético completado en toda la plataforma (Mayo 2026).
 - ✅ **Calculadora 2.0**: Layout simétrico y temas dinámicos por examen.
 - ✅ **Fix SGC**: Resuelto crash de navegación y scroll de sidebar.
+- ✅ **Viáticos**: Módulo integrado (PR #29) y migración aplicada.
+- ✅ **Nombre Institucional**: Actualizado a "Languages Education Consulting".
 
 **Prioridad Alta:**
-1. Dashboard CENNI: vista de estadísticas por estatus (cards + gráfica).
-
-**Pendiente de decisión antes de codificar (Luis decide):**
-- ¿IH Billing: import Excel o captura manual?
-- ¿Adjuntar Excel/PDF de IH como comprobante del pago (Storage)?
-- ¿LEC genera PDF de factura desde la plataforma?
-- ¿Viáticos: módulo separado o ligado a nómina?
+1. Dashboard CENNI: Refinar vista de estadísticas si es necesario (ya cuenta con cards y barras).
+2. Smoke test de viáticos en producción.
 
 ### Pendientes técnicos (cualquier sprint)
 
-1. **UI `/join/[token]?expired=1`:** CTA "pedir nueva invitación" — backend listo, falta el componente
-2. **Cron `fn_expire_old_invitations()`:** Vercel Cron diario — listo para conectar
-3. **PR #20:** Verificar CI verde → squash merge
-4. **Fix nombre empresa:** "Language Evaluation Center" → "Languages Education Consulting" en código, emails y UI
-5. **Backfill CENNI SOLICITADO:** `python backfill_certificates.py --status SOLICITADO` en cenni-bot
-6. **CURP faltante:** Silvia Selene Moreno Carrasco (folio CENNI-CF57JA)
-7. **Retry timeout:** MARCO GASTELUM folio 336225
+1. **Smoke test** de viáticos en dashboard productivo.
+2. **Validación** de 9 grupos de permisos con gerencia.
+3. **KPI cards** adicionales en Caja Chica.
 
 ### Prioridad media/baja
 

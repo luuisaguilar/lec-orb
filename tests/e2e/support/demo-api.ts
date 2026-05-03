@@ -73,6 +73,44 @@ type DemoMember = {
     email: string;
 };
 
+type DemoTravelReport = {
+    id: string;
+    org_id: string;
+    payroll_period_id: string | null;
+    employee_name: string;
+    destination: string;
+    trip_purpose: string;
+    start_date: string;
+    end_date: string;
+    amount_requested: number;
+    amount_approved: number | null;
+    status: "pending" | "approved" | "rejected" | "reimbursed";
+    approval_notes: string | null;
+    approved_by: string | null;
+    approved_at: string | null;
+    created_by: string;
+    updated_by: string;
+    created_at: string;
+    updated_at: string;
+    receipts?: DemoTravelReceipt[];
+    receipts_total?: number;
+    payroll_period_name?: string | null;
+};
+
+type DemoTravelReceipt = {
+    id: string;
+    org_id: string;
+    report_id: string;
+    file_name: string;
+    file_type: "pdf" | "xlsx" | "xls" | "csv" | "other";
+    file_url: string;
+    amount: number | null;
+    notes: string | null;
+    uploaded_by: string;
+    created_at: string;
+    updated_at: string;
+};
+
 const ORG = {
     id: "demo-org-001",
     name: "LEC Demo",
@@ -272,7 +310,41 @@ function createDemoState() {
             is_native: true,
             sort_order: 30,
         },
+        {
+            id: "module-travel-expenses",
+            slug: "travel-expenses",
+            name: "Viaticos",
+            icon: "Map",
+            category: "Finanzas",
+            is_native: true,
+            sort_order: 54,
+        },
     ];
+
+    const travelReports: DemoTravelReport[] = [
+        {
+            id: "report-001",
+            org_id: ORG.id,
+            payroll_period_id: null,
+            employee_name: "Demo Admin",
+            destination: "CDMX",
+            trip_purpose: "Evento UNAM",
+            start_date: dateOnly(1),
+            end_date: dateOnly(3),
+            amount_requested: 2500,
+            amount_approved: null,
+            status: "pending",
+            approval_notes: null,
+            approved_by: null,
+            approved_at: null,
+            created_by: "user-001",
+            updated_by: "user-001",
+            created_at: isoDate(),
+            updated_at: isoDate(),
+        }
+    ];
+
+    const travelReceipts: DemoTravelReceipt[] = [];
 
     return {
         categories,
@@ -285,6 +357,8 @@ function createDemoState() {
         invitations,
         members,
         modules,
+        travelReports,
+        travelReceipts,
     };
 }
 
@@ -709,6 +783,115 @@ export async function installDemoApiMocks(page: Page) {
                 state.poaLines.splice(index, 1);
             }
             return json(route, { success: true });
+        }
+
+        if (matchesPath(pathname, "/api/v1/finance/travel-expenses")) {
+            if (method === "GET") {
+                const status = url.searchParams.get("status");
+                const year = url.searchParams.get("year");
+
+                let filtered = [...state.travelReports];
+                if (status && status !== "all") {
+                    filtered = filtered.filter((r) => r.status === status);
+                }
+                if (year) {
+                    filtered = filtered.filter((r) => r.start_date.startsWith(year));
+                }
+
+                const hydrated = filtered.map((report) => {
+                    const receipts = state.travelReceipts.filter((rc) => rc.report_id === report.id);
+                    const receiptsTotal = receipts.reduce((sum, rc) => sum + (rc.amount || 0), 0);
+                    return {
+                        ...report,
+                        receipts,
+                        receipts_total: receiptsTotal,
+                        payroll_period_name: null, // Simplified for mock
+                    };
+                });
+
+                const summary = {
+                    total_reports: hydrated.length,
+                    pending_count: hydrated.filter((r) => r.status === "pending").length,
+                    approved_count: hydrated.filter((r) => r.status === "approved").length,
+                    reimbursed_count: hydrated.filter((r) => r.status === "reimbursed").length,
+                    requested_total: hydrated.reduce((sum, r) => sum + r.amount_requested, 0),
+                    approved_total: hydrated.reduce((sum, r) => sum + (r.amount_approved || 0), 0),
+                    receipts_total: hydrated.reduce((sum, r) => sum + (r.receipts_total || 0), 0),
+                };
+
+                return json(route, { reports: hydrated, summary });
+            }
+
+            if (method === "POST") {
+                const body = parseBody(route) as any;
+                const report: DemoTravelReport = {
+                    id: `report-${Date.now()}`,
+                    org_id: ORG.id,
+                    payroll_period_id: body.payroll_period_id || null,
+                    employee_name: body.employee_name,
+                    destination: body.destination,
+                    trip_purpose: body.trip_purpose,
+                    start_date: body.start_date,
+                    end_date: body.end_date,
+                    amount_requested: body.amount_requested,
+                    amount_approved: null,
+                    status: "pending",
+                    approval_notes: null,
+                    approved_by: null,
+                    approved_at: null,
+                    created_by: "user-001",
+                    updated_by: "user-001",
+                    created_at: isoDate(),
+                    updated_at: isoDate(),
+                };
+                state.travelReports.unshift(report);
+                return json(route, { report: { ...report, receipts: [], receipts_total: 0 } }, 201);
+            }
+        }
+
+        if (/\/api\/v1\/finance\/travel-expenses\/[^/]+$/.test(pathname)) {
+            const id = pathname.split("/").pop();
+            const report = state.travelReports.find((r) => r.id === id);
+
+            if (!report) {
+                return json(route, { error: "Report not found" }, 404);
+            }
+
+            if (method === "PATCH") {
+                const body = parseBody(route) as any;
+                Object.assign(report, {
+                    ...body,
+                    updated_at: isoDate(),
+                    updated_by: "user-001",
+                });
+                if (body.status === "approved") {
+                    report.approved_by = "user-001";
+                    report.approved_at = isoDate();
+                }
+                return json(route, { report });
+            }
+        }
+
+        if (/\/api\/v1\/finance\/travel-expenses\/[^/]+\/receipts$/.test(pathname)) {
+            const reportId = pathname.split("/").slice(-2)[0];
+            if (method === "POST") {
+                const body = parseBody(route) as any;
+                const receipt: DemoTravelReceipt = {
+                    id: `receipt-${Date.now()}`,
+                    org_id: ORG.id,
+                    report_id: reportId,
+                    file_name: body.file_name,
+                    file_type: body.file_type,
+                    file_url: body.file_url,
+                    amount: body.amount || null,
+                    notes: body.notes || null,
+                    uploaded_by: "user-001",
+                    created_at: isoDate(),
+                    updated_at: isoDate(),
+                };
+                state.travelReceipts.push(receipt);
+                return json(route, { receipt }, 201);
+            }
         }
 
         return route.continue();

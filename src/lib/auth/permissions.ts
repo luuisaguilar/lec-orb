@@ -25,6 +25,7 @@ export type Module =
     | "documents"
     | "notifications"
     | "studio"
+    | "courses"
     | "audit-log";
 
 export type Action =
@@ -158,6 +159,12 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
     "audit-log": {
         read: ["admin", "supervisor"],
     },
+    courses: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
 };
 
 /**
@@ -238,6 +245,8 @@ export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Acti
     notifications: { module: "notifications", readAction: "read", writeAction: "manage", deleteAction: "manage" },
     "audit-log": { module: "audit-log", readAction: "read", writeAction: "read", deleteAction: "read" },
     studio: { module: "studio", readAction: "read", writeAction: "manage", deleteAction: "manage" },
+    courses: { module: "courses", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    cursos: { module: "courses", readAction: "read", writeAction: "create", deleteAction: "delete" },
 };
 
 /**
