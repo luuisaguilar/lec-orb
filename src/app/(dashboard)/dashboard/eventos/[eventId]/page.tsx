@@ -22,6 +22,7 @@ import {
     Briefcase,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { EventStaffManager } from "./components/event-staff-manager";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());

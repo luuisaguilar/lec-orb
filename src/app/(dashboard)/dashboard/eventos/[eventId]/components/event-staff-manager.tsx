@@ -244,7 +244,7 @@ export function EventStaffManager({ eventId }: { eventId: string }) {
                     <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                         <AlertCircle className="h-8 w-8 mb-2 opacity-20" />
                         <p>No hay personal asignado a este evento todavía.</p>
-                        <p className="text-xs">Usa el botón "Asignar Staff" para comenzar.</p>
+                        <p className="text-xs">Usa el botón &quot;Asignar Staff&quot; para comenzar.</p>
                     </CardContent>
                 </Card>
             ) : (

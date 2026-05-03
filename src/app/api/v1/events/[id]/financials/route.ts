@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 
-export const GET = withAuth(async (req, { supabase, member, params }) => {
+export const GET = withAuth(async (req, { supabase, member }, { params }) => {
     const { id: eventId } = await params;
 
     // 1. Get Payroll Costs for this event
@@ -19,7 +19,7 @@ export const GET = withAuth(async (req, { supabase, member, params }) => {
 
     if (pError) throw pError;
 
-    const totalStaffCost = payrollItems?.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0) || 0;
+    const totalStaffCost = payrollItems?.reduce((sum: number, item: any) => sum + (Number(item.total_amount) || 0), 0) || 0;
 
     // 2. Get Event Basic Info for context (if needed)
     const { data: event, error: eError } = await supabase
@@ -38,7 +38,7 @@ export const GET = withAuth(async (req, { supabase, member, params }) => {
             totalStaffCost,
             estimatedIncome,
             netProfit: estimatedIncome - totalStaffCost,
-            staffCount: new Set(payrollItems?.map(i => (i.payroll_entries as any)?.applicator_id)).size
+            staffCount: new Set(payrollItems?.map((i: any) => (i.payroll_entries as any)?.applicator_id)).size
         },
         breakdown: payrollItems
     });

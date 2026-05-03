@@ -17,7 +17,7 @@ const staffAssignmentSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
-export const GET = withAuth(async (req, { supabase, member, params }) => {
+export const GET = withAuth(async (req, { supabase, member }, { params }) => {
     const { id: eventId } = await params;
 
     // Fetch staff with applicator details
@@ -41,7 +41,7 @@ export const GET = withAuth(async (req, { supabase, member, params }) => {
     return NextResponse.json({ staff: data });
 }, { module: "events", action: "view" });
 
-export const POST = withAuth(async (req, { supabase, member, user, params }) => {
+export const POST = withAuth(async (req, { supabase, member, user }, { params }) => {
     const { id: eventId } = await params;
     const body = await req.json();
     const parsed = staffAssignmentSchema.safeParse(body);

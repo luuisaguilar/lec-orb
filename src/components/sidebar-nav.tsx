@@ -49,7 +49,6 @@ const NATIVE_ROUTES: Record<string, string> = {
     "schools": "/dashboard/schools",
     "applicators": "/dashboard/applicators",
     "events": "/dashboard/eventos",
-    "inventory": "/dashboard/inventario",
     "toefl": "/dashboard/toefl/administraciones",
     "toefl-codes": "/dashboard/toefl/codigos",
     "cenni": "/dashboard/cenni",

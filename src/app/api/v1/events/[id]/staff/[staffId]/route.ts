@@ -10,7 +10,7 @@ const updateStaffSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 
-export const PATCH = withAuth(async (req, { supabase, member, user, params }) => {
+export const PATCH = withAuth(async (req, { supabase, member, user }, { params }) => {
     const { id: eventId, staffId } = await params;
     const body = await req.json();
     const parsed = updateStaffSchema.safeParse(body);
@@ -66,7 +66,7 @@ export const PATCH = withAuth(async (req, { supabase, member, user, params }) =>
     return NextResponse.json({ assignment: data });
 }, { module: "events", action: "edit" });
 
-export const DELETE = withAuth(async (req, { supabase, member, user, params }) => {
+export const DELETE = withAuth(async (req, { supabase, member, user }, { params }) => {
     const { id: eventId, staffId } = await params;
 
     const { data: currentStaff, error: fetchError } = await supabase
