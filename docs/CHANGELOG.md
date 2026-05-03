@@ -44,7 +44,6 @@ Cambios ordenados de mas reciente a mas antiguo.
 - feat(db): future-proofed payroll schema with `type` and `category` fields for upcoming administrative payroll integration.
 
 ## [2026-05-02] - UI/UX Polish: Premium SaaS Refinement & Calculadora 2.0
-
 - feat(ui): major visual refinement pass focused on "Premium SaaS" aesthetics (glassmorphism, dark mode polish, consistent contrast).
 - feat(calculadora): implemented dynamic exam-based theming (Starters, Movers, Flyers, KEY, PET, FCE) with custom color tokens and glows.
 - feat(calculadora): refactored layout for visual symmetry, spacious glassmorphic containers, and reordered metric hierarchy (bottom-aligned icons).

@@ -37,7 +37,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Sprint 1: Estabilización | Completado | Auth, CENNI, Caja Chica base. |
 | Sprint 2: IH Billing | Completado | Facturación, CxC, Viáticos. |
 | Sprint 3: Nómina y Eventos | Completado | Pulido visual y auditoría terminada. |
-| Sprint 4: Cursos y Ferias | **En Desarrollo** | Iniciando esquema de inventario dual y costos. |
+| Sprint 4: Cursos y Ferias | **Completado** | Simulador financiero + Inventario multi-ubicación. |
 | Sprint 5: Dashboard Gerencial | Pendiente | Integración de P&L consolidado. |
 
 ---
@@ -63,7 +63,7 @@ Cambridge Assessment / Sistema Uno
 
 ---
 
-## Sprint 4 — Cursos y Ferias de Libros (EN CURSO)
+## Sprint 4 — Cursos y Ferias de Libros (COMPLETADO)
 
 ### Objetivo
 Digitalizar la operación académica y el control logístico de ferias con inventario centralizado.
@@ -71,12 +71,104 @@ Digitalizar la operación académica y el control logístico de ferias con inven
 ### Componentes clave
 - **Módulo de Cursos**: 
   - Esquema DB para cursos, niveles y alumnos.
-  - Calculadora de Costos y Márgenes (basada en Excel Mayo-Julio 2026).
-  - Dashboard de rentabilidad por curso.
+  - Simulador de Costos y Márgenes (ROI, Punto de Equilibrio).
+  - Persistencia de proyecciones (Draft/Published).
 - **Módulo de Ferias e Inventario**:
   - Almacén Central (Maestro) vs Ubicaciones por Evento/Feria.
   - Sistema de Transferencias/Asignaciones de stock con auditoría.
-  - Registro de ventas rápidas en sitio.
+  - Dashboard de inventario real conectado a Supabase.
+
+---
+
+## Sprint 2 — IH Billing (detalle)
+
+### Que hace el modulo
+
+Registra sesiones de examen aplicadas por escuela, las agrupa en facturas, registra los pagos
+de IH y calcula automaticamente el saldo pendiente con alertas de antiguedad.
+
+### Tablas propuestas
+
+```sql
+ih_sessions   -- sesion por sesion: escuela, examen, fecha, alumnos, tarifa, conciliacion vs IH
+ih_invoices   -- facturas mensuales emitidas a IH
+ih_payments   -- pagos recibidos de IH
+ih_tariffs    -- catalogo de tarifas por examen/ano (editable)
+```
+
+### Excels que lo reemplazarian
+
+| Archivo | Ruta |
+|---------|------|
+| DESGLOSE 2025-2026.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` |
+| PAGOS IH LEC v1.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` |
+
+### Decisiones de Sprint 2 cerradas con Luis
+
+- IH: import + captura manual
+- Adjuntar comprobantes IH (Excel/PDF)
+- PDF de factura en plataforma movido a Sprint 3
+- Viaticos como modulo separado, vinculado a Nomina
+
+---
+
+## Sprint 3 — Logistica de eventos y Nomina real
+
+### Que falta
+
+Hoy la logistica de cada evento Cambridge esta en `LOGISTICA_UNOi 2026.xlsx`:
+- Rol del aplicador por evento (SE / ADMIN / INVIGILATOR / SUPER)
+- Tabla de duracion: N alumnos + tipo examen -> cuantos SEs + cuantas horas
+- Nomina: horas x tarifa por rol (no por aplicador individual)
+- P&L por sesion: ingreso IH - nomina - viaticos = comision LEC
+
+### Tablas propuestas
+
+```sql
+applicator_event_roles   -- aplicador + evento + rol + horas + tarifa + viaticos
+duration_lookup          -- tipo examen + rango alumnos -> n_SEs + horas (catalogo editable)
+applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPER)
+```
+
+---
+
+## Proximos pasos concretos
+
+### Alta prioridad
+
+- [x] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
+- [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
+- [ ] Smoke test funcional de Viaticos en dashboard productivo
+- [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
+- [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
+
+### Datos / operacion
+
+- [ ] Backfill CENNI `--status SOLICITADO` (19 registros) en cenni-bot
+- [ ] Agregar CURP de Silvia Selene Moreno Carrasco (`CENNI-CF57JA`)
+- [ ] Reintentar backfill de MARCO GASTELUM folio `336225`
+
+### Deuda tecnica
+
+- [x] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
+- [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
+- [ ] KPI cards en Caja Chica
+- [ ] Staging environment con org de prueba
+- [ ] Validar propuesta de 9 grupos de permisos con gerencia
+- [ ] Cron `fn_expire_old_invitations()` (Vercel Cron / pg_cron)
+
+---
+
+## Modulos faltantes
+
+| Proceso | Como se hace hoy | Sprint |
+|---------|-----------------|--------|
+| Rol de aplicador por evento (SE/ADMIN/INVIG/SUPER) | LOGISTICA_UNOi 2026.xlsx | Sprint 3 |
+| Nomina dinamica por rol | Tarifas hardcoded en Excel | Sprint 3 |
+| P&L por sesion (IH - nomina - viaticos) | Hoja PRESUPUESTO GASTOS en Excel | Sprint 3 |
+| Cursos | Sistema externo | Sprint 4 |
+| Ferias de libros | Manual | Sprint 4 |
+| IELTS / OOPT | Sin rastreo | Sin asignar |
 
 ---
 
