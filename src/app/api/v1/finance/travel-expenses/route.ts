@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
@@ -11,6 +11,14 @@ const createReportSchema = z.object({
     start_date: z.string().min(1),
     end_date: z.string().min(1),
     amount_requested: z.number().positive(),
+    // Budget breakdown
+    ppto_aereos: z.number().min(0).optional(),
+    ppto_gasolina: z.number().min(0).optional(),
+    ppto_taxis: z.number().min(0).optional(),
+    ppto_casetas: z.number().min(0).optional(),
+    ppto_hospedaje: z.number().min(0).optional(),
+    ppto_alimentacion: z.number().min(0).optional(),
+    ppto_otros: z.number().min(0).optional(),
 });
 
 function groupReceiptsByReport(receipts: any[]) {
@@ -63,7 +71,16 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     const reportsQuery = supabase
         .from("travel_expense_reports")
-        .select("id, payroll_period_id, employee_name, destination, trip_purpose, start_date, end_date, amount_requested, amount_approved, status, approval_notes, approved_by, approved_at, created_by, updated_by, created_at, updated_at")
+        .select(`
+            id, payroll_period_id, employee_name, destination, trip_purpose, 
+            start_date, end_date, amount_requested, amount_approved, status, 
+            approval_notes, approved_by, approved_at, created_by, updated_by, 
+            created_at, updated_at,
+            ppto_aereos, ppto_gasolina, ppto_taxis, ppto_casetas, 
+            ppto_hospedaje, ppto_alimentacion, ppto_otros,
+            real_aereos, real_gasolina, real_taxis, real_casetas, 
+            real_hospedaje, real_alimentacion, real_otros
+        `)
         .eq("org_id", member.org_id)
         .order("created_at", { ascending: false });
 
@@ -161,11 +178,27 @@ export const POST = withAuth(async (req, { supabase, member, user }) => {
             start_date: payload.start_date,
             end_date: payload.end_date,
             amount_requested: payload.amount_requested,
+            ppto_aereos: payload.ppto_aereos ?? 0,
+            ppto_gasolina: payload.ppto_gasolina ?? 0,
+            ppto_taxis: payload.ppto_taxis ?? 0,
+            ppto_casetas: payload.ppto_casetas ?? 0,
+            ppto_hospedaje: payload.ppto_hospedaje ?? 0,
+            ppto_alimentacion: payload.ppto_alimentacion ?? 0,
+            ppto_otros: payload.ppto_otros ?? 0,
             status: "pending",
             created_by: user.id,
             updated_by: user.id,
         })
-        .select("id, payroll_period_id, employee_name, destination, trip_purpose, start_date, end_date, amount_requested, amount_approved, status, approval_notes, approved_by, approved_at, created_by, updated_by, created_at, updated_at")
+        .select(`
+            id, payroll_period_id, employee_name, destination, trip_purpose, 
+            start_date, end_date, amount_requested, amount_approved, status, 
+            approval_notes, approved_by, approved_at, created_by, updated_by, 
+            created_at, updated_at,
+            ppto_aereos, ppto_gasolina, ppto_taxis, ppto_casetas, 
+            ppto_hospedaje, ppto_alimentacion, ppto_otros,
+            real_aereos, real_gasolina, real_taxis, real_casetas, 
+            real_hospedaje, real_alimentacion, real_otros
+        `)
         .single();
 
     if (error) throw error;

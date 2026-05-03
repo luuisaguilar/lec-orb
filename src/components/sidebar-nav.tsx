@@ -49,7 +49,6 @@ const NATIVE_ROUTES: Record<string, string> = {
     "schools": "/dashboard/schools",
     "applicators": "/dashboard/applicators",
     "events": "/dashboard/eventos",
-    "inventory": "/dashboard/inventario",
     "toefl": "/dashboard/toefl/administraciones",
     "toefl-codes": "/dashboard/toefl/codigos",
     "cenni": "/dashboard/cenni",
@@ -70,6 +69,8 @@ const NATIVE_ROUTES: Record<string, string> = {
     "users": "/dashboard/users",
     "audit-log": "/dashboard/actividad",
     "documentos": "/dashboard/documentos",
+    "courses": "/dashboard/academico/cursos",
+    "inventory": "/dashboard/logistica/inventario",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +83,8 @@ const CATEGORY_ICONS: Record<string, string> = {
     "Catálogos": "BookOpen",
     "Finanzas": "DollarSign",
     "Ajustes": "UserCog",
+    "Académico": "GraduationCap",
+    "Logística": "Truck",
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -190,8 +193,14 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
         // Category groups
         const orderedCategories = [
-            "Institucional", "Inventario", "Exámenes", "Catálogos", "Finanzas", "Ajustes",
-            // Any additional custom categories follow
+            "Institucional", 
+            "Inventario", 
+            "Exámenes", 
+            "Académico",
+            "Logística",
+            "Catálogos", 
+            "Finanzas", 
+            "Ajustes",
         ];
         const allCategories = [
             ...orderedCategories,

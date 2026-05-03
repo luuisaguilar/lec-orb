@@ -14,17 +14,31 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | ESLint | Pass (`0` errores) |
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
+| Finance - Nómina Operativa | **COMPLETADO (Fase 3)** - Motor dinámico, P&L real, recalculo |
 | Finance - Caja Chica | CRUD + balance RPC + Excel export/import + receipt upload |
 | Finance - Presupuesto (POA) | Tabla `poa_lines` libre por seccion/concepto, dos fuentes (CAJA_CHICA / CUENTA_BAC) |
 | Finance - IH Billing | Operativo: sesiones, tarifas, facturas, pagos, conciliacion e import |
-| Finance - Viaticos | MVP implementado (PR #29 abierto, pendiente merge) |
-| Invitaciones | Flujo completo + Resend + `expires_at` + `joinUrl` fallback |
-| CENNI | CRUD + bulk import + certificados PDF + visor + email |
+| Finance - Viáticos | **COMPLETADO** - Módulo integrado con PR #29 mergeado |
+| Invitaciones | **COMPLETADO** - Flujo + Resend + Vercel Cron + UI de expiración |
+| CENNI | **COMPLETADO** - CRUD + bulk import + certificados PDF + visor + dashboard KPIs |
 | TOEFL | Administraciones + codigos |
-| SGC (checklist auditoria) | **OPERATIVO** - Fix de navegación aplicado |
+| SGC (checklist auditoria) | **OPERATIVO** - Fix de navegación y refinamiento visual aplicado |
 | Calculadora de Tiempos | **PREMIUM** - Versión 2.0 con temas dinámicos |
 | Sentry | Activo (project `orb-lec`) |
-| Portal de aplicadores | Datos placeholder desde `src/lib/demo/data.ts` — no terminado |
+| Portal de aplicadores | Datos reales (Supabase integration complete) |
+| Nombre Institucional | **COMPLETADO** - Actualizado a "Languages Education Consulting" |
+
+---
+
+## Roadmap
+
+| Sprint | Estado | Notas |
+|--------|--------|-------|
+| Sprint 1: Estabilización | Completado | Auth, CENNI, Caja Chica base. |
+| Sprint 2: IH Billing | Completado | Facturación, CxC, Viáticos. |
+| Sprint 3: Nómina y Eventos | Completado | Pulido visual y auditoría terminada. |
+| Sprint 4: Cursos y Ferias | **Completado** | Simulador financiero + Inventario multi-ubicación. |
+| Sprint 5: Dashboard Gerencial | Pendiente | Integración de P&L consolidado. |
 
 ---
 
@@ -47,23 +61,22 @@ Cambridge Assessment / Sistema Uno
 4. LEC concilia: aplicado vs pagado -> saldo pendiente por escuela
 5. Seguimiento de CxC por antiguedad
 
-**Estado de cuentas por cobrar al 15/abril/2026:**
-- Total pendiente: **$245,425** (Sonora $179,488 + BC $65,937)
-- Alerta mas urgente: Colegio Larrea **$149,672** con 6+ semanas vencido
-
-**Todo esto se gestiona hoy en Excel** — no tiene modulo en la plataforma. Es el Sprint 2.
-
 ---
 
-## Roadmap
+## Sprint 4 — Cursos y Ferias de Libros (COMPLETADO)
 
-```
-Sprint 1   - Estabilizacion funcional          -> COMPLETADO (abril 2026)
-Sprint 2   - IH Billing + Viaticos             -> EN CIERRE (falta merge PR #29)
-Sprint 3   - Logistica de eventos + Nomina     -> Diseñado, pendiente implementar
-Sprint 4   - Cursos + Ferias de libros         -> Pendiente
-Sprint 5   - Dashboard KPIs completo           -> Pendiente
-```
+### Objetivo
+Digitalizar la operación académica y el control logístico de ferias con inventario centralizado.
+
+### Componentes clave
+- **Módulo de Cursos**: 
+  - Esquema DB para cursos, niveles y alumnos.
+  - Simulador de Costos y Márgenes (ROI, Punto de Equilibrio).
+  - Persistencia de proyecciones (Draft/Published).
+- **Módulo de Ferias e Inventario**:
+  - Almacén Central (Maestro) vs Ubicaciones por Evento/Feria.
+  - Sistema de Transferencias/Asignaciones de stock con auditoría.
+  - Dashboard de inventario real conectado a Supabase.
 
 ---
 
@@ -123,8 +136,8 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [ ] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
-- [ ] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
+- [x] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
+- [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
@@ -137,7 +150,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Deuda tecnica
 
-- [ ] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
+- [x] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica
 - [ ] Staging environment con org de prueba
@@ -184,34 +197,3 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | `docs/API_MODULES.md` | Referencia de rutas API |
 | `docs/DATABASE_SCHEMA.md` | Schema, enums y RPCs |
 | `docs/FINANCE_MODULES.md` | Detalle de Caja Chica y Presupuesto |
-
----
-
-## Contexto de negocio completo
-
-Ver memoria del proyecto en:
-
-```
-C:\Users\luuis\.claude\projects\C--Users-luuis-Downloads-Proyectos-LEC-lecorb\memory\
-|- MEMORY.md                    <- Indice — leer primero
-|- project_lec_state.md         <- Estado tecnico actual
-|- project_lec_business.md      <- Negocio, organigrama, flujos
-|- project_ih_billing.md        <- IH Billing: Excels analizados, CxC, modelo de datos
-|- project_event_logistics.md   <- Logistica de eventos: roles, nomina, P&L por sesion
-|- project_cenni.md             <- Modulo CENNI completo
-|- project_invitations.md       <- Invitaciones + expires_at
-|- project_sentry.md            <- Error tracking
-```
-
----
-
-## Archivos Excel operativos clave
-
-| Archivo | Ruta | Uso |
-|---------|------|-----|
-| DESGLOSE 2025-2026.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` | Maestro de sesiones por escuela/examen/ano |
-| PAGOS IH LEC v1.xlsx | `C:\Users\luuis\Documents\Proyectos\LEC\REPORTES\` | Conciliacion CxC vs pagos IH |
-| LOGISTICA_UNOi 2026.xlsx | `C:\Users\luuis\Downloads\` | Logistica por evento: personal, nomina, P&L |
-| IH COLEGIOS SONORA 2025-2026.xlsx | `C:\Users\luuis\Downloads\` | Calendario anual confirmado con escuelas |
-| CAJA CHICA.xlsx | (referencia diseno) | Movimientos caja chica — ya en plataforma |
-| Presupuestos de Gastos POA 2026.xlsx | (referencia diseno) | Presupuesto libre — ya en plataforma |

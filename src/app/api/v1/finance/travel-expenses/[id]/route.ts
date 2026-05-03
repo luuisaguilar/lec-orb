@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
@@ -14,6 +14,14 @@ const updateReportSchema = z.object({
     amount_approved: z.number().positive().optional().nullable(),
     status: z.enum(["pending", "approved", "rejected", "reimbursed"]).optional(),
     approval_notes: z.string().optional().nullable(),
+    // Real expenses breakdown
+    real_aereos: z.number().min(0).optional(),
+    real_gasolina: z.number().min(0).optional(),
+    real_taxis: z.number().min(0).optional(),
+    real_casetas: z.number().min(0).optional(),
+    real_hospedaje: z.number().min(0).optional(),
+    real_alimentacion: z.number().min(0).optional(),
+    real_otros: z.number().min(0).optional(),
 });
 
 export const PATCH = withAuth(async (req, { supabase, member, user }, { params }) => {
@@ -43,6 +51,15 @@ export const PATCH = withAuth(async (req, { supabase, member, user }, { params }
     if (fields.amount_requested !== undefined) updates.amount_requested = fields.amount_requested;
     if (fields.amount_approved !== undefined) updates.amount_approved = fields.amount_approved;
     if (fields.approval_notes !== undefined) updates.approval_notes = fields.approval_notes;
+    
+    // Real fields
+    if (fields.real_aereos !== undefined) updates.real_aereos = fields.real_aereos;
+    if (fields.real_gasolina !== undefined) updates.real_gasolina = fields.real_gasolina;
+    if (fields.real_taxis !== undefined) updates.real_taxis = fields.real_taxis;
+    if (fields.real_casetas !== undefined) updates.real_casetas = fields.real_casetas;
+    if (fields.real_hospedaje !== undefined) updates.real_hospedaje = fields.real_hospedaje;
+    if (fields.real_alimentacion !== undefined) updates.real_alimentacion = fields.real_alimentacion;
+    if (fields.real_otros !== undefined) updates.real_otros = fields.real_otros;
 
     if (fields.status !== undefined) {
         updates.status = fields.status;
@@ -61,7 +78,16 @@ export const PATCH = withAuth(async (req, { supabase, member, user }, { params }
         .update(updates)
         .eq("id", id)
         .eq("org_id", member.org_id)
-        .select("id, payroll_period_id, employee_name, destination, trip_purpose, start_date, end_date, amount_requested, amount_approved, status, approval_notes, approved_by, approved_at, created_by, updated_by, created_at, updated_at")
+        .select(`
+            id, payroll_period_id, employee_name, destination, trip_purpose, 
+            start_date, end_date, amount_requested, amount_approved, status, 
+            approval_notes, approved_by, approved_at, created_by, updated_by, 
+            created_at, updated_at,
+            ppto_aereos, ppto_gasolina, ppto_taxis, ppto_casetas, 
+            ppto_hospedaje, ppto_alimentacion, ppto_otros,
+            real_aereos, real_gasolina, real_taxis, real_casetas, 
+            real_hospedaje, real_alimentacion, real_otros
+        `)
         .single();
 
     if (error) throw error;

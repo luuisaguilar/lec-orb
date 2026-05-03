@@ -1,6 +1,6 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-05-02
+Ultima actualizacion: 2026-05-03
 
 ---
 
@@ -9,9 +9,14 @@ Ultima actualizacion: 2026-05-02
 - `npm run build`: pass (Exit code: 0)
 - `npm test`: pass (`26` archivos, `164` tests)
 - `npm run lint`: pass
-- `npm run test:e2e`: pass (`10/10`)
+- `npm run test:e2e`: pass (`10/10` + new `travel-expenses` suite)
 - Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 - **UI/UX Audit**: Pass (Refinamiento "Premium SaaS" completado)
+- **Portal de Aplicadores**: Migrado a datos reales (Supabase integration complete)
+- **Phase 3**: COMPLETADA (Motor de nómina dinámico + P&L de eventos operativos)
+- **Logística**: Nueva tabla `event_staff` para roles (SE, ADMIN, INVIGILATOR, SUPER) integrada
+- **Nómina**: Motor de cálculo dinámico implementado vía RPC con soporte para roles y tarifas variables
+- **P&L**: Dashboard financiero de eventos conectado a datos reales de staff
 - **SGC Navigation**: Resuelto (Fix aplicado y validado)
 
 Diagnostico E2E actual:
@@ -29,6 +34,8 @@ Diagnostico E2E actual:
 - CENNI con 5 estatus canonicos y campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
 - Caja Chica y Presupuesto operativos
 - Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll, SGC, RRHH, IH Billing
+- **Nómina de Eventos (Fase 3)**: Cálculo dinámico por rol, recalculo manual y desglose de roles
+- **P&L por Evento**: Integración de costos de staff reales en el dashboard financiero
 - Audit log, notificaciones y DMS
 - Sentry activo en Next.js (`orb-lec`)
 - Audit logging migrado a `logAudit()` / `enrichAudit`
@@ -72,17 +79,33 @@ Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.
 - smoke test manual en `/dashboard/sgc` (tabs procesos/auditoria/riesgos)
 - validar navegacion completa de modulos en desktop y mobile
 
+### 4. SGC Fase 1 -> Operacion real (API + UI)
+
+- implementar API `/api/v1/sgc/*` con `withAuth` + `logAudit`
+- construir UI operativa NC/CAPA/Auditoria/Revision sobre tablas SGC nuevas
+- integrar evidencia documental (DMS) en registros SGC
+- referencia de trabajo:
+  - `docs/SGC_MODULE.md`
+  - `docs/SGC_MATRICES.md`
+  - `docs/SGC_SPRINT_PLAN.md`
+  - `docs/SGC_SPRINT01_EXECUTION_BOARD.md`
+  - `docs/BACKLOG_SGC.md`
+  - `docs/adr/ADR-005-sgc-domain-model-phase1.md`
+  - `docs/adr/ADR-006-sgc-workflow-rules-in-database.md`
+
+### 5. Cierre de gap ERP (benchmark Odoo/ERPNext/ERPcafe)
+
+- cerrar brechas de CRM, Ventas, CxC y Contabilidad como bloque Must
+- extender Compras, Inventario, RRHH y BI como bloque Should
+- integrar SGC transversalmente con todos los modulos operativos
+- referencia:
+  - `docs/ERP_GAP_MATRIX_AND_MODULES.md`
+
 ---
 
 ## Prioridad media
 
-### 3. Sprint 3 - Logistica de eventos + Nomina real
-
-- rol por aplicador por evento (SE/ADMIN/INVIGILATOR/SUPER)
-- nomina dinamica por rol y tabla de duracion
-- P&L por sesion (IH - nomina - viaticos)
-
-### 4. KPI cards y graficas en Caja Chica
+### 1. KPI cards y graficas en Caja Chica
 
 - resumen ingresos vs egresos por mes
 - tendencia de balance
@@ -114,3 +137,17 @@ Continuar `docs/adr/` para decisiones nuevas.
 
 - cambiar los restos de "Language Evaluation Center" por "Languages Education Consulting"
 - migrar el portal de aplicadores fuera de `src/lib/demo/data.ts`
+
+---
+
+## 🏁 Sprint 4: Cursos y Ferias de Libros (COMPLETADO)
+**Objetivo:** Digitalizar la operación académica y el control logístico de ferias con inventario centralizado.
+
+- [x] **Módulo de Cursos (Académico)**:
+    - [x] Esquema DB para cursos, niveles y alumnos.
+    - [x] Simulador de Costos y Márgenes (ROI, Punto de Equilibrio).
+    - [x] Persistencia de simulaciones (Draft/Published).
+- [x] **Módulo de Ferias e Inventario (Logística)**:
+    - [x] Almacén Central vs Ubicaciones por Evento/Feria.
+    - [x] Sistema de Transferencias/Asignaciones de stock con auditoría.
+    - [x] Dashboard de inventario real conectado a Supabase.

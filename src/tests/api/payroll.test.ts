@@ -16,6 +16,7 @@ vi.mock("@/lib/demo/config", () => ({
 const makeChain = (data: any, error: any = null) => ({
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
     then: vi.fn((resolve: any) => resolve({ data, error })),
@@ -70,10 +71,16 @@ describe("Payroll API Route", () => {
 
             const periodChain = makeChain(periodData);
             const entriesChain = makeChain(entriesData);
+            const lineItemsChain = makeChain([]);
 
             let callCount = 0;
             const mockSupabase = {
-                from: vi.fn(() => callCount++ === 0 ? periodChain : entriesChain),
+                from: vi.fn(() => {
+                    const count = callCount++;
+                    if (count === 0) return periodChain;
+                    if (count === 1) return entriesChain;
+                    return lineItemsChain;
+                }),
             };
 
             const req = new NextRequest("http://localhost/api/v1/payroll?periodId=per1");

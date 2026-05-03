@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -47,6 +47,22 @@ type TravelReport = {
     created_at: string;
     receipts_total: number;
     receipts: TravelReceipt[];
+    // Budget
+    ppto_aereos: number;
+    ppto_gasolina: number;
+    ppto_taxis: number;
+    ppto_casetas: number;
+    ppto_hospedaje: number;
+    ppto_alimentacion: number;
+    ppto_otros: number;
+    // Real
+    real_aereos: number;
+    real_gasolina: number;
+    real_taxis: number;
+    real_casetas: number;
+    real_hospedaje: number;
+    real_alimentacion: number;
+    real_otros: number;
 };
 
 type TravelResponse = {
@@ -94,10 +110,24 @@ export default function ViaticosPage() {
         end_date: "",
         amount_requested: "",
         payroll_period_id: "none",
+        ppto_aereos: "0",
+        ppto_gasolina: "0",
+        ppto_taxis: "0",
+        ppto_casetas: "0",
+        ppto_hospedaje: "0",
+        ppto_alimentacion: "0",
+        ppto_otros: "0",
     });
     const [approvalDraft, setApprovalDraft] = useState({
         amount_approved: "",
         approval_notes: "",
+        real_aereos: "0",
+        real_gasolina: "0",
+        real_taxis: "0",
+        real_casetas: "0",
+        real_hospedaje: "0",
+        real_alimentacion: "0",
+        real_otros: "0",
     });
     const [receiptDraft, setReceiptDraft] = useState({
         file_name: "",
@@ -140,6 +170,13 @@ export default function ViaticosPage() {
                     end_date: form.end_date,
                     amount_requested: Number(form.amount_requested),
                     payroll_period_id: form.payroll_period_id === "none" ? null : form.payroll_period_id,
+                    ppto_aereos: Number(form.ppto_aereos || 0),
+                    ppto_gasolina: Number(form.ppto_gasolina || 0),
+                    ppto_taxis: Number(form.ppto_taxis || 0),
+                    ppto_casetas: Number(form.ppto_casetas || 0),
+                    ppto_hospedaje: Number(form.ppto_hospedaje || 0),
+                    ppto_alimentacion: Number(form.ppto_alimentacion || 0),
+                    ppto_otros: Number(form.ppto_otros || 0),
                 }),
             });
             const payload = await res.json();
@@ -154,6 +191,13 @@ export default function ViaticosPage() {
                 end_date: "",
                 amount_requested: "",
                 payroll_period_id: "none",
+                ppto_aereos: "0",
+                ppto_gasolina: "0",
+                ppto_taxis: "0",
+                ppto_casetas: "0",
+                ppto_hospedaje: "0",
+                ppto_alimentacion: "0",
+                ppto_otros: "0",
             });
             await mutate();
             setSelectedId(payload.report.id);
@@ -176,6 +220,13 @@ export default function ViaticosPage() {
                         ? Number(approvalDraft.amount_approved || report.amount_requested)
                         : undefined,
                     approval_notes: approvalDraft.approval_notes || null,
+                    real_aereos: Number(approvalDraft.real_aereos || 0),
+                    real_gasolina: Number(approvalDraft.real_gasolina || 0),
+                    real_taxis: Number(approvalDraft.real_taxis || 0),
+                    real_casetas: Number(approvalDraft.real_casetas || 0),
+                    real_hospedaje: Number(approvalDraft.real_hospedaje || 0),
+                    real_alimentacion: Number(approvalDraft.real_alimentacion || 0),
+                    real_otros: Number(approvalDraft.real_otros || 0),
                 }),
             });
             const payload = await res.json();
@@ -287,32 +338,36 @@ export default function ViaticosPage() {
                     <CardContent>
                         <form onSubmit={submitReport} className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-1">
-                                <Label>Colaborador</Label>
+                                <Label htmlFor="employee_name">Colaborador</Label>
                                 <Input
+                                    id="employee_name"
                                     value={form.employee_name}
                                     onChange={(e) => setForm((prev) => ({ ...prev, employee_name: e.target.value }))}
                                     required
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Destino</Label>
+                                <Label htmlFor="destination">Destino</Label>
                                 <Input
+                                    id="destination"
                                     value={form.destination}
                                     onChange={(e) => setForm((prev) => ({ ...prev, destination: e.target.value }))}
                                     required
                                 />
                             </div>
                             <div className="space-y-1 md:col-span-2">
-                                <Label>Motivo</Label>
+                                <Label htmlFor="trip_purpose">Motivo</Label>
                                 <Textarea
+                                    id="trip_purpose"
                                     value={form.trip_purpose}
                                     onChange={(e) => setForm((prev) => ({ ...prev, trip_purpose: e.target.value }))}
                                     required
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Inicio</Label>
+                                <Label htmlFor="start_date">Inicio</Label>
                                 <Input
+                                    id="start_date"
                                     type="date"
                                     value={form.start_date}
                                     onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
@@ -320,8 +375,9 @@ export default function ViaticosPage() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Fin</Label>
+                                <Label htmlFor="end_date">Fin</Label>
                                 <Input
+                                    id="end_date"
                                     type="date"
                                     value={form.end_date}
                                     onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))}
@@ -329,8 +385,9 @@ export default function ViaticosPage() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Monto solicitado</Label>
+                                <Label htmlFor="amount_requested">Monto solicitado total</Label>
                                 <Input
+                                    id="amount_requested"
                                     type="number"
                                     min="1"
                                     step="0.01"
@@ -338,6 +395,39 @@ export default function ViaticosPage() {
                                     onChange={(e) => setForm((prev) => ({ ...prev, amount_requested: e.target.value }))}
                                     required
                                 />
+                            </div>
+                            <div className="md:col-span-2 mt-2">
+                                <p className="text-sm font-medium mb-2">Desglose de presupuesto (estimado)</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Aéreos</Label>
+                                        <Input type="number" value={form.ppto_aereos} onChange={(e) => setForm(p => ({...p, ppto_aereos: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Gasolina</Label>
+                                        <Input type="number" value={form.ppto_gasolina} onChange={(e) => setForm(p => ({...p, ppto_gasolina: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Taxis</Label>
+                                        <Input type="number" value={form.ppto_taxis} onChange={(e) => setForm(p => ({...p, ppto_taxis: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Casetas</Label>
+                                        <Input type="number" value={form.ppto_casetas} onChange={(e) => setForm(p => ({...p, ppto_casetas: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Hospedaje</Label>
+                                        <Input type="number" value={form.ppto_hospedaje} onChange={(e) => setForm(p => ({...p, ppto_hospedaje: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Alimentos</Label>
+                                        <Input type="number" value={form.ppto_alimentacion} onChange={(e) => setForm(p => ({...p, ppto_alimentacion: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Otros</Label>
+                                        <Input type="number" value={form.ppto_otros} onChange={(e) => setForm(p => ({...p, ppto_otros: e.target.value}))} />
+                                    </div>
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 <Label>Periodo de nomina</Label>
@@ -385,6 +475,13 @@ export default function ViaticosPage() {
                                         setApprovalDraft({
                                             amount_approved: report.amount_approved?.toString() ?? "",
                                             approval_notes: report.approval_notes ?? "",
+                                            real_aereos: report.real_aereos?.toString() ?? "0",
+                                            real_gasolina: report.real_gasolina?.toString() ?? "0",
+                                            real_taxis: report.real_taxis?.toString() ?? "0",
+                                            real_casetas: report.real_casetas?.toString() ?? "0",
+                                            real_hospedaje: report.real_hospedaje?.toString() ?? "0",
+                                            real_alimentacion: report.real_alimentacion?.toString() ?? "0",
+                                            real_otros: report.real_otros?.toString() ?? "0",
                                         });
                                     }}
                                 >
@@ -413,8 +510,9 @@ export default function ViaticosPage() {
                         <CardContent className="space-y-4">
                             <div className="grid gap-3 md:grid-cols-2">
                                 <div className="space-y-1">
-                                    <Label>Monto aprobado</Label>
+                                    <Label htmlFor="amount_approved">Monto aprobado</Label>
                                     <Input
+                                        id="amount_approved"
                                         type="number"
                                         min="0"
                                         step="0.01"
@@ -449,11 +547,46 @@ export default function ViaticosPage() {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <Label>Notas de aprobacion</Label>
+                                <Label htmlFor="approval_notes">Notas de aprobacion</Label>
                                 <Textarea
+                                    id="approval_notes"
                                     value={approvalDraft.approval_notes}
                                     onChange={(e) => setApprovalDraft((prev) => ({ ...prev, approval_notes: e.target.value }))}
                                 />
+                            </div>
+
+                            <div className="pt-2 border-t mt-2">
+                                <p className="text-sm font-medium mb-2">Desglose de Gasto Real (Con Factura)</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Aéreos</Label>
+                                        <Input type="number" value={approvalDraft.real_aereos} onChange={(e) => setApprovalDraft(p => ({...p, real_aereos: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Gasolina</Label>
+                                        <Input type="number" value={approvalDraft.real_gasolina} onChange={(e) => setApprovalDraft(p => ({...p, real_gasolina: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Taxis</Label>
+                                        <Input type="number" value={approvalDraft.real_taxis} onChange={(e) => setApprovalDraft(p => ({...p, real_taxis: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Casetas</Label>
+                                        <Input type="number" value={approvalDraft.real_casetas} onChange={(e) => setApprovalDraft(p => ({...p, real_casetas: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Hospedaje</Label>
+                                        <Input type="number" value={approvalDraft.real_hospedaje} onChange={(e) => setApprovalDraft(p => ({...p, real_hospedaje: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Alimentos</Label>
+                                        <Input type="number" value={approvalDraft.real_alimentacion} onChange={(e) => setApprovalDraft(p => ({...p, real_alimentacion: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] uppercase">Otros</Label>
+                                        <Input type="number" value={approvalDraft.real_otros} onChange={(e) => setApprovalDraft(p => ({...p, real_otros: e.target.value}))} />
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <Button disabled={saving} onClick={() => updateStatus(selectedReport, "approved")}>Aprobar</Button>
@@ -475,8 +608,9 @@ export default function ViaticosPage() {
                         <CardContent className="space-y-4">
                             <form onSubmit={addReceipt} className="grid gap-3 md:grid-cols-2">
                                 <div className="space-y-1 md:col-span-2">
-                                    <Label>Nombre del archivo</Label>
+                                    <Label htmlFor="receipt_file_name">Nombre del archivo</Label>
                                     <Input
+                                        id="receipt_file_name"
                                         value={receiptDraft.file_name}
                                         onChange={(e) => setReceiptDraft((prev) => ({ ...prev, file_name: e.target.value }))}
                                         placeholder="Ej. Viaticos_Hermosillo_Abril2026.xlsx"
@@ -502,8 +636,9 @@ export default function ViaticosPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-1">
-                                    <Label>Monto (opcional)</Label>
+                                    <Label htmlFor="receipt_amount">Monto (opcional)</Label>
                                     <Input
+                                        id="receipt_amount"
                                         type="number"
                                         min="0"
                                         step="0.01"
@@ -512,8 +647,9 @@ export default function ViaticosPage() {
                                     />
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
-                                    <Label>URL del comprobante</Label>
+                                    <Label htmlFor="receipt_file_url">URL del comprobante</Label>
                                     <Input
+                                        id="receipt_file_url"
                                         type="url"
                                         value={receiptDraft.file_url}
                                         onChange={(e) => setReceiptDraft((prev) => ({ ...prev, file_url: e.target.value }))}
