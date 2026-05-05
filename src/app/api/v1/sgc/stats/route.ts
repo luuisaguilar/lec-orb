@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 
+type NonconformityStat = {
+    created_at: string | null;
+    detection_date: string | null;
+    updated_at: string | null;
+    status: string | null;
+    severity_id: string | null;
+    stage_id: string | null;
+};
+
+type CapaStat = {
+    status: string | null;
+    deadline_at: string | null;
+    completed_at: string | null;
+};
+
+type RiskStat = {
+    severity: string | null;
+    probability: string | null;
+    status: string | null;
+};
 export const GET = withAuth(async (req, { supabase, member }) => {
     // 1. Lead Time NCs (Average days to close)
     // We try to select both legacy and new columns to be resilient
@@ -14,13 +34,21 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         return NextResponse.json({ error: ncError.message }, { status: 500 });
     }
 
-    const closedNcs = (ncData || []).filter(nc => nc.status === 'done');
-    const avgLeadTime = closedNcs.length > 0
-        ? closedNcs.reduce((acc, nc: any) => {
-            const start = new Date(nc.detection_date || nc.created_at).getTime();
-            const end = new Date(nc.updated_at).getTime();
-            return acc + (end - start) / (1000 * 60 * 60 * 24);
-        }, 0) / closedNcs.length
+    const ncs: NonconformityStat[] = (ncData ?? []) as NonconformityStat[];
+    const closedNcs = ncs.filter((nc) => nc.status === "done");
+    const leadTimes = closedNcs
+        .map((nc) => {
+            const startRaw = nc.detection_date ?? nc.created_at;
+            const endRaw = nc.updated_at;
+            if (!startRaw || !endRaw) return null;
+            const start = new Date(startRaw).getTime();
+            const end = new Date(endRaw).getTime();
+            if (Number.isNaN(start) || Number.isNaN(end)) return null;
+            return (end - start) / (1000 * 60 * 60 * 24);
+        })
+        .filter((days): days is number => days !== null);
+    const avgLeadTime = leadTimes.length > 0
+        ? leadTimes.reduce((acc, days) => acc + days, 0) / leadTimes.length
         : 0;
 
     // 2. CAPA Compliance
@@ -34,10 +62,11 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         return NextResponse.json({ error: capaError.message }, { status: 500 });
     }
 
-    const totalCapas = (capaData || []).length;
-    const completedCapas = (capaData || []).filter(c => c.status === 'done').length;
-    const onTimeCapas = (capaData || []).filter(c => {
-        if (c.status !== 'done') return false;
+    const capas: CapaStat[] = (capaData ?? []) as CapaStat[];
+    const totalCapas = capas.length;
+    const completedCapas = capas.filter((c) => c.status === "done").length;
+    const onTimeCapas = capas.filter((c) => {
+        if (c.status !== "done") return false;
         if (!c.deadline_at || !c.completed_at) return true;
         return new Date(c.completed_at) <= new Date(c.deadline_at);
     }).length;
@@ -52,7 +81,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         console.warn("SGC Stats Risk Error (likely missing table):", riskError.message);
     }
 
-    const risks = riskData ?? [];
+    const risks: RiskStat[] = (riskData ?? []) as RiskStat[];
 
     // Helper to convert risk levels to scores (matching sgc-risks.tsx logic)
     const getScore = (val: string | null) => {
@@ -67,21 +96,22 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     };
 
     // 4. Group by Stage/Severity for NCs
-    const ncBySeverity = (ncData || []).reduce((acc: any, nc) => {
+    const ncBySeverity = ncs.reduce<Record<string, number>>((acc, nc) => {
         const sev = nc.severity_id || 'unassigned';
         acc[sev] = (acc[sev] || 0) + 1;
         return acc;
     }, {});
 
-    const ncByStatus = (ncData || []).reduce((acc: any, nc) => {
-        acc[nc.status] = (acc[nc.status] || 0) + 1;
+    const ncByStatus = ncs.reduce<Record<string, number>>((acc, nc) => {
+        const status = nc.status || "unknown";
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
     }, {});
 
     return NextResponse.json({
         summary: {
-            totalNc: (ncData || []).length,
-            openNc: (ncData || []).filter(nc => nc.status !== 'done' && nc.status !== 'cancel').length,
+            totalNc: ncs.length,
+            openNc: ncs.filter((nc) => nc.status !== "done" && nc.status !== "cancel").length,
             avgLeadTime: Math.round(avgLeadTime * 10) / 10,
             capaCompliance: totalCapas > 0 ? Math.round((completedCapas / totalCapas) * 100) : 100,
             capaOnTimeRate: completedCapas > 0 ? Math.round((onTimeCapas / completedCapas) * 100) : 100,
@@ -95,7 +125,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         },
         risks: {
             total: risks.length,
-            critical: risks.filter((r: any) => {
+            critical: risks.filter((r) => {
                 const s = getScore(r.severity);
                 const p = getScore(r.probability);
                 return (s * p) >= 15; // Adjusted threshold or logic as needed
