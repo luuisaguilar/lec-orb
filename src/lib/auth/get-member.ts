@@ -39,12 +39,14 @@ export async function getAuthenticatedMember(supabase: any): Promise<MemberResul
         };
     }
 
-    // 2. Fetch org membership
+    // 2. Fetch org membership (pick one row — users may legitimately have multiple orgs)
     const { data: member, error: memberError } = await supabase
         .from("org_members")
         .select("id, org_id, role, location, organizations(name, slug)")
         .eq("user_id", user.id)
-        .single();
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     if (memberError || !member) {
         return {

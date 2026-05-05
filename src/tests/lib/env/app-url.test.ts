@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getConfiguredAppOrigin, resolveAppOrigin } from "@/lib/env/app-url";
+import { getConfiguredAppOrigin, getEmailRedirectOrigin, resolveAppOrigin } from "@/lib/env/app-url";
 
 afterEach(() => {
     vi.unstubAllEnvs();
@@ -12,6 +12,7 @@ describe("app URL resolution", () => {
 
         expect(getConfiguredAppOrigin()).toBe("https://staging.lec.mx");
         expect(resolveAppOrigin()).toBe("https://staging.lec.mx");
+        expect(getEmailRedirectOrigin()).toBe("https://staging.lec.mx");
     });
 
     it("derives the origin from forwarded request headers when the env var is absent", () => {
@@ -33,6 +34,12 @@ describe("app URL resolution", () => {
         vi.stubEnv("NODE_ENV", "development");
 
         expect(resolveAppOrigin()).toBe("http://localhost:3000");
+    });
+
+    it("getEmailRedirectOrigin uses window.location when NEXT_PUBLIC_APP_URL is unset", () => {
+        vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+
+        expect(getEmailRedirectOrigin()).toBe(window.location.origin);
     });
 
     it("throws in production when neither env nor request origin is available", () => {

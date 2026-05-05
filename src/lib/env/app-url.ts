@@ -70,3 +70,20 @@ export function resolveAppOrigin(req?: NextRequest): string {
         "NEXT_PUBLIC_APP_URL is not configured and the runtime request origin could not be determined."
     );
 }
+
+/**
+ * Absolute origin for Supabase email links (confirm signup, recovery, etc.).
+ * Prefer NEXT_PUBLIC_APP_URL so messages sent from production never point at localhost.
+ */
+export function getEmailRedirectOrigin(): string {
+    const configured = getConfiguredAppOrigin();
+    if (configured) {
+        return configured;
+    }
+    if (typeof window !== "undefined") {
+        return window.location.origin;
+    }
+    throw new Error(
+        "getEmailRedirectOrigin: set NEXT_PUBLIC_APP_URL or call from the browser."
+    );
+}

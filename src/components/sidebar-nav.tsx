@@ -87,7 +87,14 @@ const CATEGORY_ICONS: Record<string, string> = {
     "Logística": "Truck",
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+async function navFetcher(url: string) {
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        return { __error: true as const, status: res.status, ...data };
+    }
+    return data;
+}
 
 const MODULE_PERMISSION_ALIAS: Record<string, string> = {
     "travel-expenses": "finanzas",
@@ -117,19 +124,24 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
     const pathname = usePathname();
 
     // User data (permissions, role) — existing SWR call
-    const { data: userData, isLoading: userLoading } = useSWR("/api/v1/users/me", fetcher);
+    const { data: userData, isLoading: userLoading } = useSWR("/api/v1/users/me", navFetcher);
 
     // Module registry — new SWR call
     const { data: modulesData, isLoading: modulesLoading } = useSWR(
         variant === "dashboard" ? "/api/v1/modules" : null,
-        fetcher
+        navFetcher
     );
 
     const isLoading = userLoading || modulesLoading;
 
     // ── Build navigation groups from module_registry ──────────────────────────
     const navGroups = useMemo<NavGroup[]>(() => {
-        if (!userData || !modulesData) return [];
+        if (!userData || (userData as { __error?: boolean }).__error) {
+            return [];
+        }
+        if (!(userData as { user?: unknown }).user) {
+            return [];
+        }
 
         if (variant === "portal") {
             // Portal stays static, no module registry needed
@@ -146,7 +158,15 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             }];
         }
 
-        const modules: ModuleRegistryEntry[] = modulesData.modules ?? [];
+        if (
+            !modulesData ||
+            (modulesData as { __error?: boolean }).__error ||
+            !Array.isArray((modulesData as { modules?: unknown }).modules)
+        ) {
+            return [];
+        }
+
+        const modules: ModuleRegistryEntry[] = (modulesData as { modules: ModuleRegistryEntry[] }).modules ?? [];
         const perms: any[] = userData.permissions ?? [];
         const isAdmin = userData.role === "admin";
 
@@ -233,6 +253,51 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
         return (
             <div className="flex h-10 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    const userPayload = userData as
+        | { __error?: boolean; status?: number; error?: string; user?: { id?: string } }
+        | undefined;
+    const modulesPayload = modulesData as
+        | { __error?: boolean; status?: number; error?: string; modules?: ModuleRegistryEntry[] }
+        | undefined;
+
+    if (userPayload?.__error || !userPayload?.user) {
+        const noOrg =
+            userPayload?.status === 403 || userPayload?.error === "No organization found";
+        return (
+            <div
+                className={cn(
+                    "rounded-lg border p-3 text-xs leading-relaxed text-foreground",
+                    noOrg ? "border-amber-200 bg-amber-50" : "border-destructive/30 bg-destructive/5"
+                )}
+            >
+                <p className="font-semibold">
+                    {noOrg ? "Cuenta sin organización" : "No se pudo cargar tu perfil"}
+                </p>
+                {noOrg ? (
+                    <p className="mt-2 text-muted-foreground">
+                        Si venías de una invitación: abre el enlace del correo, inicia sesión con el{" "}
+                        <strong>mismo email</strong> invitado y pulsa <strong>Aceptar</strong> en la
+                        pantalla de unión.
+                    </p>
+                ) : (
+                    <p className="mt-2 text-muted-foreground">Vuelve a iniciar sesión o recarga la página.</p>
+                )}
+                <Link href="/login" className="mt-3 inline-block font-medium text-primary hover:underline">
+                    Ir a iniciar sesión
+                </Link>
+            </div>
+        );
+    }
+
+    if (variant === "dashboard" && modulesPayload?.__error) {
+        return (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed">
+                <p className="font-semibold text-foreground">No se pudo cargar el menú</p>
+                <p className="mt-2 text-muted-foreground">Recarga la página. Si continúa, avisa a soporte.</p>
             </div>
         );
     }

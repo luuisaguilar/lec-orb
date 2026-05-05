@@ -27,7 +27,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const filtered = modules.filter((m: any) => m.is_native || allowedCustomIds.has(m.id));
 
     return NextResponse.json({ modules: filtered, role: member.role });
-}, { module: "studio", action: "view" }); // Modules management falls under Studio for now
+}); // Listing modules is required for all authenticated members (sidebar); Studio permission applies to POST only
 
 const createModuleSchema = z.object({
     slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/),
