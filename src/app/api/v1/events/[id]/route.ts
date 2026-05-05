@@ -4,20 +4,9 @@ import { withAuth } from "@/lib/auth/with-handler";
 export const GET = withAuth(async (req, { supabase, member }, { params }) => {
     const { id } = await params;
 
-    const selectShape = `
-            *,
-            school:schools(*),
-            sessions:event_sessions(*),
-            staff:event_staff(
-                id, role, session_id, applicator_id,
-                applicator:applicators(*)
-            ),
-            slots:event_slots(*)
-        `;
-
     const { data: directEvent, error: directError } = await supabase
         .from("events")
-        .select(selectShape)
+        .select("*")
         .eq("id", id)
         .eq("org_id", member.org_id)
         .maybeSingle();
@@ -40,7 +29,7 @@ export const GET = withAuth(async (req, { supabase, member }, { params }) => {
         if (sessionRef?.event_id) {
             const { data: fallbackEvent, error: fallbackError } = await supabase
                 .from("events")
-                .select(selectShape)
+                .select("*")
                 .eq("id", sessionRef.event_id)
                 .eq("org_id", member.org_id)
                 .maybeSingle();
@@ -52,11 +41,33 @@ export const GET = withAuth(async (req, { supabase, member }, { params }) => {
 
     if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-    if (event.slots) {
-        event.slots.sort((a: any, b: any) => a.slot_number - b.slot_number);
-    }
+    const eventId = event.id;
 
-    return NextResponse.json({ event });
+    const [
+        { data: school },
+        { data: sessions },
+        { data: staff },
+        { data: slots },
+    ] = await Promise.all([
+        event.school_id
+            ? supabase.from("schools").select("*").eq("id", event.school_id).maybeSingle()
+            : Promise.resolve({ data: null } as any),
+        supabase.from("event_sessions").select("*").eq("event_id", eventId),
+        supabase.from("event_staff").select("id, role, session_id, applicator_id, applicator:applicators(*)").eq("event_id", eventId),
+        supabase.from("event_slots").select("*").eq("event_id", eventId),
+    ]);
+
+    const safeSlots = (slots || []).sort((a: any, b: any) => (a.slot_number || 0) - (b.slot_number || 0));
+
+    return NextResponse.json({
+        event: {
+            ...event,
+            school: school || null,
+            sessions: sessions || [],
+            staff: staff || [],
+            slots: safeSlots,
+        },
+    });
 }, { module: "events", action: "view" });
 
 export const PATCH = withAuth(async (req, { supabase, member }, { params }) => {
