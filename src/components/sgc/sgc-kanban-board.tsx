@@ -320,7 +320,6 @@ export default function SGCKanbanBoard({
                 {activeId && activeItem ? (
                     <SortableNcCard
                         item={activeItem}
-                        statusBadges={statusBadges}
                         onDetail={onDetail}
                         severityMap={severityMap}
                         isOverlay
