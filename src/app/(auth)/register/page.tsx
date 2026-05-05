@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
+import { getEmailRedirectOrigin } from "@/lib/env/app-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,13 +51,19 @@ function RegisterForm() {
         const supabase = createClient();
 
         // 1. Sign up the user via Supabase Auth
+        const origin = getEmailRedirectOrigin();
+        const afterConfirmPath = next
+            ? `/login?next=${encodeURIComponent(next)}`
+            : "/login";
+
         const { error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
             options: {
                 data: {
                     full_name: data.fullName,
-                }
+                },
+                emailRedirectTo: `${origin}${afterConfirmPath}`,
             }
         });
 
