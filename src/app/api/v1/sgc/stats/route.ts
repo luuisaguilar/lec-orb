@@ -37,12 +37,19 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     const ncs: NonconformityStat[] = (ncData ?? []) as NonconformityStat[];
     const closedNcs = ncs.filter((nc) => nc.status === "done");
-    const avgLeadTime = closedNcs.length > 0
-        ? closedNcs.reduce((acc, nc) => {
-            const start = new Date(nc.detection_date || nc.created_at).getTime();
-            const end = new Date(nc.updated_at).getTime();
-            return acc + (end - start) / (1000 * 60 * 60 * 24);
-        }, 0) / closedNcs.length
+    const leadTimes = closedNcs
+        .map((nc) => {
+            const startRaw = nc.detection_date ?? nc.created_at;
+            const endRaw = nc.updated_at;
+            if (!startRaw || !endRaw) return null;
+            const start = new Date(startRaw).getTime();
+            const end = new Date(endRaw).getTime();
+            if (Number.isNaN(start) || Number.isNaN(end)) return null;
+            return (end - start) / (1000 * 60 * 60 * 24);
+        })
+        .filter((days): days is number => days !== null);
+    const avgLeadTime = leadTimes.length > 0
+        ? leadTimes.reduce((acc, days) => acc + days, 0) / leadTimes.length
         : 0;
 
     // 2. CAPA Compliance
