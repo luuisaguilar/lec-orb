@@ -4,9 +4,7 @@ import { withAuth } from "@/lib/auth/with-handler";
 export const GET = withAuth(async (req, { supabase, member }, { params }) => {
     const { id } = await params;
 
-    const { data: event, error } = await supabase
-        .from("events")
-        .select(`
+    const selectShape = `
             *,
             school:schools(*),
             sessions:event_sessions(*),
@@ -15,12 +13,44 @@ export const GET = withAuth(async (req, { supabase, member }, { params }) => {
                 applicator:applicators(*)
             ),
             slots:event_slots(*)
-        `)
+        `;
+
+    const { data: directEvent, error: directError } = await supabase
+        .from("events")
+        .select(selectShape)
         .eq("id", id)
         .eq("org_id", member.org_id)
-        .single();
+        .maybeSingle();
 
-    if (error || !event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    if (directError) throw directError;
+
+    let event = directEvent;
+
+    // Backward compatibility:
+    // some old links can open planner using a session id instead of event id.
+    if (!event) {
+        const { data: sessionRef, error: sessionRefError } = await supabase
+            .from("event_sessions")
+            .select("event_id")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (sessionRefError) throw sessionRefError;
+
+        if (sessionRef?.event_id) {
+            const { data: fallbackEvent, error: fallbackError } = await supabase
+                .from("events")
+                .select(selectShape)
+                .eq("id", sessionRef.event_id)
+                .eq("org_id", member.org_id)
+                .maybeSingle();
+
+            if (fallbackError) throw fallbackError;
+            event = fallbackEvent;
+        }
+    }
+
+    if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
     if (event.slots) {
         event.slots.sort((a: any, b: any) => a.slot_number - b.slot_number);
