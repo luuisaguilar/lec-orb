@@ -134,7 +134,7 @@ describe("CENNI API", () => {
             expect(body.case.folio_cenni).toBe("C-001");
         });
 
-        it("defaults estatus to EN OFICINA when not provided", async () => {
+        it("defaults estatus to PENDIENTE when not provided", async () => {
             const supabase = createMockSupabase([{ data: CASE }, { data: null }]);
             const req = new NextRequest("http://localhost/api/v1/cenni", {
                 method: "POST",
@@ -143,7 +143,7 @@ describe("CENNI API", () => {
             await (POST as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit: vi.fn() });
 
             expect(supabase.insert).toHaveBeenCalledWith(
-                expect.objectContaining({ estatus: "EN OFICINA" })
+                expect.objectContaining({ estatus: "PENDIENTE" })
             );
         });
 
@@ -189,7 +189,7 @@ describe("CENNI API", () => {
         });
 
         it("logs audit with old_data and new_data", async () => {
-            const updated = { ...CASE, estatus: "APROBADO" };
+            const updated = { ...CASE, estatus: "SOLICITADO" };
             const supabase = createMockSupabase([
                 { data: CASE },
                 { data: updated },
@@ -197,7 +197,7 @@ describe("CENNI API", () => {
             ]);
             const req = new NextRequest("http://localhost/api/v1/cenni/c1", {
                 method: "PATCH",
-                body: JSON.stringify({ estatus: "APROBADO" }),
+                body: JSON.stringify({ estatus: "SOLICITADO" }),
             });
             const enrichAudit = vi.fn();
             await (PATCH as unknown as Handler)(req, { supabase, user: USER, member: MEMBER, enrichAudit }, PARAMS);

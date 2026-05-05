@@ -180,10 +180,10 @@ export default function SGCRisks() {
                     <td className="p-4 text-right">
                       <Badge
                         className={cn(
-                          "text-[9px] uppercase tracking-tighter",
-                          risk.statusUi === "critical" ? "bg-red-500 text-white" :
-                          risk.statusUi === "mitigating" ? "bg-amber-500 text-black" :
-                          "bg-emerald-600 text-white"
+                          "text-[10px] border-none",
+                          risk.statusUi === "critical" ? "bg-red-900/70 text-red-200" :
+                          risk.statusUi === "mitigating" ? "bg-amber-900/70 text-amber-200" :
+                          "bg-emerald-900/70 text-emerald-200"
                         )}
                       >
                         {risk.statusUi === "critical" ? "Crítico" : risk.statusUi === "mitigating" ? "En Mitigación" : "Controlado"}
@@ -202,7 +202,7 @@ export default function SGCRisks() {
 
 function RiskStatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <Card className="bg-slate-900/80 border-slate-800">
+    <Card className="bg-slate-900/50 border-slate-800">
       <CardContent className="p-4 flex items-center gap-4">
         <div className="p-2.5 rounded-xl bg-slate-950 shadow-inner">
           {icon}

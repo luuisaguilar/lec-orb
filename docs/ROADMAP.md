@@ -1,14 +1,18 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-05-03
+Ultima actualizacion: 2026-05-04
 
 ---
 
-## Estado verificado el 2026-05-02
+## Estado verificado el 2026-05-04
 
 - `npm run build`: pass (Exit code: 0)
 - `npm test`: pass (`26` archivos, `164` tests)
 - `npm run lint`: pass
+- `npm run test:e2e`: pass
+- **SGC Stabilization**: COMPLETADA (Stats API fixed, NC Detail resilient).
+- **Viaticos**: COMPLETADA (Schema verified, API integrated, UI ready).
+- **Sprint 4**: 100% COMPLETADO (Cursos + Inventario + SGC Stabilization).
 - `npm run test:e2e`: pass (`10/10` + new `travel-expenses` suite)
 - Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 - **UI/UX Audit**: Pass (Refinamiento "Premium SaaS" completado)
@@ -32,18 +36,26 @@ Diagnostico E2E actual:
 - Multi-tenant auth con aislamiento por `org_id` y RLS
 - Flujo completo de invitaciones con RPC atomica y expiracion por `expires_at`
 - CENNI con 5 estatus canonicos y campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
-- Caja Chica y Presupuesto operativos
-- Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll, SGC, RRHH, IH Billing
-- **Nómina de Eventos (Fase 3)**: Cálculo dinámico por rol, recalculo manual y desglose de roles
-- **P&L por Evento**: Integración de costos de staff reales en el dashboard financiero
-- Audit log, notificaciones y DMS
-- Sentry activo en Next.js (`orb-lec`)
-- Audit logging migrado a `logAudit()` / `enrichAudit`
-- Vitest extendido a `22/22` modulos API cubiertos
-- Viaticos MVP implementado (PR #29 abierto)
-- Refinamiento Visual "Premium SaaS" completado en toda la plataforma
-- Calculadora de Tiempos 2.0 con temas dinámicos por examen
-- Fix de navegación SGC y scroll de sidebar unificado
+- Caja Chica, Presupuesto y **Viáticos** operativos.
+- Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll, SGC, RRHH, IH Billing, Cursos e Inventario.
+- **Nómina de Eventos (Fase 3)**: Cálculo dinámico por rol y P&L de eventos.
+- **SGC Fase 1**: Estabilización técnica de métricas y vistas de detalle.
+- Refinamiento Visual "Premium SaaS" y Calculadora 2.0.
+- Fix de navegación SGC y scroll de sidebar unificado.
+
+---
+
+## 🏁 Sprint 5: Inteligencia Financiera y P&L (EN CURSO)
+**Objetivo:** Consolidar todos los flujos de dinero en un Dashboard Gerencial para la toma de decisiones.
+
+### 1. Dashboard Gerencial (P&L Consolidado)
+- [ ] Endpoint `/api/v1/dashboard/finance/pl` para agregación multi-módulo.
+- [ ] Integración de ingresos (Ventas/Eventos) y egresos (Nómina/Viáticos/Gastos).
+- [ ] Visualización premium de márgenes operativos y tendencia de flujo.
+
+### 2. Automatización de Auditoría SGC
+- [ ] Notificaciones automáticas por CAR vencidas.
+- [ ] Generación de PDF para reportes de Auditoría Interna.
 
 ---
 
@@ -73,13 +85,11 @@ Las vistas de `src/app/(portal)/portal/*` siguen consumiendo `src/lib/demo/data.
 
 - conectar `fn_expire_old_invitations()` a Vercel Cron diario
 
-### 3. Validar cierre tecnico SGC + Sidebar
-
-- merge PR #32 (hardening SGC + scroll vertical sidebar)
-- smoke test manual en `/dashboard/sgc` (tabs procesos/auditoria/riesgos)
-- validar navegacion completa de modulos en desktop y mobile
-
-### 4. SGC Fase 1 -> Operacion real (API + UI)
+### 3. SGC — Estabilización Técnica (COMPLETADO)
+- [x] Refactor Mermaid.js (rendering asíncrono robusto)
+- [x] Detalle de NC con Timeline real (Audit Log)
+- [x] Expansión del registro de procesos (Ventas, Exámenes)
+- [x] Build de producción exitoso
 
 - implementar API `/api/v1/sgc/*` con `withAuth` + `logAudit`
 - construir UI operativa NC/CAPA/Auditoria/Revision sobre tablas SGC nuevas

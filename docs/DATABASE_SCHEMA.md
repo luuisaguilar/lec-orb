@@ -798,4 +798,44 @@ Tabla append-only — nunca actualizar ni eliminar registros.
 - **RLS habilitado** en todas las tablas de tenant. Nunca deshabilitar en `petty_cash_movements`, `org_members`, `org_invitations`.
 - El **admin client** (`src/lib/supabase/admin.ts`) bypasea RLS. Solo para RPCs privilegiadas e invitaciones.
 - Soft delete via `deleted_at` (packs, schools, applicators, cenni, petty_cash_movements) o `is_active = false` (payments, toefl_codes, exam_codes, quotes, purchase_orders).
+
+## 14. Finanzas — Viáticos (Travel Expenses)
+
+### `travel_expense_reports`
+Reportes de gastos de viaje con presupuesto estimado vs gastos reales.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `payroll_period_id` | uuid | FK → `payroll_periods` (opcional) |
+| `employee_name` | text | |
+| `destination` | text | |
+| `trip_purpose` | text | |
+| `start_date` | date | |
+| `end_date` | date | |
+| `status` | text | `pending`, `approved`, `rejected`, `reimbursed` |
+| `amount_requested` | numeric | |
+| `amount_approved` | numeric | |
+| **Presupuesto (ppto_*)** | numeric | `ppto_aereos`, `ppto_gasolina`, `ppto_taxis`, `ppto_casetas`, `ppto_hospedaje`, `ppto_alimentacion`, `ppto_otros` |
+| **Gasto Real (real_*)** | numeric | `real_aereos`, `real_gasolina`, `real_taxis`, `real_casetas`, `real_hospedaje`, `real_alimentacion`, `real_otros` |
+| `approved_by` | uuid | FK → `auth.users` |
+| `approved_at` | timestamptz | |
+| `created_by` | uuid | |
+| `created_at` | timestamptz | |
+
+### `travel_expense_receipts`
+Comprobantes individuales adjuntos a un reporte.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | |
+| `report_id` | uuid | FK → `travel_expense_reports` |
+| `file_name` | text | |
+| `file_type` | text | pdf, xlsx, etc. |
+| `file_url` | text | |
+| `amount` | numeric | nullable |
+| `uploaded_by` | uuid | |
+| `created_at` | timestamptz | |
 - `audit_log` es append-only — no modificar registros existentes.

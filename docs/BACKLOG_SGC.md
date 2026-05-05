@@ -13,6 +13,13 @@ Tablero operativo Sprint 01: `docs/SGC_SPRINT01_EXECUTION_BOARD.md`
 La base de datos SGC Fase 1 está implementada.  
 El pendiente principal es convertir ese dominio en capacidad operativa completa (API + UI + reportes + evidencia).
 
+Estado al 2026-05-04:
+- Completado: estabilización de esquema + hooks/UI de auditoría SGC + flujo CAR.
+- Completado: hardening de seguridad RLS SGC vía migración delta.
+- Completado: **Estabilización de API SGC (Stats & Detail)** - Resolución de errores 500 y resiliencia de timeline.
+- Pendiente: evidencia documental (DMS) y exportables PDF.
+- Pendiente: automatización de recordatorios de vencimiento.
+
 ---
 
 ## Épica 1 - API SGC v1

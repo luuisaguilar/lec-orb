@@ -29,7 +29,8 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 | [Quotes](#quotes) | `/quotes` | GET POST PATCH DELETE | — | `quotes` |
 | [Scan](#scan) | `/scan` | GET POST | ✅ | `packs`, `movements` (via RPC) |
 | [Schools](#schools) | `/schools` | GET POST | ✅ | `schools` |
-| [Settings](#settings) | `/settings` | GET PUT | ✅ | `user_settings` |
+| [Finance — Viáticos](#finance--viáticos) | `/finance/travel-expenses` | GET POST PATCH | — | `travel_expense_reports` |
+| [SGC](#sgc) | `/sgc` | GET POST PATCH DELETE + catalogs | - | `sgc_nonconformities`, `sgc_actions`, `sgc_*` |
 | [Suppliers](#suppliers) | `/suppliers` | GET POST PATCH DELETE | — | `suppliers` |
 | [TOEFL — Administrations](#toefl--administrations) | `/toefl/administrations` | GET POST | — | `toefl_administrations` |
 | [TOEFL — Codes](#toefl--codes) | `/toefl/codes` | GET POST | — | `toefl_codes` |
@@ -1093,6 +1094,42 @@ Obtiene información del usuario específico y sus accesos de módulos.
 ### PATCH `/users/[id]`
 Actualiza permisos de módulos específicos para el usuario. Solo admins.
 
+
+## SGC
+Ruta base: /api/v1/sgc  
+RBAC module: sgc
+### No conformidades
+- GET /sgc/nonconformities: listado paginado (page, limit) con filtros (status, stage_id, severity_id, q).
+- POST /sgc/nonconformities: crea no conformidad (tenant from member.org_id) y permite vincular origin_ids, cause_ids, action_links.
+- GET /sgc/nonconformities/[id]: detalle + relaciones (origin_ids, cause_ids, action_links).
+- PATCH /sgc/nonconformities/[id]: actualizacion parcial + sincronizacion de relaciones.
+- DELETE /sgc/nonconformities/[id]: cancelacion logica (status = cancel).
+### Acciones CAPA
+- GET /sgc/actions: listado paginado con filtros (status, stage_id, type_action, responsible_user_id, q).
+- POST /sgc/actions: crea accion CAPA.
+- GET /sgc/actions/[id]: detalle por id.
+- PATCH /sgc/actions/[id]: actualizacion parcial con reglas de workflow DB.
+- DELETE /sgc/actions/[id]: cancelacion logica (status = cancel).
+### Auditoria SGC
+- GET /sgc/audit: checklist + CAR + timeline consolidado por tenant.
+- POST /sgc/audit: alta manual de item de checklist.
+- PATCH /sgc/audit/[id]: actualiza estado/nota/fecha y genera CAR automatica al pasar a noconf.
+- PATCH /sgc/audit/cars/[id]: actualiza causa raiz, plan, responsable, vencimiento y estatus de CAR.
+### Catalogos SGC
+- GET/POST /sgc/catalogs/stages?kind=nc|action
+- PATCH/DELETE /sgc/catalogs/stages/[id]?kind=nc|action
+- GET/POST /sgc/catalogs/origins
+- PATCH/DELETE /sgc/catalogs/origins/[id]
+- GET/POST /sgc/catalogs/causes
+- PATCH/DELETE /sgc/catalogs/causes/[id]
+- GET/POST /sgc/catalogs/severities
+- PATCH/DELETE /sgc/catalogs/severities/[id]
+### Reglas operativas
+- Todas las rutas mutantes aplican withAuth + logAudit.
+- Mutaciones SGC restringidas en API a admin y supervisor.
+- Todos los queries aplican org_id para aislamiento tenant.
+- Errores de workflow/constraints de DB se mapean a respuestas API legibles (409 / 400).
+---
 ## RBAC — Módulo × Acción requerida por endpoint
 
 Cada endpoint declara `{ module, action }` en su `withAuth`. La tabla siguiente
@@ -1200,9 +1237,40 @@ en la tabla `module_permissions` de Supabase.
 | `/toefl/codes/import` | POST | toefl-codes | edit | - |
 | `/users/me` | GET | users | view | - |
 | `/users/[id]` | GET | users | view | - |
-| `/users/[id]` | PATCH | users | edit | Solo role=admin |
-
+| /sgc/nonconformities | GET | sgc | view | - |
+| /sgc/nonconformities | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/nonconformities/[id] | GET | sgc | view | - |
+| /sgc/nonconformities/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/nonconformities/[id] | DELETE | sgc | edit | Cancelacion logica; Solo admin/supervisor |
+| /sgc/actions | GET | sgc | view | - |
+| /sgc/actions | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/actions/[id] | GET | sgc | view | - |
+| /sgc/actions/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/actions/[id] | DELETE | sgc | edit | Cancelacion logica; Solo admin/supervisor |
+| /sgc/audit | GET | sgc | view | Checklist + CAR + timeline |
+| /sgc/audit | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/audit/[id] | PATCH | sgc | edit | Auto-crea CAR cuando status=noconf |
+| /sgc/audit/cars/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/stages | GET | sgc | view | kind=nc|action |
+| /sgc/catalogs/stages | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/stages/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/stages/[id] | DELETE | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/origins | GET | sgc | view | - |
+| /sgc/catalogs/origins | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/origins/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/origins/[id] | DELETE | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/causes | GET | sgc | view | - |
+| /sgc/catalogs/causes | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/causes/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/causes/[id] | DELETE | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/severities | GET | sgc | view | - |
+| /sgc/catalogs/severities | POST | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/severities/[id] | PATCH | sgc | edit | Solo admin/supervisor |
+| /sgc/catalogs/severities/[id] | DELETE | sgc | edit | Solo admin/supervisor |
 > **Patrones de delete:**
 > - **Hard delete** (elimina el registro): `events`, `applicators`
 > - **Soft delete vía `deleted_at`**: `cenni`, `packs`, `schools`
 > - **Soft delete vía `is_active = false`**: `payments`, `purchase-orders`, `quotes`, `suppliers`
+
+
+

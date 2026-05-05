@@ -166,14 +166,15 @@ export function CenniImportDialog({ open, onOpenChange, onSuccess }: CenniImport
                         return acc;
                     }
 
-                    let estatus = row["ESTATUS"]?.toString().trim().toUpperCase() || "EN OFICINA";
-                    // Normalize to canonical 5-value enum
-                    if (["PENDIENTE", "EN OFICINA/POR ENVIAR"].includes(estatus))          estatus = "EN OFICINA";
-                    if (["EN TRAMITE", "TRAMITE", "TRÁMITE", "REVISION"].includes(estatus)) estatus = "EN TRAMITE/REVISION";
-                    if (["ENVIADO", "ENVIADO DIGITAL", "APROBADO"].includes(estatus))       estatus = "APROBADO";
-                    // BC is a client/branch code mistakenly used as status in older records
-                    if (!["EN OFICINA", "SOLICITADO", "EN TRAMITE/REVISION", "APROBADO", "RECHAZADO"].includes(estatus)) {
-                        estatus = "EN OFICINA";
+                    let estatus = row["ESTATUS"]?.toString().trim().toUpperCase() || "PENDIENTE";
+                    // Normalize to canonical 4-value enum: PENDIENTE, SOLICITADO, ENVIADO, BC
+                    if (["EN OFICINA", "PENDIENTE", "EN OFICINA/POR ENVIAR"].includes(estatus))  estatus = "PENDIENTE";
+                    if (["EN TRAMITE", "TRAMITE", "TRÁMITE", "REVISION", "SOLICITADO"].includes(estatus)) estatus = "SOLICITADO";
+                    if (["ENVIADO", "ENVIADO DIGITAL", "APROBADO"].includes(estatus))            estatus = "ENVIADO";
+                    if (["RECHAZADO", "NO PROCEDE", "BC"].includes(estatus))                    estatus = "BC";
+                    
+                    if (!["PENDIENTE", "SOLICITADO", "ENVIADO", "BC"].includes(estatus)) {
+                        estatus = "PENDIENTE";
                     }
 
                     const estatus_certificado = normalizeCertStatus(

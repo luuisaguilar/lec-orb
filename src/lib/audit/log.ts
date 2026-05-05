@@ -17,7 +17,7 @@
  *   });
  */
 
-export type AuditAction = "INSERT" | "UPDATE" | "DELETE";
+export type AuditAction = "INSERT" | "UPDATE" | "DELETE" | "EXPORT";
 
 export interface AuditEntry {
     org_id: string;
@@ -41,17 +41,26 @@ export interface AuditEntry {
  */
 export async function logAudit(supabase: any, entry: AuditEntry): Promise<void> {
     try {
+        // We populate both legacy 'action' and new 'operation' columns for compatibility.
+        // If the DB has a check constraint on 'operation', we map 'EXPORT' to 'INSERT' 
+        // but keep 'EXPORT' in the 'action' column for traceability.
+        const operation = (entry.action === "EXPORT") ? "INSERT" : entry.action;
+
         await supabase.from("audit_log").insert({
             org_id: entry.org_id,
             table_name: entry.table_name,
             record_id: entry.record_id,
+            operation: operation,
             action: entry.action,
             old_data: entry.old_data ?? null,
             new_data: entry.new_data ?? null,
             performed_by: entry.performed_by,
+            changed_by: entry.performed_by, // Legacy column
+            changed_at: new Date().toISOString(), // Legacy column
         });
-    } catch {
+    } catch (err) {
         // Audit logging failures are non-fatal — log to console but don't throw
-        console.warn(`[audit] Failed to log ${entry.action} on ${entry.table_name}:${entry.record_id}`);
+        console.warn(`[audit] Failed to log ${entry.action} on ${entry.table_name}:${entry.record_id}`, err);
     }
 }
+
