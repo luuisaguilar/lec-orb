@@ -21,7 +21,6 @@ type RiskStat = {
     probability: string | null;
     status: string | null;
 };
-
 export const GET = withAuth(async (req, { supabase, member }) => {
     // 1. Lead Time NCs (Average days to close)
     // We try to select both legacy and new columns to be resilient
