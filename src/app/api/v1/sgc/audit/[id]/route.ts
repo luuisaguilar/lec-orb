@@ -9,6 +9,11 @@ const updateAuditItemSchema = z.object({
     next_audit_date: z.string().optional().nullable(),
 });
 
+function buildCarCode() {
+    const uuidPart = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+    return `CAR-${uuidPart}`;
+}
+
 export const PATCH = withAuth(async (req, { supabase, member, user }, { params }) => {
     const { id } = await params;
     const body = await req.json();
@@ -48,5 +53,47 @@ export const PATCH = withAuth(async (req, { supabase, member, user }, { params }
         performed_by: user.id,
     });
 
-    return NextResponse.json({ item: updated });
+    let car: Record<string, unknown> | null = null;
+
+    if (updated.status === "noconf") {
+        const { data: existingCar } = await supabase
+            .from("sgc_audit_cars")
+            .select("id, audit_check_id, car_code, finding_clause_id, finding_title, description, status, root_cause, action_plan, owner_name, due_date, created_at, updated_at")
+            .eq("org_id", member.org_id)
+            .eq("audit_check_id", updated.id)
+            .maybeSingle();
+
+        if (existingCar) {
+            car = existingCar;
+        } else {
+            const { data: insertedCar, error: carInsertError } = await supabase
+                .from("sgc_audit_cars")
+                .insert({
+                    org_id: member.org_id,
+                    audit_check_id: updated.id,
+                    car_code: buildCarCode(),
+                    finding_clause_id: updated.clause_id,
+                    finding_title: updated.title,
+                    description: updated.question,
+                    status: "open",
+                })
+                .select("id, audit_check_id, car_code, finding_clause_id, finding_title, description, status, root_cause, action_plan, owner_name, due_date, created_at, updated_at")
+                .single();
+
+            if (carInsertError) throw carInsertError;
+
+            await logAudit(supabase, {
+                org_id: member.org_id,
+                table_name: "sgc_audit_cars",
+                record_id: insertedCar.id,
+                action: "INSERT",
+                new_data: insertedCar,
+                performed_by: user.id,
+            });
+
+            car = insertedCar;
+        }
+    }
+
+    return NextResponse.json({ item: updated, car });
 }, { module: "sgc", action: "edit" });

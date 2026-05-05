@@ -1,198 +1,416 @@
 "use client";
 
-import { FolderOpen, Search, Filter, Trash2, Download, FileText, Image, File, Loader2, History, Calendar, FileType } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { useState } from "react";
-import { format } from "date-fns";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  Download,
+  File,
+  FileText,
+  Filter,
+  FolderOpen,
+  Image,
+  Loader2,
+  Trash2,
+  UserRound,
+  UsersRound,
+  XCircle,
+} from "lucide-react";
+import { addYears, differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Document {
-    id: string;
-    file_name: string;
-    file_path: string;
-    file_size: number;
-    mime_type: string;
-    tags: string[];
-    module_slug: string;
-    created_at: string;
-    version?: string; // New field from migration
-    document_type?: string; // New field from migration
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  tags: string[];
+  module_slug: string;
+  created_at: string;
+  version?: string | null;
+  document_type?: string | null;
+  uploaded_by?: string | null;
+  uploaded_by_name?: string | null;
 }
 
 interface DocumentExplorerProps {
-    hideHeader?: boolean;
-    initialSearch?: string;
-    className?: string;
+  hideHeader?: boolean;
+  initialSearch?: string;
+  className?: string;
 }
 
-export default function DocumentExplorer({ hideHeader, initialSearch = "", className }: DocumentExplorerProps) {
-    const [search, setSearch] = useState(initialSearch);
-    const { data, mutate, isLoading } = useSWR("/api/v1/documents", fetcher);
-    const documents: Document[] = data?.documents ?? [];
+type ReviewStatus = "Vigente" | "Por revisar" | "Vencido";
 
-    const filteredDocs = documents.filter(doc =>
-        doc.file_name.toLowerCase().includes(search.toLowerCase()) ||
-        doc.module_slug.toLowerCase().includes(search.toLowerCase()) ||
-        doc.tags?.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
-    );
+type ControlMetadata = {
+  code: string;
+  documentOwner: string;
+  processOwner: string;
+  lastReviewDate: Date;
+  nextReviewDate: Date;
+  status: ReviewStatus;
+};
 
-    const formatSize = (bytes: number) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)} KB`;
-        return `${(bytes / 1048576).toFixed(1)} MB`;
-    };
+const STATUS_BADGE_CLASSES: Record<ReviewStatus, string> = {
+  Vigente: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  "Por revisar": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  Vencido: "bg-red-500/10 text-red-400 border-red-500/20",
+};
 
-    const getFileExtension = (fileName: string) => {
-        return fileName.split('.').pop()?.toUpperCase() || 'FILE';
-    };
+function normalizeTagKey(key: string) {
+  return key
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s_-]+/g, "");
+}
 
-    const getFileIcon = (mime: string) => {
-        if (mime?.startsWith("image/")) return Image;
-        if (mime?.includes("pdf")) return FileText;
-        return File;
-    };
+function parseTagMap(tags: string[] | undefined) {
+  const map = new Map<string, string>();
+  for (const rawTag of tags ?? []) {
+    const [left, ...rest] = rawTag.split(/[:=]/);
+    if (!left || rest.length === 0) continue;
+    const key = normalizeTagKey(left);
+    const value = rest.join(":").trim();
+    if (key && value && !map.has(key)) {
+      map.set(key, value);
+    }
+  }
+  return map;
+}
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("¿Eliminar este documento permanentemente?")) return;
-        const res = await fetch(`/api/v1/documents?id=${id}`, { method: "DELETE" });
-        if (res.ok) mutate();
-    };
+function pickTagValue(map: Map<string, string>, keys: string[]) {
+  for (const key of keys) {
+    const normalized = normalizeTagKey(key);
+    const value = map.get(normalized);
+    if (value) return value;
+  }
+  return null;
+}
 
+function parseDateValue(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = parseISO(value);
+  if (isValid(parsed)) return parsed;
+
+  const fallback = new Date(value);
+  return isValid(fallback) ? fallback : null;
+}
+
+function humanizeSlug(slug: string | null | undefined) {
+  if (!slug) return "General";
+  return slug
+    .split("-")
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
+
+function buildControlMetadata(doc: Document): ControlMetadata {
+  const tagMap = parseTagMap(doc.tags);
+  const fallbackDate = parseDateValue(doc.created_at) ?? new Date();
+
+  const lastReviewTag = pickTagValue(tagMap, [
+    "ultima_revision",
+    "ultima revision",
+    "last_review",
+    "last review",
+    "fecha_revision",
+  ]);
+  const nextReviewTag = pickTagValue(tagMap, [
+    "proxima_revision",
+    "proxima revision",
+    "next_review",
+    "next review",
+    "fecha_proxima_revision",
+  ]);
+
+  const lastReviewDate = parseDateValue(lastReviewTag) ?? fallbackDate;
+  const nextReviewDate = parseDateValue(nextReviewTag) ?? addYears(lastReviewDate, 1);
+
+  const daysUntilReview = differenceInCalendarDays(nextReviewDate, new Date());
+  let status: ReviewStatus = "Vigente";
+  if (daysUntilReview < 0) {
+    status = "Vencido";
+  } else if (daysUntilReview <= 30) {
+    status = "Por revisar";
+  }
+
+  const codeTag = pickTagValue(tagMap, ["codigo", "code", "doc_code", "document_code"]);
+  const ownerTag = pickTagValue(tagMap, [
+    "dueno_documento",
+    "dueno",
+    "document_owner",
+    "owner",
+    "responsable_documento",
+  ]);
+  const processOwnerTag = pickTagValue(tagMap, [
+    "dueno_proceso",
+    "process_owner",
+    "owner_process",
+    "responsable_proceso",
+  ]);
+
+  const code = codeTag ?? `${(doc.module_slug || "DOC").toUpperCase()}-${doc.id.slice(0, 8).toUpperCase()}`;
+  const documentOwner = ownerTag ?? doc.uploaded_by_name ?? "Sin asignar";
+  const processOwner = processOwnerTag ?? `Resp. ${humanizeSlug(doc.module_slug)}`;
+
+  return {
+    code,
+    documentOwner,
+    processOwner,
+    lastReviewDate,
+    nextReviewDate,
+    status,
+  };
+}
+
+function getFileIcon(mime: string) {
+  if (mime?.startsWith("image/")) return Image;
+  if (mime?.includes("pdf")) return FileText;
+  return File;
+}
+
+function getFormatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
+function formatDateLabel(date: Date) {
+  return format(date, "d MMM yyyy", { locale: es });
+}
+
+export default function DocumentExplorer({
+  hideHeader,
+  initialSearch = "",
+  className,
+}: DocumentExplorerProps) {
+  const [search, setSearch] = useState(initialSearch);
+  const { data, mutate, isLoading } = useSWR("/api/v1/documents", fetcher);
+
+  const enrichedDocs = useMemo(
+    () => {
+      const documents: Document[] = data?.documents ?? [];
+      return documents.map((doc) => ({
+        ...doc,
+        control: buildControlMetadata(doc),
+      }));
+    },
+    [data?.documents]
+  );
+
+  const filteredDocs = enrichedDocs.filter((doc) => {
+    const s = search.toLowerCase();
     return (
-        <div className={cn("flex flex-col gap-6", className)}>
-            {!hideHeader && (
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                            <FolderOpen className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-white font-outfit">Gestión de Documentos</h1>
-                            <p className="text-muted-foreground text-sm">Explorador global de archivos y expedientes operativos</p>
-                        </div>
-                    </div>
-                </div>
+      doc.file_name.toLowerCase().includes(s) ||
+      doc.module_slug.toLowerCase().includes(s) ||
+      doc.control.code.toLowerCase().includes(s) ||
+      doc.control.documentOwner.toLowerCase().includes(s) ||
+      (doc.document_type ?? "").toLowerCase().includes(s) ||
+      doc.tags?.some((tag) => tag.toLowerCase().includes(s))
+    );
+  });
+
+  const statusSummary = useMemo(() => {
+    const base: Record<ReviewStatus, number> = {
+      Vigente: 0,
+      "Por revisar": 0,
+      Vencido: 0,
+    };
+
+    for (const doc of filteredDocs) {
+      base[doc.control.status] += 1;
+    }
+    return base;
+  }, [filteredDocs]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Eliminar este documento permanentemente?")) return;
+    const res = await fetch(`/api/v1/documents?id=${id}`, { method: "DELETE" });
+    if (res.ok) mutate();
+  };
+
+  return (
+    <div className={cn("flex flex-col gap-6", className)}>
+      {!hideHeader && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-primary/10 p-2">
+              <FolderOpen className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-outfit text-2xl font-bold tracking-tight text-white">Lista Maestra de Documentos</h1>
+              <p className="text-sm text-muted-foreground">Control documental centralizado por organizacion</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 shadow-sm backdrop-blur-md">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-sm">
+            <Input
+              placeholder="Buscar por nombre, codigo, proceso o responsable..."
+              className="border-slate-700 bg-slate-950/50 text-white"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+            <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Vigentes: {statusSummary.Vigente}
+            </Badge>
+            <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-400">
+              <AlertTriangle className="mr-1 h-3.5 w-3.5" /> Por revisar: {statusSummary["Por revisar"]}
+            </Badge>
+            <Badge className="border-red-500/20 bg-red-500/10 text-red-400">
+              <XCircle className="mr-1 h-3.5 w-3.5" /> Vencidos: {statusSummary.Vencido}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-700 text-slate-300"
+              onClick={() => mutate()}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="mr-2 h-4 w-4" />}
+              Actualizar
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/30 backdrop-blur-sm">
+        <Table className="min-w-[1250px]">
+          <TableHeader className="bg-slate-950/60">
+            <TableRow className="border-slate-800 hover:bg-transparent">
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documento</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Codigo</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tipo</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dueno documento</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dueno proceso</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ult. revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prox. revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Estatus</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tamano</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && filteredDocs.length === 0 && (
+              <TableRow className="border-slate-800">
+                <TableCell colSpan={11} className="py-14 text-center text-slate-400">
+                  <Loader2 className="mx-auto mb-3 h-7 w-7 animate-spin text-primary" />
+                  Cargando lista maestra...
+                </TableCell>
+              </TableRow>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-900/40 p-4 rounded-xl border border-slate-800 shadow-sm backdrop-blur-md">
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                    <Input
-                        placeholder="Buscar por nombre, módulo o tag..."
-                        className="pl-9 bg-slate-950/50 border-slate-700 text-white"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <Button variant="outline" size="sm" className="hidden sm:flex border-slate-700 text-slate-400">
-                        <Filter className="h-4 w-4 mr-2" /> Filtrar
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => mutate()} disabled={isLoading} className="border-slate-700 text-slate-300">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar"}
-                    </Button>
-                </div>
-            </div>
+            {!isLoading && filteredDocs.length === 0 && (
+              <TableRow className="border-slate-800">
+                <TableCell colSpan={11} className="py-14 text-center text-slate-500">
+                  <FolderOpen className="mx-auto mb-3 h-10 w-10 opacity-40" />
+                  No se encontraron documentos para ese criterio.
+                </TableCell>
+              </TableRow>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
-                {filteredDocs.length === 0 && !isLoading && (
-                    <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-800 rounded-xl">
-                        <FolderOpen className="h-12 w-12 text-slate-700 mx-auto mb-3" />
-                        <p className="text-slate-500 font-medium">No se encontraron documentos en el sistema</p>
+            {filteredDocs.map((doc) => {
+              const Icon = getFileIcon(doc.mime_type);
+              return (
+                <TableRow key={doc.id} className="border-slate-800 hover:bg-slate-800/30">
+                  <TableCell>
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-md border border-slate-800 bg-slate-950/50 p-2">
+                        <Icon className="h-4 w-4 text-slate-300" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-100" title={doc.file_name}>
+                          {doc.file_name}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wider text-primary/80">{humanizeSlug(doc.module_slug)}</p>
+                      </div>
                     </div>
-                )}
-
-                {isLoading && filteredDocs.length === 0 && (
-                  <div className="col-span-full py-20 text-center">
-                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
-                    <p className="text-slate-400">Sincronizando Lista Maestra...</p>
-                  </div>
-                )}
-
-                {filteredDocs.map((doc) => {
-                    const Icon = getFileIcon(doc.mime_type);
-                    const ext = getFileExtension(doc.file_name);
-                    
-                    return (
-                        <div key={doc.id} className="group flex flex-col bg-slate-900/40 rounded-xl border border-slate-800 overflow-hidden hover:border-primary/50 transition-all hover:shadow-xl backdrop-blur-sm relative">
-                            {/* Version Badge Overlay */}
-                            <div className="absolute top-2 right-2">
-                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-bold py-0 h-5">
-                                    Rev. {doc.version || '1.0'}
-                                </Badge>
-                            </div>
-
-                            <div className="p-4 flex items-start gap-3">
-                                <div className="p-2.5 bg-slate-950/50 rounded-lg shrink-0 border border-slate-800">
-                                    <Icon className="h-6 w-6 text-slate-400 group-hover:text-primary transition-colors" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-sm truncate text-slate-100 pr-12" title={doc.file_name}>
-                                        {doc.file_name}
-                                    </h3>
-                                    
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      <p className="text-[10px] uppercase font-bold text-primary/80 tracking-wider">
-                                          {doc.module_slug || 'General'}
-                                      </p>
-                                      <span className="text-[10px] text-slate-600">•</span>
-                                      <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-800 px-1.5 rounded uppercase">
-                                        <FileType className="w-2.5 h-2.5" /> {ext}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex flex-col gap-1.5 mt-4">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
-                                          <Calendar className="w-3 h-3 text-slate-600" />
-                                          Creado: <span className="text-slate-300">{format(new Date(doc.created_at), "d MMM yyyy", { locale: es })}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
-                                          <History className="w-3 h-3 text-slate-600" />
-                                          Revisión: <span className="text-slate-300">{doc.version || '1.0'}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
-                                          <div className="w-3 h-3 rounded-full border border-slate-600 flex items-center justify-center text-[7px] font-bold">i</div>
-                                          Tamaño: <span className="text-slate-300">{formatSize(doc.file_size)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {doc.tags && doc.tags.length > 0 && (
-                                <div className="px-4 pb-4 flex flex-wrap gap-1.5">
-                                    {doc.tags.map(tag => (
-                                        <Badge key={tag} variant="outline" className="text-[9px] px-1.5 py-0 bg-slate-950/50 border-slate-800 text-slate-400">
-                                            {tag}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div className="mt-auto border-t border-slate-800 bg-slate-950/30 px-4 py-2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                                <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-primary hover:text-primary hover:bg-primary/10" asChild>
-                                    <a href={`/api/v1/documents/download?path=${encodeURIComponent(doc.file_path)}`} target="_blank">
-                                        <Download className="h-3.5 w-3.5 mr-1.5" /> Descargar
-                                    </a>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                                    onClick={() => handleDelete(doc.id)}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-primary">{doc.control.code}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="border-slate-700 bg-slate-800/60 text-slate-300">
+                      {doc.document_type || "General"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-300">Rev. {doc.version || "1.0"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                      <UserRound className="h-3.5 w-3.5 text-slate-500" />
+                      {doc.control.documentOwner}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                      <UsersRound className="h-3.5 w-3.5 text-slate-500" />
+                      {doc.control.processOwner}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-300">{formatDateLabel(doc.control.lastReviewDate)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                      <CalendarClock className="h-3.5 w-3.5 text-slate-500" />
+                      {formatDateLabel(doc.control.nextReviewDate)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={cn("text-[10px] font-bold", STATUS_BADGE_CLASSES[doc.control.status])}>
+                      {doc.control.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-400">{getFormatSize(doc.file_size)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary hover:bg-primary/10 hover:text-primary"
+                        asChild
+                      >
+                        <a href={`/api/v1/documents/download?path=${encodeURIComponent(doc.file_path)}`} target="_blank" rel="noreferrer">
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => handleDelete(doc.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
 }

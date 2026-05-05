@@ -25,6 +25,12 @@ Generar el SQL → Luis lo aplica en Supabase Dashboard o CLI.
 3. Llamar `logAudit` después de cada mutación exitosa
 4. Confirmar que la tabla destino tiene RLS habilitado
 
+## Flujo: Resiliencia de Datos SGC
+Debido a la migración de esquemas de auditoría y nombres de columnas históricos en el SGC:
+1. **Audit Logs**: Al leer el timeline, soportar tanto `operation` (nuevo) como `action` (antiguo) y `changed_by` vs `performed_by`.
+2. **Fechas**: Siempre proveer fallbacks para columnas de fecha (`detection_date`, `completed_at`). Si el valor es nulo, usar `created_at` o la fecha actual para evitar errores en el dashboard de métricas.
+3. **Tablas de Riesgo**: Usar siempre `risk_assessments` (no `sgc_risks`).
+
 ## Flujo: nuevo componente UI
 
 1. Revisar `src/components/` — puede existir algo reutilizable

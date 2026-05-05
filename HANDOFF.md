@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-02
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-04 (Financial Intelligence) |
 
 ---
 
@@ -14,19 +14,13 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | ESLint | Pass (`0` errores) |
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
-| Finance - Nómina Operativa | **COMPLETADO (Fase 3)** - Motor dinámico, P&L real, recalculo |
-| Finance - Caja Chica | CRUD + balance RPC + Excel export/import + receipt upload |
-| Finance - Presupuesto (POA) | Tabla `poa_lines` libre por seccion/concepto, dos fuentes (CAJA_CHICA / CUENTA_BAC) |
-| Finance - IH Billing | Operativo: sesiones, tarifas, facturas, pagos, conciliacion e import |
-| Finance - Viáticos | **COMPLETADO** - Módulo integrado con PR #29 mergeado |
-| Invitaciones | **COMPLETADO** - Flujo + Resend + Vercel Cron + UI de expiración |
-| CENNI | **COMPLETADO** - CRUD + bulk import + certificados PDF + visor + dashboard KPIs |
-| TOEFL | Administraciones + codigos |
-| SGC (checklist auditoria) | **OPERATIVO** - Fix de navegación y refinamiento visual aplicado |
-| Calculadora de Tiempos | **PREMIUM** - Versión 2.0 con temas dinámicos |
-| Sentry | Activo (project `orb-lec`) |
-| Portal de aplicadores | Datos reales (Supabase integration complete) |
-| Nombre Institucional | **COMPLETADO** - Actualizado a "Languages Education Consulting" |
+| Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
+| Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
+| Finance - Caja Chica | CRUD + balance RPC + Excel export/import |
+| Finance - Presupuesto (POA) | Tabla `poa_lines` operativa |
+| Finance - Dashboard P&L | **EN DESARROLLO** - Consolidación de ingresos/egresos |
+| SGC (Calidad) | **COMPLETADO** - Estabilización técnica (Stats API + Timeline NC resiliente) |
+| Cursos e Inventario | **COMPLETADO** - Simulador ROI + Control de stock multi-ubicación |
 
 ---
 
@@ -37,8 +31,8 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Sprint 1: Estabilización | Completado | Auth, CENNI, Caja Chica base. |
 | Sprint 2: IH Billing | Completado | Facturación, CxC, Viáticos. |
 | Sprint 3: Nómina y Eventos | Completado | Pulido visual y auditoría terminada. |
-| Sprint 4: Cursos y Ferias | **Completado** | Simulador financiero + Inventario multi-ubicación. |
-| Sprint 5: Dashboard Gerencial | Pendiente | Integración de P&L consolidado. |
+| Sprint 4: Cursos y Ferias | Completado | Simulador financiero + Inventario + SGC Stabilization. |
+| Sprint 5: Dashboard Gerencial | **En curso** | Consolidación de P&L de todos los módulos financieros. |
 
 ---
 

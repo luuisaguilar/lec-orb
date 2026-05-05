@@ -779,6 +779,30 @@ export const HR_PROCESSES = [
     resources: 'Financieros: Cuentas bancarias.\nTecnológicos: Software Contable, Sistema Integral.',
     documents: '1. Reporte de Flujo de Efectivo.xlsx\n2. Comprobantes de Pago.pdf\n3. Presupuesto Anual',
     mermaidCode: 'graph TD\n    A[Recepción de Solicitud de Pago] --> B{"¿Presupuesto Aprobado?"}\n    B -- Sí --> C[Validación de Factura]\n    B -- No --> D[Autorización de Director General]\n    D --> C\n    C --> E[Programación de Pago]\n    E --> F[Ejecución y Registro Contable]'
+  },
+  {
+    id: 'PROC_VENTAS',
+    title: 'Proceso de Ventas y Comunicación',
+    kpis: '1. Conversión del 20% en prospectos de certificaciones.\n2. 90% de satisfacción en encuestas de atención inicial.',
+    risks: '1. Información incorrecta proporcionada al cliente.\n2. Seguimiento tardío a prospectos interesados.',
+    improvements: '1. Implementación de CRM automatizado.\n2. Plantillas de comunicación estandarizadas.',
+    actors: 'Responsable de Comunicación, Representantes de Ventas, Director General.',
+    inputsOutputs: 'Entradas: Prospectos (Web, Redes), Campañas.\nSalidas: Clientes Registrados, Reportes de Ventas.',
+    resources: 'Tecnológicos: CRM, Redes Sociales, LEC Orb.',
+    documents: '1. Catálogo de Productos.pdf\n2. Guión de Ventas\n3. Lista de Precios Vigente',
+    mermaidCode: 'graph TD\n    A[Prospecto Registrado] --> B[Primer Contacto / Calificación]\n    B --> C{"¿Interesado?"}\n    C -- No --> D[Seguimiento Posterior]\n    C -- Sí --> E[Presentación de Propuesta]\n    E --> F[Cierre / Inscripción]\n    F --> G[Handoff a Operaciones]'
+  },
+  {
+    id: 'PROC_EXAMENES',
+    title: 'Proceso de Aplicación de Exámenes',
+    kpis: '1. 0 incidencias de seguridad en material confidencial.\n2. 100% de reportes de aplicación entregados en tiempo.',
+    risks: '1. Extravío de material de examen.\n2. Fallas técnicas durante aplicaciones digitales.',
+    improvements: '1. Digitalización de reportes de incidencias.\n2. Auditoría aleatoria de aplicaciones.',
+    actors: 'Coordinador de Exámenes, Aplicadores, Candidatos, Cambridge/TOEFL.',
+    inputsOutputs: 'Entradas: Registro de Candidatos, Material Confidencial.\nSalidas: Resultados, Reportes de Sesión.',
+    resources: 'Físicos: Salones, Computadoras.\nLogísticos: Material de Examen Seguro.',
+    documents: '1. Manual del Aplicador.pdf\n2. Protocolo de Seguridad\n3. Registro de Incidencias.xlsx',
+    mermaidCode: 'graph TD\n    A[Recepción de Material] --> B[Preparación de Sesión]\n    B --> C[Identificación de Candidatos]\n    C --> D[Aplicación de Examen]\n    D --> E[Recolección y Empaque]\n    E --> F[Envío a Centro Evaluador]'
   }
 ];
 

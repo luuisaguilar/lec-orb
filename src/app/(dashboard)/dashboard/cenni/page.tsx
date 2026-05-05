@@ -38,11 +38,10 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 // ── Status definitions ────────────────────────────────────────────────────────
 const STATUSES = [
-    "EN OFICINA",
+    "PENDIENTE",
     "SOLICITADO",
-    "EN TRAMITE/REVISION",
-    "APROBADO",
-    "RECHAZADO",
+    "ENVIADO",
+    "BC",
 ] as const;
 
 const CERT_STATUSES = [
@@ -52,11 +51,10 @@ const CERT_STATUSES = [
 ] as const;
 
 const statusColors: Record<string, string> = {
-    "EN OFICINA":          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    "SOLICITADO":          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    "EN TRAMITE/REVISION": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    "APROBADO":            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    "RECHAZADO":           "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    "PENDIENTE":  "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    "SOLICITADO": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "ENVIADO":    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    "BC":         "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const certColors: Record<string, string> = {
@@ -66,11 +64,10 @@ const certColors: Record<string, string> = {
 };
 
 const kanbanColors: Record<string, string> = {
-    "EN OFICINA":          "border-gray-400 bg-gray-50 dark:bg-gray-950/20",
-    "SOLICITADO":          "border-blue-400 bg-blue-50 dark:bg-blue-950/20",
-    "EN TRAMITE/REVISION": "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
-    "APROBADO":            "border-green-400 bg-green-50 dark:bg-green-950/20",
-    "RECHAZADO":           "border-red-400 bg-red-50 dark:bg-red-950/20",
+    "PENDIENTE":  "border-gray-400 bg-gray-50 dark:bg-gray-950/20",
+    "SOLICITADO": "border-blue-400 bg-blue-50 dark:bg-blue-950/20",
+    "ENVIADO":    "border-green-400 bg-green-50 dark:bg-green-950/20",
+    "BC":         "border-red-400 bg-red-50 dark:bg-red-950/20",
 };
 
 interface CenniCase {
@@ -643,7 +640,7 @@ function DraggableKanbanCard({ c, userRole, onEdit, onDelete }: { c: CenniCase; 
 function DroppableKanbanColumn({ status, cases, userRole, onEdit, onDelete }: { status: string; cases: CenniCase[]; userRole: string; onEdit: (c: CenniCase) => void; onDelete: (id: string) => void }) {
     const { setNodeRef, isOver } = useDroppable({ id: status });
     return (
-        <div className="flex-shrink-0 w-72 flex flex-col">
+        <div className="shrink-0 w-72 flex flex-col">
             <div className={`rounded-xl border-t-4 border bg-card flex-1 ${kanbanColors[status]} ${isOver ? "ring-2 ring-primary ring-inset opacity-80" : ""}`}>
                 <div className="px-3 py-2.5 flex items-center justify-between border-b bg-card/50">
                     <span className="text-xs font-bold uppercase tracking-wide">{status}</span>

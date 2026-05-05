@@ -224,8 +224,30 @@ export default async function Page({ params }: { params: { id: string } }) {
   const { id } = params;
 }
 
+```tsx
 // Después (correcto)
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 }
 ```
+
+---
+
+## Mantenimiento SGC y Finanzas
+
+### Verificar Salud del Módulo SGC
+Si el Dashboard de SGC muestra errores 500 o métricas en cero:
+1. **Verificar Tablas**: Asegurarse que existen registros en `risk_assessments`.
+2. **Timeline de Auditoría**: Si el timeline de una NC no carga, revisar si hay registros en `audit_log` para esa `table_name = 'sgc_nonconformities'`. El código es resiliente a cambios de columna (`action` vs `operation`), pero requiere que el `record_id` coincida.
+3. **Métricas**: Las métricas fallan si `detection_date` es nulo en registros creados antes de la estabilización. Se implementó un fallback en el API, pero se recomienda completar los datos manualmente si es crítico.
+
+### Verificar Integración de Viáticos
+Para confirmar que el módulo de Viáticos está 100% operativo:
+1. **Ejecutar Check de Migraciones**:
+   ```sql
+   SELECT column_name FROM information_schema.columns 
+   WHERE table_name = 'travel_expense_reports' 
+   AND column_name = 'ppto_aereos';
+   ```
+   Si no devuelve nada, aplicar `supabase/migrations/20260509_travel_expenses_detailed_fields.sql`.
+2. **Cierre de Ciclo**: Un reporte de viáticos solo afecta al P&L consolidado (futuro) cuando su estado es `approved` o `reimbursed`.

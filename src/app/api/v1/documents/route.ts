@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/with-handler";
 
+type DocumentRow = {
+    uploaded_by: string | null;
+    [key: string]: unknown;
+};
+
+type ProfileRow = {
+    id: string;
+    full_name: string | null;
+};
+
 export const GET = withAuth(async (req, { supabase, member }) => {
     const { searchParams } = new URL(req.url);
     const moduleSlug = searchParams.get("module");
@@ -18,7 +28,36 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const { data: documents, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ documents: documents ?? [] });
+    const documentsList = (documents ?? []) as DocumentRow[];
+
+    const uploaderIds = Array.from(
+        new Set(
+            documentsList
+                .map((doc) => doc.uploaded_by)
+                .filter((id): id is string => Boolean(id))
+        )
+    );
+
+    let profileById = new Map<string, string>();
+    if (uploaderIds.length > 0) {
+        const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", uploaderIds);
+
+        profileById = new Map(
+            ((profiles ?? []) as ProfileRow[])
+                .filter((profile) => Boolean(profile.id))
+                .map((profile) => [profile.id, profile.full_name || "Sin asignar"])
+        );
+    }
+
+    const enrichedDocuments = documentsList.map((doc) => ({
+        ...doc,
+        uploaded_by_name: doc.uploaded_by ? profileById.get(doc.uploaded_by) ?? "Sin asignar" : "Sin asignar",
+    }));
+
+    return NextResponse.json({ documents: enrichedDocuments });
 }, { module: "documents", action: "view" });
 
 export const POST = withAuth(async (req, { supabase, user, member }) => {

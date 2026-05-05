@@ -3,11 +3,10 @@ import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 
 const CENNI_STATUSES = [
-    "EN OFICINA",
+    "PENDIENTE",
     "SOLICITADO",
-    "EN TRAMITE/REVISION",
-    "APROBADO",
-    "RECHAZADO",
+    "ENVIADO",
+    "BC",
 ] as const;
 
 const updateCenniSchema = z.object({

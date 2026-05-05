@@ -4,6 +4,57 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-04] - SGC Stabilization & Finance Integration (Sprint 04 completion)
+
+- **fix(sgc)**: resolved HTTP 500 internal server errors in SGC Stats API by aligning queries with `risk_assessments` and stabilizing date column fallbacks (`detection_date`, `completed_at`, `updated_at`).
+- **fix(sgc)**: enhanced NC Detail View resilience by supporting both legacy (`action`, `performed_by`) and current (`operation`, `changed_by`) audit log schemas.
+- **feat(finance)**: finalized **Viaticos (Travel Expenses)** module integration. 
+    - Verified database schema for detailed budget and real expense tracking (Migrations `20260503` and `20260509`).
+    - Validated API endpoints for reports and receipts management.
+    - Confirmed UI readiness for full operational deployment.
+- **feat(security)**: refined SGC RLS policies to enforce strict `admin/supervisor` mutation rights while maintaining organization-wide visibility for members.
+- **docs**: updated full technical documentation suite (API, Runbook, Database Schema, Roadmap) to reflect platform stability.
+
+---
+
+## [2026-05-03] - SGC Hardening & Audit API (Sprint 02/03 transition)
+
+- feat(security): implemented granular RBAC visual controls in SGC module using new `@/lib/hooks/use-user` hook.
+- feat(ui): interaction buttons (Create, Edit, Delete, Transitions) in `SGCNonconformities` and `SGCActions` now respect user roles and lifecycle states.
+- feat(ui): locked modifications for nonconformities and actions in final states (`done`/`cancel`) for non-admin users.
+- test(e2e): new `tests/e2e/sgc-flow.spec.ts` smoke tests for SGC navigation, RBAC visibility, and detail interaction.
+- feat(api): new SGC Audits (plural) API endpoints for instance-based management:
+  - `GET /api/v1/sgc/audits`: List audit headers.
+  - `POST /api/v1/sgc/audits`: Create audit header.
+  - `GET /api/v1/sgc/audits/[id]`: Detail view with auditors/auditees/checks.
+  - `PATCH /api/v1/sgc/audits/[id]`: Update audit header and closing.
+  - `DELETE /api/v1/sgc/audits/[id]`: Secure deletion of audit instances.
+- feat(api): new SGC Audit Checks API:
+  - `GET /api/v1/sgc/audits/[id]/checks`: List checks for specific audit.
+  - `POST /api/v1/sgc/audits/[id]/checks`: Add manual check to audit.
+
+## [2026-05-03] - SGC Sprint 01: API + Catalogos (inicio implementacion)
+
+- feat(api): nuevos endpoints SGC para no conformidades: `/api/v1/sgc/nonconformities` y `/api/v1/sgc/nonconformities/[id]`.
+- feat(api): nuevos endpoints SGC para acciones CAPA: `/api/v1/sgc/actions` y `/api/v1/sgc/actions/[id]`.
+- feat(api): nuevos endpoints de catalogos SGC:
+  - `/api/v1/sgc/catalogs/stages` y `/api/v1/sgc/catalogs/stages/[id]` (`kind=nc|action`)
+  - `/api/v1/sgc/catalogs/origins` y `/api/v1/sgc/catalogs/origins/[id]`
+  - `/api/v1/sgc/catalogs/causes` y `/api/v1/sgc/catalogs/causes/[id]`
+  - `/api/v1/sgc/catalogs/severities` y `/api/v1/sgc/catalogs/severities/[id]`
+- feat(security): mutaciones SGC restringidas en API a roles `admin/supervisor`, con aislamiento tenant por `org_id`.
+- feat(audit): `logAudit` agregado en todas las mutaciones SGC exitosas.
+- test(api): nueva suite `src/tests/api/sgc.test.ts` con 11 pruebas criticas (CRUD base, RBAC y errores de transicion DB).
+- docs(api): addendum SGC agregado en `docs/API_MODULES.md`.
+- feat(db): nueva migracion `20260511_sgc_audit_cars.sql` para registro CAR de hallazgos de auditoria SGC (RLS + triggers).
+- feat(db): nueva migracion `20260514_sgc_security_hardening_delta.sql` para reforzar RLS SGC por rol (`admin/supervisor` en mutaciones) y retirar policy amplia `%_access`.
+- feat(api): auditoria SGC extendida con flujo completo:
+  - `GET /api/v1/sgc/audit` devuelve checklist + cars + timeline
+  - `PATCH /api/v1/sgc/audit/[id]` auto-crea CAR al marcar `noconf`
+  - `PATCH /api/v1/sgc/audit/cars/[id]` actualiza seguimiento CAR
+- feat(ui): `SGCAudit` migra a vista operativa por clausulas ISO + tab CAR + tab historico.
+- test(api): se amplian pruebas SGC para endpoints de auditoria y seguimiento CAR.
+
 ## [2026-05-03] - Sprint 4: Academic & Logistics Modules (Hardening)
 
 - feat(courses): implemented Course Simulator with financial projections (ROI, Break-even, CAC).

@@ -88,7 +88,7 @@ function LoginForm() {
 
                 {/* Login Card */}
                 <Card className="bg-slate-950/40 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl ring-1 ring-white/20 rounded-[2rem] overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-transparent via-primary to-transparent opacity-50" />
                     <CardHeader className="space-y-1 text-center pb-8 pt-10">
                         <CardTitle className="text-3xl font-outfit font-black text-white tracking-tight">{t("auth.loginTitle")}</CardTitle>
                         <CardDescription className="text-slate-400 font-medium text-base">{t("auth.loginSubtitle")}</CardDescription>

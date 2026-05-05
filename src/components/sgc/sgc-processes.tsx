@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Workflow, 
   Target, 
@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   Zap,
   ChevronRight,
-  Maximize2
+  Maximize2,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,68 @@ import { HR_PROCESSES } from "@/lib/data/hr";
 export default function SGCProcesses() {
   const [selectedId, setSelectedId] = useState(HR_PROCESSES[0].id);
   const selectedProcess = HR_PROCESSES.find(p => p.id === selectedId) || HR_PROCESSES[0];
+  const diagramRef = useRef<HTMLDivElement>(null);
+  const renderCount = useRef(0);
 
   useEffect(() => {
-    mermaid.initialize({ 
-        startOnLoad: true, 
-        theme: 'dark',
-        securityLevel: 'loose',
-        fontFamily: 'Outfit, sans-serif'
-    });
-    mermaid.contentLoaded();
-  }, [selectedId]);
+    let isMounted = true;
+
+    const renderDiagram = async () => {
+      if (!diagramRef.current || !selectedProcess.mermaidCode) return;
+      
+      const node = diagramRef.current;
+      node.innerHTML = '<div class="flex items-center justify-center h-40 text-slate-500 text-sm"><Loader2 class="w-4 h-4 animate-spin mr-2" /> Renderizando diagrama...</div>';
+
+      try {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "dark",
+          securityLevel: "loose",
+          fontFamily: "Outfit, sans-serif",
+          themeVariables: {
+            primaryColor: "#3b82f6",
+            primaryTextColor: "#fff",
+            primaryBorderColor: "#3b82f6",
+            lineColor: "#64748b",
+            secondaryColor: "#1e293b",
+            tertiaryColor: "#0f172a",
+          }
+        });
+
+        renderCount.current += 1;
+        const id = `mermaid-sgc-${renderCount.current}`;
+        
+        const { svg } = await mermaid.render(id, selectedProcess.mermaidCode);
+        
+        if (isMounted && node) {
+          node.innerHTML = svg;
+          // Make SVG responsive
+          const svgElement = node.querySelector('svg');
+          if (svgElement) {
+            svgElement.style.maxWidth = '100%';
+            svgElement.style.height = 'auto';
+          }
+        }
+      } catch (error) {
+        console.error("Mermaid render error:", error);
+        if (isMounted && node) {
+          node.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-8 text-slate-500">
+              <AlertCircle class="w-8 h-8 mb-2 text-slate-700" />
+              <p class="text-xs text-center">No se pudo renderizar el diagrama.</p>
+              <p class="text-[10px] mt-1 opacity-50 font-mono">${selectedProcess.id}</p>
+            </div>
+          `;
+        }
+      }
+    };
+
+    renderDiagram();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProcess.id, selectedProcess.mermaidCode]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -88,7 +141,7 @@ export default function SGCProcesses() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Mermaid Diagram */}
-          <Card className="xl:col-span-2 bg-slate-950/40 border-slate-800 shadow-2xl relative overflow-hidden group">
+          <Card className="xl:col-span-2 bg-slate-900/50 border-slate-800 shadow-2xl relative overflow-hidden group">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-800/50">
               <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Workflow className="w-4 h-4 text-primary" /> Diagrama de Flujo
@@ -98,9 +151,7 @@ export default function SGCProcesses() {
               </Button>
             </CardHeader>
             <CardContent className="p-8 flex justify-center items-center min-h-[400px]">
-              <div className="mermaid w-full">
-                {selectedProcess.mermaidCode}
-              </div>
+              <div ref={diagramRef} className="w-full overflow-auto" />
             </CardContent>
             {/* Ambient Background Glow */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full -z-10" />
@@ -109,7 +160,7 @@ export default function SGCProcesses() {
 
           {/* Docs & Risks */}
           <div className="space-y-6">
-            <Card className="bg-slate-900/80 border-slate-800">
+            <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-400" /> Documentación
@@ -127,7 +178,7 @@ export default function SGCProcesses() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/80 border-slate-800">
+            <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-400" /> Riesgos Críticos
@@ -143,7 +194,7 @@ export default function SGCProcesses() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/80 border-slate-800 border-dashed">
+            <Card className="bg-slate-900/50 border-slate-800 border-dashed">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-400" /> Oportunidades
@@ -162,7 +213,7 @@ export default function SGCProcesses() {
 
 function DetailCard({ icon, title, content }: { icon: React.ReactNode, title: string, content: string }) {
   return (
-    <Card className="bg-slate-900/80 border-slate-800 hover:border-slate-700 transition-colors group">
+    <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors group">
       <CardContent className="p-4 flex gap-3">
         <div className="p-2 rounded-xl bg-slate-950 group-hover:scale-110 transition-transform">
           {icon}
