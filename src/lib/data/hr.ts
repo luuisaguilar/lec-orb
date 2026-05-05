@@ -701,20 +701,21 @@ export const HR_PROFILES = [
       "Gerente de Operaciones"
     ],
     "subordinates": [],
-    "mission": "",
-    "sex": "",
-    "experience": "",
-    "travel": "",
-    "education": "",
-    "specialty": "",
-    "desiredExp": "",
-    "knowledge": "",
-    "skills": "",
-    "languages": "",
-    "responsibilities": "",
-    "otherRoles": "",
-    "attributes": "",
-    "processId": ""
+    "mission": "Planificar, organizar y ejecutar eventos corporativos, académicos y protocolarios de la organización, asegurando la máxima calidad, la correcta proyección de la imagen institucional y la satisfacción de los asistentes y partes interesadas.",
+    "sex": "Indistinto",
+    "experience": "Deseable 1 año",
+    "travel": "Si",
+    "education": "Licenciatura o Carrera Técnica",
+    "specialty": "Comunicación, Relaciones Públicas, Organización de Eventos, Administración o afín.",
+    "desiredExp": "Experiencia en la coordinación y logística de eventos corporativos, académicos o públicos. Conocimientos en gestión de proveedores y presupuestos.",
+    "knowledge": "Protocolo y etiqueta de eventos. Negociación con proveedores. Gestión de presupuestos. Dominio de herramientas de ofimática y software de gestión de proyectos.",
+    "skills": "Excelente comunicación verbal y escrita. Habilidades de organización y planificación. Atención al detalle. Capacidad de resolución de problemas bajo presión. Creatividad y enfoque al cliente.",
+    "languages": "Español, Nivel deseable Inglés B1 MCRE",
+    "responsibilities": "Diseñar, planificar y coordinar la logística integral de los eventos de la organización. Seleccionar, negociar y coordinar proveedores (catering, audiovisuales, sedes, etc.). Gestionar las invitaciones, registro y atención a los asistentes. Velar por el cumplimiento de los estándares de calidad y protocolo. Evaluar los resultados de los eventos y presentar reportes de mejora. Participar en las actividades de ESR que se le asignen. Asegurar el aumento del desempeño del SGC y SGOE.",
+    "otherRoles": "Apoyo en actividades de relaciones públicas. Apoyo en áreas que lo requieran.",
+    "attributes": "Liderazgo, dinamismo, creatividad, responsabilidad, excelente presentación, empatía y adaptabilidad.",
+    "file": "PERFIL DE PUESTO ESPECIALISTA PARA ORGANIZACION DE EVENTOS.xlsx",
+    "processId": "SUBPROC_GESTION_PROYECTOS"
   },
   {
     "id": "AUXILIAR DE OPERACIONES",
@@ -723,20 +724,21 @@ export const HR_PROFILES = [
       "Gerente de Operaciones"
     ],
     "subordinates": [],
-    "mission": "",
-    "sex": "",
-    "experience": "",
-    "travel": "",
-    "education": "",
-    "specialty": "",
-    "desiredExp": "",
-    "knowledge": "",
-    "skills": "",
-    "languages": "",
-    "responsibilities": "",
-    "otherRoles": "",
-    "attributes": "",
-    "processId": ""
+    "mission": "Brindar soporte operativo y administrativo a la Gerencia de Operaciones para garantizar la correcta ejecución de los procesos internos, el cumplimiento de las metas departamentales y la fluidez en la prestación de servicios.",
+    "sex": "Indistinto",
+    "experience": "Deseable 6 meses",
+    "travel": "Ocasional",
+    "education": "Preparatoria, Carrera Técnica o Licenciatura Trunca",
+    "specialty": "Administración, Operaciones o afín.",
+    "desiredExp": "Experiencia previa en actividades administrativas, atención al cliente o soporte operativo. Manejo de archivo y bases de datos.",
+    "knowledge": "Manejo de paquetería Office (Word, Excel, PowerPoint). Conocimiento básico de procesos administrativos y logísticos.",
+    "skills": "Organización, seguimiento oportuno de tareas, comunicación efectiva, trabajo en equipo, capacidad para seguir instrucciones precisas y manejo básico de herramientas digitales.",
+    "languages": "Español",
+    "responsibilities": "Asistir en la planificación y seguimiento de las actividades operativas diarias. Actualizar bases de datos y registros internos de la operación. Apoyar en la elaboración de reportes e informes de seguimiento. Controlar el flujo de documentación y correspondencia operativa. Atender requerimientos logísticos básicos del equipo de operaciones. Colaborar con otras áreas para el buen desarrollo de los proyectos. Asegurar el cumplimiento de las directrices del SGC.",
+    "otherRoles": "Apoyo en recepción y atención a clientes cuando sea requerido. Apoyo en áreas que lo requieran.",
+    "attributes": "Actitud de servicio, proactividad, responsabilidad, orden, atención al detalle y compromiso.",
+    "file": "PERFIL DE PUESTO AUXILIAR DE OPERACIONES.xlsx",
+    "processId": "PROC_RRHH"
   }
 ];
 
@@ -803,6 +805,66 @@ export const HR_PROCESSES = [
     resources: 'Físicos: Salones, Computadoras.\nLogísticos: Material de Examen Seguro.',
     documents: '1. Manual del Aplicador.pdf\n2. Protocolo de Seguridad\n3. Registro de Incidencias.xlsx',
     mermaidCode: 'graph TD\n    A[Recepción de Material] --> B[Preparación de Sesión]\n    B --> C[Identificación de Candidatos]\n    C --> D[Aplicación de Examen]\n    D --> E[Recolección y Empaque]\n    E --> F[Envío a Centro Evaluador]'
+  },
+  {
+    id: 'PROC_ACADEMICA',
+    title: 'Proceso de Gestión Académica',
+    kpis: '1. 90% de satisfacción en evaluaciones docentes.\n2. Cumplimiento del 100% en el diseño de cursos solicitados.',
+    risks: '1. Deserción de alumnos por baja calidad académica.\n2. Falta de instructores capacitados.',
+    improvements: '1. Actualización continua de materiales didácticos.\n2. Implementación de encuestas de satisfacción automatizadas.',
+    actors: 'Coordinador Académico, Instructores, Estudiantes, Clientes.',
+    inputsOutputs: 'Entradas: Requerimiento de curso, Perfil de estudiantes.\nSalidas: Curso impartido, Evaluación de estudiantes.',
+    resources: 'Humanos: Instructores capacitados.\nTecnológicos: Plataformas educativas (LMS), Material didáctico.',
+    documents: '1. Plan de Estudios.pdf\n2. Evaluación Docente.xlsx\n3. Lista de Asistencia.pdf',
+    mermaidCode: 'graph TD\n    A[Solicitud de Curso] --> B[Diseño/Adaptación del Programa]\n    B --> C[Asignación de Instructor]\n    C --> D[Impartición del Curso]\n    D --> E[Evaluación de Estudiantes y Docente]\n    E --> F[Entrega de Resultados/Constancias]'
+  },
+  {
+    id: 'PROC_FERIA_LIBRO',
+    title: 'Proceso de Feria del Libro',
+    kpis: '1. 100% de cumplimiento en el cronograma de ferias.\n2. Incremento del 15% en ventas respecto al año anterior.',
+    risks: '1. Falta de stock de títulos demandados.\n2. Problemas logísticos en el montaje de la feria.',
+    improvements: '1. Digitalización del control de inventario en tiempo real.\n2. Estrategias de preventa en escuelas.',
+    actors: 'Coordinadora de Feria del Libro, Auxiliar, Editoriales, Escuelas.',
+    inputsOutputs: 'Entradas: Solicitud de feria por escuela, Catálogo de editoriales.\nSalidas: Libros vendidos, Reporte de ventas y utilidades.',
+    resources: 'Físicos: Libros, Material de montaje (Stands, cajas registadoras).\nLogísticos: Transporte.',
+    documents: '1. Inventario de Feria.xlsx\n2. Reporte de Ventas.pdf\n3. Convenio con Escuela.pdf',
+    mermaidCode: 'graph TD\n    A[Planificación y Convenio con Escuela] --> B[Solicitud de Material a Editoriales]\n    B --> C[Recepción y Etiquetado de Inventario]\n    C --> D[Montaje de Feria]\n    D --> E[Atención y Venta]\n    E --> F[Desmontaje y Cierre de Caja]\n    F --> G[Reporte de Resultados]'
+  },
+  {
+    id: 'SUBPROC_COORD_ACADEMICA',
+    title: 'Subproceso de Coordinación Académica',
+    kpis: '1. 100% de instructores evaluados trimestralmente.\n2. 95% de programas educativos aprobados sin observaciones.',
+    risks: '1. Programas no alineados a los requerimientos del cliente.\n2. Instructores con bajo desempeño.',
+    improvements: '1. Estandarización de rúbricas de evaluación.\n2. Creación de un banco de recursos compartidos para instructores.',
+    actors: 'Coordinador Académico, Instructores, Dirección General.',
+    inputsOutputs: 'Entradas: Retroalimentación de alumnos, Nuevos requerimientos educativos.\nSalidas: Programas de estudio aprobados, Reportes de desempeño.',
+    resources: 'Tecnológicos: Sistema Integral, Plataformas LMS.',
+    documents: '1. Rúbricas de Evaluación.pdf\n2. Reporte de Desempeño Docente.xlsx',
+    mermaidCode: 'graph TD\n    A[Revisión de Requerimientos Educativos] --> B[Diseño Curricular]\n    B --> C[Validación de Contenidos]\n    C --> D[Capacitación a Instructores]\n    D --> E[Supervisión de Clases]\n    E --> F[Retroalimentación y Mejora Continua]'
+  },
+  {
+    id: 'SUBPROC_AUDITORIAS_INTERNAS',
+    title: 'Subproceso de Auditorías Internas y SGC',
+    kpis: '1. 100% del programa anual de auditorías cumplido.\n2. Cierre del 90% de las No Conformidades en el tiempo estipulado.',
+    risks: '1. Incumplimiento de normativas ISO (9001/21001).\n2. Cierre ineficaz de acciones correctivas.',
+    improvements: '1. Uso de software para el seguimiento de hallazgos.\n2. Capacitación continua en cultura de calidad.',
+    actors: 'Coordinadora de Calidad y RS, Auditores Internos, Dueños de Procesos.',
+    inputsOutputs: 'Entradas: Programa Anual de Auditorías, Manual de Calidad.\nSalidas: Informes de Auditoría, Acciones Correctivas (SAC).',
+    resources: 'Humanos: Auditores capacitados.\nTecnológicos: Sistema de Gestión Documental.',
+    documents: '1. Plan de Auditoría.pdf\n2. Informe de Auditoría.pdf\n3. Registro de SAC.xlsx',
+    mermaidCode: 'graph TD\n    A[Elaboración del Programa de Auditorías] --> B[Planificación de Auditoría Específica]\n    B --> C[Ejecución de la Auditoría]\n    C --> D[Elaboración de Informe y Hallazgos]\n    D --> E[Apertura de SAC (No Conformidades)]\n    E --> F[Seguimiento y Cierre de Hallazgos]'
+  },
+  {
+    id: 'SUBPROC_GESTION_PROYECTOS',
+    title: 'Subproceso de Gestión de Proyectos y Eventos',
+    kpis: '1. 100% de proyectos entregados dentro del presupuesto y plazo.\n2. 90% de satisfacción de los stakeholders en eventos.',
+    risks: '1. Retrasos en el cronograma por factores externos.\n2. Sobrecostos no planificados.',
+    improvements: '1. Implementación de metodologías ágiles.\n2. Plantillas estandarizadas para planificación de eventos.',
+    actors: 'Coordinadora de Proyectos, Especialista de Eventos, Proveedores, Clientes.',
+    inputsOutputs: 'Entradas: Propuesta de Proyecto/Evento, Presupuesto.\nSalidas: Proyecto concluido, Evento realizado, Reporte final.',
+    resources: 'Financieros: Presupuesto asignado.\nTecnológicos: Software de gestión de proyectos (Trello, Asana).',
+    documents: '1. Cronograma de Actividades.xlsx\n2. Presupuesto del Proyecto.xlsx\n3. Reporte de Cierre.pdf',
+    mermaidCode: 'graph TD\n    A[Recepción de Requerimiento/Propuesta] --> B[Planificación y Presupuesto]\n    B --> C[Aprobación del Proyecto]\n    C --> D[Ejecución y Coordinación de Proveedores]\n    D --> E[Monitoreo y Control de Avances]\n    E --> F[Cierre del Proyecto/Evento]\n    F --> G[Evaluación de Resultados]'
   }
 ];
 
