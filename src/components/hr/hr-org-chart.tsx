@@ -16,6 +16,8 @@ import {
   Search,
   ChevronRight,
   Maximize2,
+  Maximize,
+  Minimize2,
   Crosshair,
   X,
   Sliders,
@@ -137,6 +139,7 @@ export default function HROrgChart() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingSGC, setIsSavingSGC] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<ProfileFormValues>({
@@ -429,7 +432,12 @@ export default function HROrgChart() {
 
   return (
     <>
-      <div className="relative h-[calc(100vh-220px)] bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in duration-500">
+      <div className={cn(
+        "relative bg-slate-950 border border-slate-800 shadow-2xl animate-in fade-in duration-500 transition-all",
+        isFullscreen 
+          ? "fixed inset-0 z-[100] h-screen w-screen rounded-none" 
+          : "h-[calc(100vh-120px)] rounded-3xl overflow-hidden"
+      )}>
         {/* Floating Toolbar */}
         <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap gap-2 justify-between pointer-events-none">
           <div className="flex gap-2 pointer-events-auto items-start">
@@ -452,6 +460,17 @@ export default function HROrgChart() {
                 <Crosshair className="w-4 h-4" />
                 <span className="hidden md:inline text-xs">Centrar</span>
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-slate-300 hover:text-white hover:bg-slate-800 gap-1.5"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                <span className="hidden md:inline text-xs">{isFullscreen ? "Salir" : "Pantalla"}</span>
+              </Button>
+              <div className="w-px h-5 bg-slate-700 mx-1" />
               <Button
                 variant="ghost"
                 size="sm"

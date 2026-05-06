@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { PlanningWizardDialog } from "@/components/planning/planning-wizard-dialog";
 
 // ── Exam colors for calendar chips ─────────────────────────────────────────
 const EXAM_COLORS: Record<string, string> = {
@@ -298,7 +299,10 @@ export default function EventosPage() {
                         Gestiona y planifica los horarios para las aplicaciones de exámenes.
                     </p>
                 </div>
-                <AddEventDialog onEventAdded={fetchEvents} />
+                <div className="flex items-center gap-2">
+                    <PlanningWizardDialog triggerLabel="Wizard de planeación" defaultProjectType="custom" onDone={fetchEvents} />
+                    <AddEventDialog onEventAdded={fetchEvents} />
+                </div>
             </div>
 
             {/* Toolbar: search + view toggle */}

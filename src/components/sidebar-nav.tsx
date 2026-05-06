@@ -72,6 +72,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "documentos": "/dashboard/documentos",
     "courses": "/dashboard/academico/cursos",
     "inventory": "/dashboard/logistica/inventario",
+    "speaking-packs": "/dashboard/toefl/speaking-packs",
     "unoi-planning": "/dashboard/logistica/unoi-planeacion",
 };
 
