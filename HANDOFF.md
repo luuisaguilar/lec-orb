@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-04 (Financial Intelligence) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-05 (PM module documentation baseline) |
 
 ---
 
@@ -21,6 +21,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Finance - Dashboard P&L | **EN DESARROLLO** - Consolidación de ingresos/egresos |
 | SGC (Calidad) | **COMPLETADO** - Estabilización técnica (Stats API + Timeline NC resiliente) |
 | Cursos e Inventario | **COMPLETADO** - Simulador ROI + Control de stock multi-ubicación |
+| Project Management (Asana/Trello/Monday style) | **PLANIFICADO** - ADR y alcance definidos; implementación pendiente |
 
 ---
 
@@ -132,6 +133,11 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 - [x] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
 - [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
+- [x] Plan Dashboard Ejecutivo + Observabilidad documentado
+- [x] Documentar decision arquitectonica del modulo PM (`ADR-007`)
+- [ ] Definir esquema SQL `pm_*` (proyectos, tableros, columnas, tareas, comentarios)
+- [ ] Implementar API base `/api/v1/pm/projects|boards|tasks`
+- [ ] Implementar UI MVP (kanban + tabla) en `/dashboard/proyectos`
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
@@ -160,6 +166,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | Rol de aplicador por evento (SE/ADMIN/INVIG/SUPER) | LOGISTICA_UNOi 2026.xlsx | Sprint 3 |
 | Nomina dinamica por rol | Tarifas hardcoded en Excel | Sprint 3 |
 | P&L por sesion (IH - nomina - viaticos) | Hoja PRESUPUESTO GASTOS en Excel | Sprint 3 |
+| Gestion transversal de tareas/proyectos (tipo Asana/Trello/Monday) | Mixto (Excel/WhatsApp/seguimiento manual) | Sprint 5-6 |
 | Cursos | Sistema externo | Sprint 4 |
 | Ferias de libros | Manual | Sprint 4 |
 | IELTS / OOPT | Sin rastreo | Sin asignar |
@@ -186,8 +193,12 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | `CLAUDE.md` | Arquitectura, patrones criticos, done criteria, backlog tecnico |
 | `HANDOFF.md` | Este archivo — resumen ejecutivo y backlog operativo |
 | `docs/ROADMAP.md` | Priorizacion actualizada |
+| `INFRASTRUCTURE_STATUS.md` | Estado operativo y readiness de lanzamiento |
+| `docs/adr/ADR-007-project-management-module-foundation.md` | Decision del modulo PM transversal |
 | `docs/TESTING_GUIDE.md` | Estado real de build, Vitest y Playwright |
 | `docs/TESTING_PATTERNS.md` | Patrones Vitest y notas del harness E2E |
 | `docs/API_MODULES.md` | Referencia de rutas API |
 | `docs/DATABASE_SCHEMA.md` | Schema, enums y RPCs |
 | `docs/FINANCE_MODULES.md` | Detalle de Caja Chica y Presupuesto |
+| `docs/executive-observability/README.md` | Indice de dashboard ejecutivo y observabilidad |
+| `docs/executive-observability/TICKETS_SPRINT_BOARD.md` | Tickets sprint-ready con owners y SP |

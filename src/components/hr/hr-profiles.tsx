@@ -196,8 +196,8 @@ export default function HRProfiles() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="bg-indigo-950/80 border-indigo-900/60 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 w-full lg:w-80 min-h-0">
+    <div className="flex flex-col lg:flex-row gap-4 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="bg-indigo-950/80 border-indigo-900/60 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 w-full lg:w-80 h-[calc(100vh-120px)] lg:sticky lg:top-4">
         <div className="p-3 border-b border-indigo-900/60 shrink-0 bg-indigo-950 backdrop-blur-sm">
           <div className="relative">
             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-indigo-400" />
@@ -250,11 +250,10 @@ export default function HRProfiles() {
         </ScrollArea>
       </Card>
 
-      <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
+      <div className="flex-1 w-full flex flex-col gap-4">
         {selectedProfile ? (
-          <ScrollArea className="flex-1 min-h-0 pr-1">
-            <div className="space-y-6 pr-3 pb-12">
-              <Card className="bg-indigo-950/90 border-indigo-900/60 border-l-4 border-l-blue-500 backdrop-blur-sm overflow-hidden">
+          <div className="space-y-6 pb-12 w-full">
+            <Card className="bg-indigo-950/90 border-indigo-900/60 border-l-4 border-l-blue-500 backdrop-blur-sm overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div className="space-y-2 min-w-0 flex-1">
@@ -473,10 +472,9 @@ export default function HRProfiles() {
                   <FileCheck className="w-4 h-4 mr-2" /> Editar Perfil
                 </Button>
               </div>
-            </div>
-          </ScrollArea>
+          </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-indigo-400">
+          <div className="h-[calc(100vh-220px)] flex flex-col items-center justify-center text-indigo-400">
             <Users className="w-16 h-16 mb-4 opacity-20" />
             <p>No hay perfiles de RRHH disponibles para esta organizacion</p>
           </div>

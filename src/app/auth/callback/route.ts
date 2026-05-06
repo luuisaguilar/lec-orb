@@ -2,13 +2,28 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+/** Same-origin path only (blocks protocol-relative //host and absolute URLs). */
+function safeAppPath(next: string | null, fallback = "/dashboard"): string {
+    if (next == null || next === "") return fallback;
+    const trimmed = next.trim();
+    if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return fallback;
+    try {
+        const resolved = new URL(trimmed, "https://placeholder.local");
+        if (resolved.origin !== "https://placeholder.local") return fallback;
+    } catch {
+        return fallback;
+    }
+    return trimmed;
+}
+
+
 /**
  * OAuth / magic-link callback: exchanges ?code= for a session and redirects to ?next=
  */
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
-    const next = searchParams.get("next") ?? "/dashboard";
+    const next = safeAppPath(searchParams.get("next"));
 
     if (!code) {
         return NextResponse.redirect(new URL("/login?error=auth", origin));
@@ -43,6 +58,5 @@ export async function GET(request: Request) {
         );
     }
 
-    const safeNext = next.startsWith("/") ? next : `/${next}`;
-    return NextResponse.redirect(new URL(safeNext, origin));
+    return NextResponse.redirect(new URL(next, origin));
 }

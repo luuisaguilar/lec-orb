@@ -173,10 +173,10 @@ export default function PagosPage() {
         <div className="flex-1 space-y-6 p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <h2 className="text-3xl font-black tracking-tight text-white font-outfit">
-                        Pagos <span className="text-primary italic">Financieros</span>
+                    <h2 className="text-3xl font-black tracking-tight text-red-600 font-outfit uppercase">
+                        Pagos Financieros
                     </h2>
-                    <p className="text-muted-foreground max-w-lg">
+                    <p className="text-muted-foreground max-w-lg font-medium">
                         Control de ingresos, conciliación de referencias y seguimiento de certificaciones.
                     </p>
                 </div>
@@ -193,7 +193,7 @@ export default function PagosPage() {
                             Borrar ({selectedKeys.size})
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleExportExcel} className="bg-slate-900/50 border-slate-700 text-slate-300 hover:text-white">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel} className="bg-slate-900/50 border-slate-700 text-slate-300 hover:text-white transition-all">
                         <Download className="mr-2 h-4 w-4" /> Exportar
                     </Button>
                     <ImportPaymentsDialog onSuccess={() => mutatePayments()} />
@@ -202,11 +202,11 @@ export default function PagosPage() {
                 </div>
             </div>
 
-            <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-md shadow-2xl overflow-hidden">
+            <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-md shadow-2xl overflow-hidden border-t-4 border-t-red-600/60">
                 <CardHeader className="border-b border-slate-800/50 bg-slate-950/30 p-4">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
-                            <CreditCard className="w-5 h-5 text-primary" /> Historial de Transacciones
+                        <CardTitle className="text-lg font-bold text-white flex items-center gap-2 uppercase tracking-tight">
+                            <CreditCard className="w-5 h-5 text-red-500" /> Historial de Transacciones
                         </CardTitle>
                         <div className="text-xs text-slate-500 font-mono">
                             {payments.length} registros encontrados

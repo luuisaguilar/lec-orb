@@ -12,7 +12,17 @@ type PlanningRow = {
     city: string | null;
     project: string | null;
     students_planned: number | null;
+    planning_year?: number;
 };
+
+function normalizeSchoolName(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
 
 export const POST = withAuth(async (req, { supabase, member }, { params }) => {
     const { id } = await params;
@@ -39,21 +49,47 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
             .ilike("name", row.school_name)
             .maybeSingle();
         schoolId = school?.id ?? null;
+        if (!schoolId) {
+            const { data: schools } = await supabase
+                .from("schools")
+                .select("id, name")
+                .eq("org_id", member.org_id);
+            const target = normalizeSchoolName(row.school_name);
+            const match = (schools ?? []).find((s: { id: string; name: string }) => normalizeSchoolName(s.name) === target);
+            schoolId = match?.id ?? null;
+        }
         if (schoolId) {
             await supabase.from("unoi_planning_rows").update({ school_id: schoolId }).eq("id", row.id);
         }
     }
     if (!schoolId) {
-        return NextResponse.json({ error: "No matching school for planning row" }, { status: 400 });
+        return NextResponse.json(
+            {
+                error: "No matching school for planning row",
+                match_status: "missing_school",
+                school_name: row.school_name,
+                suggested_action: "Create or rename school in catalog before linking.",
+            },
+            { status: 400 }
+        );
     }
 
     const dayStart = `${row.proposed_date}T00:00:00.000Z`;
     const dayEnd = `${row.proposed_date}T23:59:59.999Z`;
 
     let eventId: string | null = null;
-    const explicitEventId = typeof body?.eventId === "string" ? body.eventId : null;
+    const explicitEventId = typeof body?.eventId === "string" ? body.eventId.trim() : null;
     if (explicitEventId) {
-        eventId = explicitEventId;
+        const { data: ownedEvent, error: ownedEvErr } = await supabase
+            .from("events")
+            .select("id")
+            .eq("id", explicitEventId)
+            .eq("org_id", member.org_id)
+            .maybeSingle();
+        if (ownedEvErr || !ownedEvent) {
+            return NextResponse.json({ error: "Event not found" }, { status: 404 });
+        }
+        eventId = ownedEvent.id;
     } else {
         const { data: existingMulti } = await supabase
             .from("events")
@@ -95,9 +131,33 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
     }
 
     let sessionId: string | null = null;
-    const explicitSessionId = typeof body?.eventSessionId === "string" ? body.eventSessionId : null;
+    const explicitSessionId =
+        typeof body?.eventSessionId === "string" ? body.eventSessionId.trim() : null;
     if (explicitSessionId) {
-        sessionId = explicitSessionId;
+        const { data: sessRow, error: sessErr } = await supabase
+            .from("event_sessions")
+            .select("id, event_id")
+            .eq("id", explicitSessionId)
+            .maybeSingle();
+        if (sessErr || !sessRow) {
+            return NextResponse.json({ error: "Session not found" }, { status: 404 });
+        }
+        const { data: sessEvent, error: sessEvErr } = await supabase
+            .from("events")
+            .select("id")
+            .eq("id", sessRow.event_id)
+            .eq("org_id", member.org_id)
+            .maybeSingle();
+        if (sessEvErr || !sessEvent) {
+            return NextResponse.json({ error: "Session not found" }, { status: 404 });
+        }
+        if (sessRow.event_id !== eventId) {
+            return NextResponse.json(
+                { error: "Session does not belong to the resolved event" },
+                { status: 400 }
+            );
+        }
+        sessionId = sessRow.id;
     } else {
         const { data: existingSession } = await supabase
             .from("event_sessions")

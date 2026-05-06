@@ -55,7 +55,7 @@ interface Pack {
     applicator?: { id: string; name: string } | null;
 }
 
-export default function InventoryPage() {
+export default function SpeakingPacksPage() {
     const { t } = useI18n();
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -138,33 +138,35 @@ export default function InventoryPage() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
+        <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-6">
+            {/* Header - Vibrant Light Style */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">
-                        {t("inventory.title")}
+                    <h2 className="text-3xl font-black tracking-tight text-slate-900">
+                        {t("inventory.title")} <span className="text-blue-600">Inventory</span>
                     </h2>
+                    <p className="text-slate-500 font-medium">Gestión de Speaking Packs y materiales de examen.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button
                         onClick={() => setShowScan(true)}
-                        className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
                     >
                         <ScanBarcode className="mr-2 h-4 w-4" />
                         {t("inventory.scanBarcode")}
                     </Button>
-                    <Button variant="outline" onClick={() => setShowAddPack(true)}>
+                    <Button variant="outline" onClick={() => setShowAddPack(true)} className="border-blue-200 hover:bg-blue-50 text-blue-700">
                         <Plus className="mr-2 h-4 w-4" />
                         {t("inventory.addPack")}
                     </Button>
-                    <Button variant="outline" onClick={() => setShowImport(true)}>
+                    <Button variant="outline" onClick={() => setShowImport(true)} className="border-slate-200 hover:bg-slate-50">
                         <FileSpreadsheet className="mr-2 h-4 w-4" />
                         {t("excel.import")}
                     </Button>
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => exportPacksToExcel(packs, t)}
+                        className="text-slate-600 hover:bg-slate-100"
                     >
                         <Download className="mr-2 h-4 w-4" />
                         {t("excel.export")}
@@ -172,85 +174,88 @@ export default function InventoryPage() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards - Solid White / Vibrant Accents */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-white border-2 border-slate-100 shadow-sm hover:shadow-md transition-all">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.totalPacks")}</p>
-                        <div className="p-2 bg-slate-800 rounded-lg text-slate-300">
-                            <Package className="h-4 w-4" />
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t("inventory.totalPacks")}</p>
+                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                            <Package className="h-5 w-5" />
                         </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-3xl font-black text-white">{total}</div>
+                        <div className="text-4xl font-black text-slate-900">{total}</div>
+                        <p className="text-xs text-slate-400 mt-1">Registrados en sistema</p>
                     </div>
                 </Card>
-                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-emerald-500/50">
+                <Card className="bg-white border-2 border-slate-100 shadow-sm hover:shadow-md transition-all border-l-4 border-l-emerald-500">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.onSiteCount")}</p>
-                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
-                            <MapPin className="h-4 w-4" />
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t("inventory.onSiteCount")}</p>
+                        <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                            <MapPin className="h-5 w-5" />
                         </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-3xl font-black text-emerald-500">{onSiteCount}</div>
+                        <div className="text-4xl font-black text-emerald-600">{onSiteCount}</div>
+                        <p className="text-xs text-slate-400 mt-1">Disponibles para uso</p>
                     </div>
                 </Card>
-                <Card className="bg-slate-900/40 border-slate-800/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-amber-500/50">
+                <Card className="bg-white border-2 border-slate-100 shadow-sm hover:shadow-md transition-all border-l-4 border-l-amber-500">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t("inventory.loanedCount")}</p>
-                        <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
-                            <ArrowRightLeft className="h-4 w-4" />
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t("inventory.loanedCount")}</p>
+                        <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <ArrowRightLeft className="h-5 w-5" />
                         </div>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-3xl font-black text-amber-500">{loanedCount}</div>
+                        <div className="text-4xl font-black text-amber-600">{loanedCount}</div>
+                        <p className="text-xs text-slate-400 mt-1">En evaluación externa</p>
                     </div>
                 </Card>
             </div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row bg-white p-4 rounded-xl border-2 border-slate-100 shadow-sm">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
                         placeholder={t("common.search")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all bg-slate-50/30"
                     />
                 </div>
-                <div className="flex gap-2 p-1 bg-slate-900/50 border border-slate-800 rounded-xl">
+                <div className="flex gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
                     <Button
-                        variant="ghost"
+                        variant={statusFilter === "" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setStatusFilter("")}
                         className={cn(
-                            "rounded-lg px-4 transition-all",
-                            statusFilter === "" ? "bg-primary/10 text-primary border-primary/20 border" : "text-slate-400 hover:text-slate-200"
+                            "rounded-md px-4 transition-all h-8 text-xs font-bold",
+                            statusFilter === "" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
                         )}
                     >
                         {t("inventory.allStatuses")}
                     </Button>
                     <Button
-                        variant="ghost"
+                        variant={statusFilter === "EN_SITIO" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setStatusFilter("EN_SITIO")}
                         className={cn(
-                            "rounded-lg px-4 transition-all",
-                            statusFilter === "EN_SITIO" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 border" : "text-slate-400 hover:text-slate-200"
+                            "rounded-md px-4 transition-all h-8 text-xs font-bold",
+                            statusFilter === "EN_SITIO" ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-slate-500 hover:text-emerald-600"
                         )}
                     >
                         <MapPin className="mr-1.5 h-3.5 w-3.5" />
                         En Sitio
                     </Button>
                     <Button
-                        variant="ghost"
+                        variant={statusFilter === "PRESTADO" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setStatusFilter("PRESTADO")}
                         className={cn(
-                            "rounded-lg px-4 transition-all",
-                            statusFilter === "PRESTADO" ? "bg-amber-500/10 text-amber-500 border-amber-500/20 border" : "text-slate-400 hover:text-slate-200"
+                            "rounded-md px-4 transition-all h-8 text-xs font-bold",
+                            statusFilter === "PRESTADO" ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600" : "text-slate-500 hover:text-amber-600"
                         )}
                     >
                         <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
@@ -259,35 +264,38 @@ export default function InventoryPage() {
                 </div>
             </div>
 
-            {/* Inventory Table */}
-            <Card>
+            {/* Inventory Table - Clean & High Contrast */}
+            <Card className="border-2 border-slate-100 overflow-hidden shadow-md">
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm border-collapse">
                             <thead>
-                                <tr className="border-b bg-muted/50">
-                                    <th className="px-3 py-3 text-left font-medium text-xs text-muted-foreground">ID</th>
-                                    <th className="px-3 py-3 text-left font-medium">Código</th>
-                                    <th className="px-3 py-3 text-left font-medium">Speaking Pack Test</th>
-                                    <th className="px-3 py-3 text-left font-medium">Aplicación / Colegio</th>
-                                    <th className="px-3 py-3 text-left font-medium">Estatus</th>
-                                    <th className="px-3 py-3 text-left font-medium">Fecha de Registro</th>
-                                    <th className="px-3 py-3 text-left font-medium">Aplicador</th>
-                                    <th className="px-3 py-3 text-left font-medium">Fecha y Hora Salida</th>
-                                    <th className="px-3 py-3 text-left font-medium">Fecha y Hora Entrada</th>
-                                    <th className="px-3 py-3 text-right font-medium">Acciones</th>
+                                <tr className="bg-slate-50/80 border-b-2 border-slate-100">
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">ID</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Código</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Speaking Pack Test</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Aplicación / Colegio</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Estatus</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Fecha de Registro</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Aplicador</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Salida</th>
+                                    <th className="px-4 py-4 text-left font-bold text-xs text-slate-500 uppercase tracking-widest">Entrada</th>
+                                    <th className="px-4 py-4 text-right font-bold text-xs text-slate-500 uppercase tracking-widest">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
-                                            {t("common.loading")}
+                                        <td colSpan={10} className="px-4 py-20 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-slate-500 font-medium">{t("common.loading")}</span>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : packs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
+                                        <td colSpan={10} className="px-4 py-20 text-center text-slate-400 font-medium">
                                             {t("common.noResults")}
                                         </td>
                                     </tr>
@@ -295,74 +303,66 @@ export default function InventoryPage() {
                                     packs.map((pack) => (
                                         <tr
                                             key={pack.id}
-                                            className="border-b transition-colors hover:bg-muted/40"
+                                            className="border-b border-slate-50 transition-colors hover:bg-blue-50/30 group"
                                         >
-                                            {/* ID (short) */}
-                                            <td className="px-3 py-3 text-xs text-muted-foreground font-mono">
-                                                {pack.id.slice(0, 6)}…
+                                            <td className="px-4 py-4 text-[10px] text-slate-400 font-mono">
+                                                {pack.id.slice(0, 6)}
                                             </td>
-                                            {/* Código */}
-                                            <td className="px-3 py-3 font-mono font-semibold">
+                                            <td className="px-4 py-4 font-mono font-black text-slate-900 group-hover:text-blue-600 transition-colors">
                                                 {pack.codigo}
                                             </td>
-                                            {/* Speaking Pack Test */}
-                                            <td className="px-3 py-3">
+                                            <td className="px-4 py-4 font-bold text-slate-900">
                                                 {pack.nombre || "—"}
                                             </td>
-                                            {/* Colegio */}
-                                            <td className="px-3 py-3 text-muted-foreground">
+                                            <td className="px-4 py-4 text-slate-600">
                                                 {pack.school?.name || "—"}
                                             </td>
-                                            {/* Estatus */}
-                                            <td className="px-3 py-3">
+                                            <td className="px-4 py-4">
                                                 <Badge
-                                                    className={
+                                                    className={cn(
+                                                        "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border-none shadow-sm",
                                                         pack.status === "EN_SITIO"
-                                                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                                                    }
+                                                            ? "bg-emerald-100 text-emerald-800"
+                                                            : "bg-amber-100 text-amber-800"
+                                                    )}
                                                 >
                                                     {pack.status === "EN_SITIO" ? "En Sitio" : "Prestado"}
                                                 </Badge>
                                             </td>
-                                            {/* Fecha de Registro */}
-                                            <td className="px-3 py-3 text-muted-foreground text-xs">
+                                            <td className="px-4 py-4 text-slate-500 text-xs font-medium">
                                                 {pack.created_at
-                                                    ? new Date(pack.created_at).toLocaleDateString("es-MX")
+                                                    ? new Date(pack.created_at).toLocaleDateString("es-MX", { day: '2-digit', month: 'short' })
                                                     : "—"}
                                             </td>
-                                            {/* Aplicador */}
-                                            <td className="px-3 py-3 text-muted-foreground">
+                                            <td className="px-4 py-4 text-slate-600 font-medium">
                                                 {pack.applicator?.name || "—"}
                                             </td>
-                                            {/* Hora Salida */}
-                                            <td className="px-3 py-3 font-mono text-xs text-amber-600">
+                                            <td className="px-4 py-4 font-mono text-xs text-amber-600 font-bold">
                                                 {pack.hora_salida || "—"}
                                             </td>
-                                            {/* Hora Entrada */}
-                                            <td className="px-3 py-3 font-mono text-xs text-green-600">
+                                            <td className="px-4 py-4 font-mono text-xs text-emerald-600 font-bold">
                                                 {pack.hora_entrada || "—"}
                                             </td>
-                                            {/* Acciones */}
-                                            <td className="px-3 py-3 text-right">
+                                            <td className="px-4 py-4 text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-100 hover:text-blue-600">
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                                    <DropdownMenuContent align="end" className="w-48 border-2 border-slate-100 shadow-xl">
+                                                        <DropdownMenuLabel className="text-xs uppercase text-slate-400 font-black">Acciones</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
                                                             onClick={() => handleToggleStatus(pack)}
+                                                            className="cursor-pointer font-bold focus:bg-blue-50 focus:text-blue-700"
                                                         >
                                                             <RefreshCcw className="mr-2 h-4 w-4" />
-                                                            Cambiar a {pack.status === "EN_SITIO" ? "Prestado" : "En Sitio"}
+                                                            Marcar como {pack.status === "EN_SITIO" ? "Prestado" : "En Sitio"}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
+                                                            className="text-red-600 focus:bg-red-50 focus:text-red-700 font-bold cursor-pointer"
                                                             onClick={() => handleDelete(pack)}
                                                         >
                                                             <Trash2 className="mr-2 h-4 w-4" />
