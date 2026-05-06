@@ -21,6 +21,8 @@ Este directorio concentra la documentacion operativa para implementar el alcance
   - Rutas UI, endpoints API, tablas sugeridas y ownership por modulo.
 - `docs/executive-observability/TICKETS_SPRINT_BOARD.md`
   - Tickets listos para Jira/GitHub Projects con SP, owner y dependencias.
+- `docs/executive-observability/DB_SCHEMA_PROPOSAL.md`
+  - Propuesta de esquema (snapshots/alerts/agrupacion de errores) para cuando se requieran migraciones.
 
 ## Scope acordado
 

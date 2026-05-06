@@ -19,26 +19,38 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         const { data: entries, error: eError } = await supabase
             .from("payroll_entries")
             .select("*")
-            .eq("period_id", periodId);
+            .eq("period_id", periodId)
+            .eq("org_id", member.org_id);
 
         if (eError) throw eError;
 
         // Fetch roles from line items to provide context
         const entryIds = entries.map((e: any) => e.id);
-        const { data: lineItems } = await supabase
+        const { data: lineItems, error: liError } = await supabase
             .from("payroll_line_items")
-            .select("entry_id, role")
-            .in("entry_id", entryIds);
+            .select("entry_id, role, source")
+            .in("entry_id", entryIds)
+            .eq("org_id", member.org_id);
+        if (liError) throw liError;
 
         // Group roles by entry
         const entriesWithRoles = entries.map((entry: any) => {
-            const roles = Array.from(new Set(
-                lineItems
-                    ?.filter((li: any) => li.entry_id === entry.id)
-                    .map((li: any) => li.role)
-                    .filter(Boolean)
-            ));
-            return { ...entry, roles };
+            const items = (lineItems ?? []).filter((li: any) => li.entry_id === entry.id);
+            const roles = Array.from(
+                new Set(items.map((li: any) => li.role).filter(Boolean))
+            );
+            const sources = Array.from(
+                new Set(items.map((li: any) => li.source).filter(Boolean))
+            );
+            const manual_lines_count = items.filter((li: any) => li.source === "manual").length;
+            const auto_lines_count = items.filter((li: any) => li.source === "auto_event_staff").length;
+            return {
+                ...entry,
+                roles,
+                sources,
+                manual_lines_count,
+                auto_lines_count,
+            };
         });
 
         return NextResponse.json({ period, entries: entriesWithRoles });
