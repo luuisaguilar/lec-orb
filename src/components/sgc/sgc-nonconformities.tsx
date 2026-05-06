@@ -118,12 +118,12 @@ const STATUS_LABEL: Record<NcStatus, string> = {
     cancel: "Cancelada",
 };
 const STATUS_BADGE: Record<NcStatus, string> = {
-    draft: "bg-slate-700 text-slate-900 dark:text-slate-100",
-    analysis: "bg-blue-900/70 text-blue-200",
-    pending: "bg-amber-900/70 text-amber-200",
-    open: "bg-indigo-900/70 text-indigo-200",
-    done: "bg-emerald-900/70 text-emerald-200",
-    cancel: "bg-rose-900/70 text-rose-200",
+    draft: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-100",
+    analysis: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
+    pending: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
+    open: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300",
+    done: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
+    cancel: "bg-rose-200 dark:bg-rose-900/70 text-rose-800 dark:text-rose-200",
 };
 
 // Status transitions allowed

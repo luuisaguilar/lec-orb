@@ -79,11 +79,11 @@ const STATUS_LABEL: Record<SgcAction["status"], string> = {
 };
 
 const STATUS_STYLE: Record<SgcAction["status"], string> = {
-    draft: "bg-slate-700 text-slate-900 dark:text-slate-100",
-    open: "bg-blue-900/70 text-blue-200",
-    in_progress: "bg-amber-900/70 text-amber-200",
-    done: "bg-emerald-900/70 text-emerald-200",
-    cancel: "bg-rose-900/70 text-rose-200",
+    draft: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-100",
+    open: "bg-blue-100 dark:bg-blue-900/70 text-blue-700 dark:text-blue-200",
+    in_progress: "bg-amber-100 dark:bg-amber-900/70 text-amber-700 dark:text-amber-200",
+    done: "bg-emerald-100 dark:bg-emerald-900/70 text-emerald-700 dark:text-emerald-200",
+    cancel: "bg-rose-200 dark:bg-rose-900/70 text-rose-800 dark:text-rose-200",
 };
 
 const TYPE_LABEL: Record<SgcAction["type_action"], string> = {
