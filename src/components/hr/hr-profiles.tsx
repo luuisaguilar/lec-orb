@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import useSWR from "swr";
 import {
   Users,
@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateJobProfilePDFFromView } from "@/lib/utils/pdf-generator";
+import { toast } from "sonner";
 
 type HrProfileRow = {
   id: string;
@@ -129,6 +131,7 @@ function mapProfiles(rows: HrProfileRow[]): HrProfileView[] {
 export default function HRProfiles() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const { data, isLoading, error } = useSWR("/api/v1/hr/profiles", fetcher);
 
@@ -165,9 +168,9 @@ export default function HRProfiles() {
       .filter(Boolean);
 
   const renderInfoBlock = (label: string, value?: string, multiline?: boolean) => (
-    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">{label}</h4>
-      <p className={cn("text-xs text-slate-200 leading-relaxed", multiline && "whitespace-pre-line")}>
+    <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-800/40 shadow-inner shadow-indigo-500/10">
+      <h4 className="text-sm font-bold text-indigo-200 mb-2 uppercase tracking-wider">{label}</h4>
+      <p className={cn("text-sm font-medium text-slate-50 leading-relaxed", multiline && "whitespace-pre-line")}>
         {value?.trim() || "No especificado"}
       </p>
     </div>
@@ -176,7 +179,7 @@ export default function HRProfiles() {
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-220px)] flex items-center justify-center">
-        <div className="flex items-center gap-2 text-slate-300">
+        <div className="flex items-center gap-2 text-indigo-200">
           <Loader2 className="w-5 h-5 animate-spin" />
           Cargando perfiles de RRHH...
         </div>
@@ -194,18 +197,18 @@ export default function HRProfiles() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="bg-slate-900/40 border-slate-800 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 w-full lg:w-80 min-h-0">
-        <div className="p-3 border-b border-slate-800 shrink-0 bg-slate-900/85 backdrop-blur-sm">
+      <Card className="bg-indigo-950/80 border-indigo-900/60 backdrop-blur-sm flex flex-col overflow-hidden shrink-0 w-full lg:w-80 min-h-0">
+        <div className="p-3 border-b border-indigo-900/60 shrink-0 bg-indigo-950 backdrop-blur-sm">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-indigo-400" />
             <Input
               placeholder="Buscar perfil..."
-              className="pl-8 h-8 text-xs bg-slate-950/50 border-slate-800 text-white"
+              className="pl-8 h-8 text-xs bg-indigo-950/80 border-indigo-900/60 text-white"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mt-2 px-1">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-indigo-400 mt-2 px-1">
             {filteredProfiles.length} perfiles
           </p>
         </div>
@@ -219,20 +222,20 @@ export default function HRProfiles() {
                 className={cn(
                   "w-full flex items-start gap-2.5 rounded-lg text-left transition-all group p-2.5",
                   selectedProfile?.id === p.id
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "hover:bg-slate-800/60 text-slate-300"
+                    ? "bg-blue-600/90 text-white shadow-lg ring-1 ring-blue-400/30"
+                    : "hover:bg-indigo-900/80 text-indigo-100 font-medium"
                 )}
               >
                 <div
                   className={cn(
                     "p-1.5 rounded-md shrink-0 mt-0.5",
-                    selectedProfile?.id === p.id ? "bg-white/20" : "bg-slate-800 group-hover:bg-slate-700"
+                    selectedProfile?.id === p.id ? "bg-white/20" : "bg-indigo-900 group-hover:bg-indigo-800"
                   )}
                 >
                   <Briefcase className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
+                  <p className="text-sm font-bold leading-snug line-clamp-2">{p.title}</p>
                   <p className="text-[9px] opacity-70 uppercase tracking-wider mt-0.5 line-clamp-1">{p.id}</p>
                 </div>
                 <ChevronRight
@@ -251,7 +254,7 @@ export default function HRProfiles() {
         {selectedProfile ? (
           <ScrollArea className="flex-1 min-h-0 pr-1">
             <div className="space-y-6 pr-3 pb-12">
-              <Card className="bg-slate-900/60 border-slate-800 border-l-4 border-l-blue-500 backdrop-blur-sm overflow-hidden">
+              <Card className="bg-indigo-950/90 border-indigo-900/60 border-l-4 border-l-blue-500 backdrop-blur-sm overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div className="space-y-2 min-w-0 flex-1">
@@ -260,7 +263,7 @@ export default function HRProfiles() {
                           {selectedProfile.id}
                         </Badge>
                         {selectedProfile.processId && (
-                          <Badge variant="outline" className="text-emerald-300 border-emerald-500/40 bg-emerald-500/10 uppercase text-[10px]">
+                          <Badge variant="outline" className="text-teal-300 border-teal-500/40 bg-teal-500/15 uppercase text-[10px]">
                             PROCESO: {selectedProfile.processId}
                           </Badge>
                         )}
@@ -268,8 +271,8 @@ export default function HRProfiles() {
                       <h2 className="text-2xl xl:text-3xl font-bold text-white font-outfit leading-tight break-words whitespace-normal">
                         {selectedProfile.title}
                       </h2>
-                      <p className="text-sm text-slate-400">Titular actual: {selectedProfile.holderName}</p>
-                      <div className="flex flex-wrap gap-4 text-sm text-slate-400">
+                      <p className="text-sm font-medium text-indigo-100">Titular actual: {selectedProfile.holderName}</p>
+                      <div className="flex flex-wrap gap-4 text-sm font-medium text-indigo-100">
                         <span className="flex items-center gap-1.5">
                           <GraduationCap className="w-4 h-4" /> {selectedProfile.education || "N/A"}
                         </span>
@@ -282,16 +285,16 @@ export default function HRProfiles() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 shrink-0">
-                      <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Reporta a:</div>
+                      <div className="text-sm font-bold text-indigo-200 uppercase tracking-wider">Reporta a:</div>
                       <div className="flex flex-wrap gap-2">
                         {selectedProfile.reportsTo.length > 0 ? (
                           selectedProfile.reportsTo.map((r) => (
-                            <Badge key={r} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
+                            <Badge key={r} variant="secondary" className="bg-indigo-900 text-indigo-200 border-indigo-700">
                               {r}
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                          <Badge variant="secondary" className="bg-indigo-900 text-indigo-300 border-indigo-700">
                             Nivel raiz
                           </Badge>
                         )}
@@ -302,12 +305,12 @@ export default function HRProfiles() {
               </Card>
 
               <Tabs defaultValue="resumen" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-slate-900/50 border border-slate-800 p-1">
-                  <TabsTrigger value="resumen" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Resumen</TabsTrigger>
-                  <TabsTrigger value="funciones" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Funciones</TabsTrigger>
-                  <TabsTrigger value="requisitos" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Requisitos</TabsTrigger>
-                  <TabsTrigger value="relaciones" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Relaciones</TabsTrigger>
-                  <TabsTrigger value="documento" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Documento</TabsTrigger>
+                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto gap-1 bg-indigo-950/80 border border-indigo-900/60 p-1">
+                  <TabsTrigger value="resumen" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-950/80 transition-colors font-medium">Resumen</TabsTrigger>
+                  <TabsTrigger value="funciones" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-950/80 transition-colors font-medium">Funciones</TabsTrigger>
+                  <TabsTrigger value="requisitos" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-950/80 transition-colors font-medium">Requisitos</TabsTrigger>
+                  <TabsTrigger value="relaciones" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-950/80 transition-colors font-medium">Relaciones</TabsTrigger>
+                  <TabsTrigger value="documento" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-950/80 transition-colors font-medium">Documento</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="resumen" className="mt-4 space-y-4">
@@ -332,7 +335,7 @@ export default function HRProfiles() {
                     </div>
                     <div className="space-y-2">
                       {getLines(selectedProfile.responsibilities).map((item, idx) => (
-                        <div key={`${selectedProfile.id}-responsabilidad-${idx}`} className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-200 whitespace-pre-line">
+                        <div key={`${selectedProfile.id}-responsabilidad-${idx}`} className="rounded-lg border border-indigo-900/60 bg-indigo-950/80 p-3 text-base font-medium text-slate-50 whitespace-pre-line">
                           {item}
                         </div>
                       ))}
@@ -340,18 +343,18 @@ export default function HRProfiles() {
                   </section>
 
                   <section className="space-y-3">
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase tracking-widest border-b border-emerald-400/20 pb-2">
+                    <div className="flex items-center gap-2 text-teal-400 font-bold text-sm uppercase tracking-widest border-b border-teal-400/20 pb-2">
                       <Briefcase className="w-4 h-4" /> Otros Roles
                     </div>
                     <div className="space-y-2">
                       {getLines(selectedProfile.otherRoles).length > 0 ? (
                         getLines(selectedProfile.otherRoles).map((item, idx) => (
-                          <div key={`${selectedProfile.id}-rol-${idx}`} className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-200 whitespace-pre-line">
+                          <div key={`${selectedProfile.id}-rol-${idx}`} className="rounded-lg border border-indigo-900/60 bg-indigo-950/80 p-3 text-base font-medium text-slate-50 whitespace-pre-line">
                             {item}
                           </div>
                         ))
                       ) : (
-                        <div className="rounded-lg border border-slate-800 bg-slate-900/35 p-3 text-sm text-slate-400">
+                        <div className="rounded-lg border border-indigo-900/60 bg-indigo-950/80 p-3 text-sm font-medium text-indigo-100">
                           No especificado
                         </div>
                       )}
@@ -376,61 +379,61 @@ export default function HRProfiles() {
 
                 <TabsContent value="relaciones" className="mt-4 space-y-4">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Reporta a</h4>
+                    <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-900/60/50">
+                      <h4 className="text-sm font-bold text-indigo-200 mb-2 uppercase tracking-wider">Reporta a</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedProfile.reportsTo.length > 0 ? (
                           selectedProfile.reportsTo.map((report) => (
-                            <Badge key={`${selectedProfile.id}-${report}`} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
+                            <Badge key={`${selectedProfile.id}-${report}`} variant="secondary" className="bg-indigo-900 text-indigo-200 border-indigo-700">
                               {report}
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                          <Badge variant="secondary" className="bg-indigo-900 text-indigo-300 border-indigo-700">
                             Nivel raiz
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Subordinados</h4>
+                    <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-900/60/50">
+                      <h4 className="text-sm font-bold text-indigo-200 mb-2 uppercase tracking-wider">Subordinados</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedProfile.subordinates.length > 0 ? (
                           selectedProfile.subordinates.map((subordinate) => (
-                            <Badge key={`${selectedProfile.id}-${subordinate}`} variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">
+                            <Badge key={`${selectedProfile.id}-${subordinate}`} variant="secondary" className="bg-indigo-900 text-indigo-200 border-indigo-700">
                               {subordinate}
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700">
+                          <Badge variant="secondary" className="bg-indigo-900 text-indigo-300 border-indigo-700">
                             Sin subordinados directos
                           </Badge>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
-                    <h4 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Proceso SGC Relacionado</h4>
-                    <p className="text-sm text-slate-200">{selectedProfile.processId || "Sin proceso asignado"}</p>
+                  <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-900/60/50">
+                    <h4 className="text-sm font-bold text-indigo-200 mb-2 uppercase tracking-wider">Proceso SGC Relacionado</h4>
+                    <p className="text-base font-medium text-slate-50">{selectedProfile.processId || "Sin proceso asignado"}</p>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="documento" className="mt-4 space-y-4">
-                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50 space-y-2">
+                  <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-900/60/50 space-y-2">
                     <div className="flex items-center gap-2 text-blue-300">
                       <FolderKanban className="w-4 h-4" />
                       <p className="text-xs uppercase tracking-wider font-bold">Archivo fuente</p>
                     </div>
-                    <p className="text-sm text-slate-200 break-words">
+                    <p className="text-base font-medium text-slate-50 break-words">
                       {selectedProfile.file || "Sin documento PDF vinculado"}
                     </p>
                   </div>
-                  <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/50 space-y-2">
+                  <div className="bg-indigo-950/80 p-4 rounded-xl border border-indigo-900/60/50 space-y-2">
                     <div className="flex items-center gap-2 text-emerald-300">
                       <Link2 className="w-4 h-4" />
                       <p className="text-xs uppercase tracking-wider font-bold">Referencia</p>
                     </div>
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-indigo-200">
                       Datos cargados desde la tabla <code>hr_profiles</code> por API.
                     </p>
                   </div>
@@ -438,17 +441,42 @@ export default function HRProfiles() {
               </Tabs>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" className="border-slate-700 text-slate-400 hover:text-white">
-                  <FileText className="w-4 h-4 mr-2" /> PDF / Excel
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 font-bold border border-indigo-500/30"
+                  disabled={isGeneratingPDF}
+                  onClick={async () => {
+                    if (!selectedProfile) return;
+                    setIsGeneratingPDF(true);
+                    const tid = toast.loading("Generando PDF...");
+                    try {
+                      const { blob, fileName } = await generateJobProfilePDFFromView(selectedProfile);
+                      // Open PDF in a new tab for viewing
+                      const url = URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                      setTimeout(() => URL.revokeObjectURL(url), 5000);
+                      toast.success("Documento generado", { id: tid });
+                    } catch {
+                      toast.error("Error al generar PDF", { id: tid });
+                    } finally {
+                      setIsGeneratingPDF(false);
+                    }
+                  }}
+                >
+                  {isGeneratingPDF ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4 mr-2" />
+                  )}
+                  Ver PDF
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold">
+                <Button variant="outline" className="border-indigo-700/50 text-indigo-100 hover:bg-indigo-800 hover:text-white font-bold bg-indigo-950/50">
                   <FileCheck className="w-4 h-4 mr-2" /> Editar Perfil
                 </Button>
               </div>
             </div>
           </ScrollArea>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
+          <div className="flex-1 flex flex-col items-center justify-center text-indigo-400">
             <Users className="w-16 h-16 mb-4 opacity-20" />
             <p>No hay perfiles de RRHH disponibles para esta organizacion</p>
           </div>
@@ -457,3 +485,6 @@ export default function HRProfiles() {
     </div>
   );
 }
+
+
+

@@ -38,24 +38,24 @@ export default function RRHHDashboard() {
 
       <Tabs defaultValue="onboarding" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-4 overflow-x-auto">
-          <TabsList className="bg-slate-900/50 border border-slate-800 p-1 h-auto">
+          <TabsList className="bg-indigo-950/80 border border-indigo-900/60 p-1 h-auto shadow-inner shadow-indigo-500/10 rounded-xl">
             <TabsTrigger 
               value="onboarding" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-600/20 text-indigo-300 hover:text-indigo-100 px-4 py-2 rounded-lg transition-all"
             >
               <Info className="w-4 h-4 mr-2" />
               Onboarding
             </TabsTrigger>
             <TabsTrigger 
               value="profiles" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-600/20 text-indigo-300 hover:text-indigo-100 px-4 py-2 rounded-lg transition-all"
             >
               <Users className="w-4 h-4 mr-2" />
               Perfiles de Puesto
             </TabsTrigger>
             <TabsTrigger
               value="chart"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2 group"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-600/20 text-indigo-300 hover:text-indigo-100 px-4 py-2 group rounded-lg transition-all"
             >
               <AnimatedIcon
                 variant="lucide"

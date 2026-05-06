@@ -852,7 +852,7 @@ export const HR_PROCESSES = [
     inputsOutputs: 'Entradas: Programa Anual de Auditorías, Manual de Calidad.\nSalidas: Informes de Auditoría, Acciones Correctivas (SAC).',
     resources: 'Humanos: Auditores capacitados.\nTecnológicos: Sistema de Gestión Documental.',
     documents: '1. Plan de Auditoría.pdf\n2. Informe de Auditoría.pdf\n3. Registro de SAC.xlsx',
-    mermaidCode: 'graph TD\n    A[Elaboración del Programa de Auditorías] --> B[Planificación de Auditoría Específica]\n    B --> C[Ejecución de la Auditoría]\n    C --> D[Elaboración de Informe y Hallazgos]\n    D --> E[Apertura de SAC (No Conformidades)]\n    E --> F[Seguimiento y Cierre de Hallazgos]'
+    mermaidCode: 'graph TD\n    A[Elaboración del Programa de Auditorías] --> B[Planificación de Auditoría Específica]\n    B --> C[Ejecución de la Auditoría]\n    C --> D[Elaboración de Informe y Hallazgos]\n    D --> E["Apertura de SAC (No Conformidades)"]\n    E --> F[Seguimiento y Cierre de Hallazgos]'
   },
   {
     id: 'SUBPROC_GESTION_PROYECTOS',
