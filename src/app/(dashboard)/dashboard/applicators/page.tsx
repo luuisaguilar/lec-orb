@@ -20,6 +20,7 @@ import {
     DollarSign,
     Loader2,
     FileSpreadsheet,
+    KeyRound,
 } from "lucide-react";
 
 import { AddApplicatorDialog } from "@/components/applicators/add-applicator-dialog";
@@ -34,6 +35,7 @@ export default function ApplicatorsPage() {
     const [showAdd, setShowAdd] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editingApp, setEditingApp] = useState<any>(null);
+    const [invitingId, setInvitingId] = useState<string | null>(null);
 
     const { data, isLoading, mutate } = useSWR("/api/v1/applicators", fetcher);
 
@@ -51,6 +53,33 @@ export default function ApplicatorsPage() {
             toast.error("Error de conexión");
         }
     };
+
+    const sendPortalInvite = async (id: string) => {
+        setInvitingId(id);
+        try {
+            const res = await fetch(`/api/v1/applicators/${id}/invite`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sendEmail: true }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toast.error(typeof data?.error === "string" ? data.error : "No se pudo crear la invitación");
+                return;
+            }
+            toast.success(data.emailSent ? "Invitación enviada por correo." : "Invitación creada.");
+            if (data.joinUrl && typeof navigator?.clipboard?.writeText === "function") {
+                await navigator.clipboard.writeText(data.joinUrl);
+                toast.message("Enlace copiado al portapapeles");
+            }
+            mutate();
+        } catch {
+            toast.error("Error de conexión");
+        } finally {
+            setInvitingId(null);
+        }
+    };
+
     const allApplicators = data?.applicators || [];
 
     // Combined search + zone filter
@@ -156,6 +185,7 @@ export default function ApplicatorsPage() {
                             certified_levels: string[];
                             authorized_exams: string[];
                             notes: string | null;
+                            auth_user_id?: string | null;
                         }) => (
                             <Card key={app.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
                                 <CardHeader className="pb-3 border-b border-border/50 mb-3 flex-none">
@@ -165,11 +195,18 @@ export default function ApplicatorsPage() {
                                                 <UserCircle className="h-5 w-5 text-violet-500 shrink-0" />
                                                 <span className="break-words">{app.name}</span>
                                             </CardTitle>
-                                            {app.external_id && (
-                                                <Badge variant="outline" className="text-[10px] font-mono shrink-0 ml-auto">
-                                                    ID: {app.external_id}
-                                                </Badge>
-                                            )}
+                                            <div className="flex items-center gap-1.5 ml-auto shrink-0 flex-wrap justify-end">
+                                                {app.auth_user_id && (
+                                                    <Badge className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                        Portal
+                                                    </Badge>
+                                                )}
+                                                {app.external_id && (
+                                                    <Badge variant="outline" className="text-[10px] font-mono">
+                                                        ID: {app.external_id}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 flex-wrap">
@@ -248,6 +285,22 @@ export default function ApplicatorsPage() {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
+                                            {app.email && !app.auth_user_id && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                    title="Invitar al portal"
+                                                    disabled={invitingId === app.id}
+                                                    onClick={() => sendPortalInvite(app.id)}
+                                                >
+                                                    {invitingId === app.id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <KeyRound className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditingApp(app)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>

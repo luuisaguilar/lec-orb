@@ -111,6 +111,17 @@ type DemoTravelReceipt = {
     updated_at: string;
 };
 
+type DemoRoleRate = {
+    id: string;
+    org_id: string;
+    role: string;
+    exam_type: string | null;
+    rate_per_hour: number;
+    effective_from: string;
+    effective_to: string | null;
+    notes: string | null;
+};
+
 const ORG = {
     id: "demo-org-001",
     name: "LEC Demo",
@@ -319,6 +330,38 @@ function createDemoState() {
             is_native: true,
             sort_order: 54,
         },
+        {
+            id: "module-payroll",
+            slug: "payroll",
+            name: "Nómina",
+            icon: "DollarSign",
+            category: "Finanzas",
+            is_native: true,
+            sort_order: 52,
+        },
+    ];
+
+    const roleRates: DemoRoleRate[] = [
+        {
+            id: "rr-001",
+            org_id: ORG.id,
+            role: "INVIGILATOR",
+            exam_type: null,
+            rate_per_hour: 150,
+            effective_from: "2024-01-01",
+            effective_to: null,
+            notes: null,
+        },
+        {
+            id: "rr-002",
+            org_id: ORG.id,
+            role: "EVALUATOR",
+            exam_type: "FCE",
+            rate_per_hour: 220,
+            effective_from: "2024-01-01",
+            effective_to: null,
+            notes: null,
+        },
     ];
 
     const travelReports: DemoTravelReport[] = [
@@ -359,6 +402,7 @@ function createDemoState() {
         modules,
         travelReports,
         travelReceipts,
+        roleRates,
     };
 }
 
@@ -892,6 +936,70 @@ export async function installDemoApiMocks(page: Page) {
                 state.travelReceipts.push(receipt);
                 return json(route, { receipt }, 201);
             }
+        }
+
+        if (matchesPath(pathname, "/api/v1/settings/role-rates")) {
+            if (method === "GET") {
+                return json(route, { rates: state.roleRates });
+            }
+
+            if (method === "POST") {
+                const body = parseBody(route) as {
+                    role?: string;
+                    exam_type?: string | null;
+                    rate_per_hour?: number;
+                    effective_from?: string;
+                } | null;
+
+                if (!body?.role || typeof body.rate_per_hour !== "number") {
+                    return json(route, { error: "Validación fallida" }, 400);
+                }
+
+                const id = `rr-${Date.now()}`;
+                const row: DemoRoleRate = {
+                    id,
+                    org_id: ORG.id,
+                    role: body.role,
+                    exam_type: body.exam_type?.trim() ? body.exam_type.trim() : null,
+                    rate_per_hour: body.rate_per_hour,
+                    effective_from: body.effective_from?.slice(0, 10) || dateOnly(0),
+                    effective_to: null,
+                    notes: null,
+                };
+                state.roleRates.push(row);
+                return json(route, { rate: row }, 201);
+            }
+        }
+
+        if (/^\/api\/v1\/settings\/role-rates\/[^/]+$/.test(pathname)) {
+            const id = pathname.split("/").pop() ?? "";
+            if (method === "PATCH") {
+                const body = parseBody(route) as Partial<DemoRoleRate> | null;
+                const idx = state.roleRates.findIndex((r) => r.id === id);
+                if (idx < 0) {
+                    return json(route, { error: "No encontrado" }, 404);
+                }
+                if (body && typeof body.rate_per_hour === "number") {
+                    state.roleRates[idx].rate_per_hour = body.rate_per_hour;
+                }
+                return json(route, { rate: state.roleRates[idx] });
+            }
+
+            if (method === "DELETE") {
+                const idx = state.roleRates.findIndex((r) => r.id === id);
+                if (idx < 0) {
+                    return json(route, { error: "No encontrado" }, 404);
+                }
+                state.roleRates.splice(idx, 1);
+                return json(route, { success: true });
+            }
+        }
+
+        if (matchesPath(pathname, "/api/v1/portal/magic-link") && method === "POST") {
+            return json(route, {
+                ok: true,
+                message: "Revisa tu correo para el enlace de acceso.",
+            });
         }
 
         return route.continue();

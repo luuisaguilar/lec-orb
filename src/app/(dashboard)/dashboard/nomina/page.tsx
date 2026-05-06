@@ -17,6 +17,7 @@ import {
     Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -72,9 +73,14 @@ export default function PayrollPage() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold tracking-tight">
-                {t("payroll.title")}
-            </h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-2xl font-bold tracking-tight">
+                    {t("payroll.title")}
+                </h2>
+                <Button variant="outline" size="sm" asChild>
+                    <Link href="/dashboard/settings/role-rates">Tarifas por rol</Link>
+                </Button>
+            </div>
 
             {loadingPeriods ? (
                 <div className="flex justify-center py-12">

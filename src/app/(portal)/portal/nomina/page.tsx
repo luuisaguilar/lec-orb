@@ -11,45 +11,62 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { DollarSign, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-    mockPayrollEntries,
-    mockPayrollPeriods,
-} from "@/lib/demo/data";
+import { portalApiGet } from "@/lib/portal/server-fetch";
 
-const APPLICATOR_ID = "applicator-001"; // Hardcoded for demo
+type NominaResponse = {
+    periods: { id: string; name: string }[];
+    entries: Record<string, unknown>[];
+    line_items: unknown[];
+};
 
-export default function PortalPayrollPage() {
-    // 1. Get my payroll
-    const myPayroll = mockPayrollEntries.filter((p) => p.applicator_id === APPLICATOR_ID);
+export default async function PortalPayrollPage() {
+    const res = await portalApiGet<NominaResponse>("/api/v1/portal/nomina");
 
-    // 2. Enrich with Period Data
-    const enrichedPayroll = myPayroll.map((entry) => {
-        const period = mockPayrollPeriods.find((p) => p.id === entry.period_id);
-        return {
-            ...entry,
-            period,
-        };
-    });
+    if (!res.ok) {
+        if (res.status === 401) {
+            return (
+                <div className="rounded-md border p-8 text-center text-muted-foreground">
+                    Debes iniciar sesión para ver tu nómina.
+                </div>
+            );
+        }
+        if (res.status === 403) {
+            return (
+                <div className="rounded-md border p-8 text-center text-muted-foreground">
+                    Tu usuario no está vinculado a un aplicador.
+                </div>
+            );
+        }
+        return (
+            <div className="rounded-md border p-8 text-center text-muted-foreground">
+                No se pudo cargar la nómina: {res.message}
+            </div>
+        );
+    }
 
-    // 3. Sort by created_at desc (newest first)
-    enrichedPayroll.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const periodById = new Map((res.data.periods ?? []).map((p) => [p.id, p]));
+    const enrichedPayroll = (res.data.entries ?? []).map((entry: any) => ({
+        ...entry,
+        period: periodById.get(entry.period_id) ?? null,
+    }));
 
-    // Stats
+    enrichedPayroll.sort((a: any, b: any) =>
+        String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""))
+    );
+
     const pendingBalance = enrichedPayroll
-        .filter((p) => p.status === "pending")
-        .reduce((sum, p) => sum + p.total, 0);
+        .filter((p: any) => p.status === "pending")
+        .reduce((sum: number, p: any) => sum + Number(p.total ?? 0), 0);
 
     const totalPaidHistoric = enrichedPayroll
-        .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + p.total, 0);
+        .filter((p: any) => p.status === "paid")
+        .reduce((sum: number, p: any) => sum + Number(p.total ?? 0), 0);
 
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Mi Nómina</h1>
-                <p className="text-muted-foreground">
-                    Desglose de tus pagos y balances por período.
-                </p>
+                <p className="text-muted-foreground">Desglose de tus pagos y balances por período.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -62,9 +79,7 @@ export default function PortalPayrollPage() {
                         <div className="text-2xl font-bold">
                             ${pendingBalance.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Siguiente ciclo de pago
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Siguiente ciclo de pago</p>
                     </CardContent>
                 </Card>
 
@@ -77,9 +92,7 @@ export default function PortalPayrollPage() {
                         <div className="text-2xl font-bold">
                             ${totalPaidHistoric.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Pagos recibidos acumulados
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Pagos recibidos acumulados</p>
                     </CardContent>
                 </Card>
             </div>
@@ -90,9 +103,7 @@ export default function PortalPayrollPage() {
                         <FileText className="h-5 w-5" />
                         Historial de Pagos
                     </CardTitle>
-                    <CardDescription>
-                        Todos los registros de nómina emitidos a tu nombre.
-                    </CardDescription>
+                    <CardDescription>Todos los registros de nómina emitidos a tu nombre.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 sm:p-6">
                     {enrichedPayroll.length === 0 ? (
@@ -114,12 +125,15 @@ export default function PortalPayrollPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {enrichedPayroll.map((entry) => (
+                                    {enrichedPayroll.map((entry: any) => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="font-medium">
                                                 <div>{entry.period?.name || "Desconocido"}</div>
                                                 <div className="text-xs text-muted-foreground hidden sm:block">
-                                                    Generado: {format(new Date(entry.created_at), "d MMM yyyy", { locale: es })}
+                                                    Generado:{" "}
+                                                    {entry.created_at
+                                                        ? format(new Date(entry.created_at), "d MMM yyyy", { locale: es })
+                                                        : "—"}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -134,16 +148,23 @@ export default function PortalPayrollPage() {
                                                     {entry.status === "paid" ? "Pagado" : "Pendiente"}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right">{entry.hours_worked}h</TableCell>
-                                            <TableCell className="text-right">${entry.rate_per_hour}</TableCell>
+                                            <TableCell className="text-right">{Number(entry.hours_worked ?? 0)}h</TableCell>
+                                            <TableCell className="text-right">${Number(entry.rate_per_hour ?? 0)}</TableCell>
                                             <TableCell className="text-right hidden sm:table-cell">
-                                                ${entry.subtotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                                                $
+                                                {Number(entry.subtotal ?? 0).toLocaleString("es-MX", {
+                                                    minimumFractionDigits: 2,
+                                                })}
                                             </TableCell>
                                             <TableCell className="text-right hidden sm:table-cell text-muted-foreground">
-                                                {entry.adjustments > 0 ? "+" : ""}{entry.adjustments}
+                                                {Number(entry.adjustments ?? 0) > 0 ? "+" : ""}
+                                                {Number(entry.adjustments ?? 0)}
                                             </TableCell>
                                             <TableCell className="text-right font-bold text-base">
-                                                ${entry.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                                                $
+                                                {Number(entry.total ?? 0).toLocaleString("es-MX", {
+                                                    minimumFractionDigits: 2,
+                                                })}
                                             </TableCell>
                                         </TableRow>
                                     ))}
