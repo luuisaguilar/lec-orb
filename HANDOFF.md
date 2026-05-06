@@ -132,6 +132,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 - [x] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
 - [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
+- [x] Plan Dashboard Ejecutivo + Observabilidad documentado
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
@@ -191,3 +192,5 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | `docs/API_MODULES.md` | Referencia de rutas API |
 | `docs/DATABASE_SCHEMA.md` | Schema, enums y RPCs |
 | `docs/FINANCE_MODULES.md` | Detalle de Caja Chica y Presupuesto |
+| `docs/executive-observability/README.md` | Indice de dashboard ejecutivo y observabilidad |
+| `docs/executive-observability/TICKETS_SPRINT_BOARD.md` | Tickets sprint-ready con owners y SP |

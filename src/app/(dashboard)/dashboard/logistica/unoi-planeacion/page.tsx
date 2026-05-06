@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
@@ -608,7 +608,7 @@ function SyncedHorizontalScroll({
     );
 }
 
-export default function UNOiPlanningPage() {
+function UNOiPlanningPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [city, setCity] = useState("");
@@ -1796,3 +1796,16 @@ export default function UNOiPlanningPage() {
         </div>
     );
 }
+
+export default function UNOiPlanningPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        }>
+            <UNOiPlanningPageContent />
+        </Suspense>
+    );
+}
+

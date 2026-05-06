@@ -26,6 +26,20 @@ npm run build && npm run lint && npm run test
 
 ---
 
+## Dashboard Ejecutivo + Observabilidad
+
+Referencia operativa del frente:
+
+- `docs/executive-observability/README.md`
+- `docs/executive-observability/SCREENS_AND_KPIS.md`
+- `docs/executive-observability/BACKLOG_MVP_V2.md`
+- `docs/executive-observability/HANDOFF_DASHBOARDS.md`
+- `docs/executive-observability/RUNBOOK_DASHBOARD_OBSERVABILITY.md`
+- `docs/executive-observability/PATHS_AND_ROUTES.md`
+- `docs/executive-observability/TICKETS_SPRINT_BOARD.md`
+
+---
+
 ## Variables de Entorno
 
 Todas las variables se configuran en: **Vercel Dashboard → lec-orb → Settings → Environment Variables**

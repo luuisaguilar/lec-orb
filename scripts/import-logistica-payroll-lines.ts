@@ -75,6 +75,44 @@ function cleanApplicatorInput(rawName: string): string {
         .trim();
 }
 
+/**
+ * Alias map for common short names from LOGISTICA_UNOi to canonical applicator names in DB.
+ * Keys are normalized with normalizeKey().
+ */
+const NAME_ALIASES: Record<string, string> = {
+    "LUPITA ZATARAIN": "LAURA GUADALUPE ZATARAIN NOGALES",
+    "MAJO": "MARIA JOSE",
+    "MARIA JOSE": "MARIA JOSE",
+    "TONY": "TONY",
+    "SELENE M": "SELENE",
+    "MARISELA C": "MARISELA",
+    "VANESSA Z": "VANESSA",
+    "ZULEMA CORBALA": "ZULEMA CORBALÁ",
+    "RUTH Q": "RUTH",
+};
+
+const NOISE_TOKENS = new Set([
+    "SE",
+    "ESCRITO",
+    "ORAL",
+    "EXAMEN ESCRITO",
+    "INVIGILATOR",
+    "ADMIN",
+    "SUPER",
+]);
+
+function resolveInputAlias(rawCleaned: string): string {
+    const key = normalizeKey(rawCleaned);
+    const alias = NAME_ALIASES[key];
+    return alias ? alias : rawCleaned;
+}
+
+function isNoiseName(rawCleaned: string): boolean {
+    const key = normalizeKey(rawCleaned);
+    if (!key) return true;
+    return NOISE_TOKENS.has(key);
+}
+
 function isLikelyUuid(v: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
@@ -141,6 +179,7 @@ async function main() {
 
     const unresolvedNames = new Map<string, number>();
     const ambiguousNames = new Map<string, number>();
+    const ignoredNoiseNames = new Map<string, number>();
 
     type ResolvedLine = {
         applicator_id: string;
@@ -155,16 +194,22 @@ async function main() {
 
     const resolved: ResolvedLine[] = [];
     for (const line of payload.lines) {
-        const cleaned = cleanApplicatorInput(line.personName);
+        const cleanedBase = cleanApplicatorInput(line.personName);
+        if (!cleanedBase) continue;
+        if (isNoiseName(cleanedBase)) {
+            ignoredNoiseNames.set(cleanedBase, (ignoredNoiseNames.get(cleanedBase) ?? 0) + 1);
+            continue;
+        }
+        const cleaned = resolveInputAlias(cleanedBase);
         if (!cleaned) continue;
         const key = normalizeKey(cleaned);
         const candidates = byName.get(key) ?? [];
         if (candidates.length === 0) {
-            unresolvedNames.set(cleaned, (unresolvedNames.get(cleaned) ?? 0) + 1);
+            unresolvedNames.set(cleanedBase, (unresolvedNames.get(cleanedBase) ?? 0) + 1);
             continue;
         }
         if (candidates.length > 1) {
-            ambiguousNames.set(cleaned, (ambiguousNames.get(cleaned) ?? 0) + 1);
+            ambiguousNames.set(cleanedBase, (ambiguousNames.get(cleanedBase) ?? 0) + 1);
             continue;
         }
 
@@ -203,8 +248,10 @@ async function main() {
         resolvedLines: resolved.length,
         unresolvedCount: unresolvedNames.size,
         ambiguousCount: ambiguousNames.size,
+        ignoredNoiseCount: [...ignoredNoiseNames.values()].reduce((sum, c) => sum + c, 0),
         unresolvedSample: [...unresolvedNames.entries()].slice(0, 20).map(([name, c]) => ({ name, count: c })),
         ambiguousSample: [...ambiguousNames.entries()].slice(0, 20).map(([name, c]) => ({ name, count: c })),
+        ignoredNoiseSample: [...ignoredNoiseNames.entries()].slice(0, 20).map(([name, c]) => ({ name, count: c })),
     };
 
     if (dryRun) {
