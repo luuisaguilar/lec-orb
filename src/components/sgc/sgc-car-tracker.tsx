@@ -48,23 +48,23 @@ export default function SGCCarTracker() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <ShieldAlert className="h-5 w-5 text-rose-500" />
                         Corrective Action Requests (CAR)
                     </h3>
-                    <p className="text-sm text-slate-400">Seguimiento de hallazgos críticos de auditoría.</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Seguimiento de hallazgos críticos de auditoría.</p>
                 </div>
-                <Badge variant="outline" className="bg-slate-900 border-slate-800 text-slate-400">
+                <Badge variant="outline" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                     {openCars.length} Pendientes
                 </Badge>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {cars.slice(0, 6).map((car) => (
-                    <Card key={car.id} className="bg-slate-900/40 border-slate-800/60 hover:border-primary/30 transition-all group">
+                    <Card key={car.id} className="bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 hover:border-primary/30 transition-all group">
                         <CardHeader className="p-4 pb-2">
                             <div className="flex items-start justify-between gap-2">
-                                <Badge variant="outline" className="font-mono text-[10px] border-slate-700 text-primary bg-slate-950/50">
+                                <Badge variant="outline" className="font-mono text-[10px] border-slate-300 dark:border-slate-700 text-primary bg-slate-50 dark:bg-slate-950/50">
                                     {car.car_code}
                                 </Badge>
                                 <Badge className={cn(
@@ -76,22 +76,22 @@ export default function SGCCarTracker() {
                                     {car.status === "open" ? "Abierta" : car.status === "in_progress" ? "En curso" : "Cerrada"}
                                 </Badge>
                             </div>
-                            <CardTitle className="text-sm font-semibold text-white mt-2 group-hover:text-primary transition-colors line-clamp-1">
+                            <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white mt-2 group-hover:text-primary transition-colors line-clamp-1">
                                 {car.finding_title}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0 space-y-3">
-                            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed h-8">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed h-8">
                                 {car.description}
                             </p>
                             
-                            <div className="flex items-center justify-between pt-3 border-t border-slate-800/50">
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                                         <User className="h-3 w-3" />
                                         <span className="truncate max-w-[80px]">{car.owner_name || "Sin asignar"}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                                         <Calendar className="h-3 w-3" />
                                         <span>{car.due_date ? new Date(car.due_date).toLocaleDateString() : "S/F"}</span>
                                     </div>
@@ -105,12 +105,13 @@ export default function SGCCarTracker() {
                 ))}
 
                 {cars.length === 0 && (
-                    <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-white dark:bg-slate-900/20">
                         <CheckCircle2 className="h-8 w-8 text-slate-700 mb-2 opacity-20" />
-                        <p className="text-sm text-slate-500">No hay hallazgos registrados.</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">No hay hallazgos registrados.</p>
                     </div>
                 )}
             </div>
         </div>
     );
 }
+

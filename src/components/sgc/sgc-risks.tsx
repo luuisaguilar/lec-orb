@@ -100,7 +100,7 @@ export default function SGCRisks() {
 
   if (isLoading) {
     return (
-      <div className="h-[480px] flex items-center justify-center text-slate-300">
+      <div className="h-[480px] flex items-center justify-center text-slate-700 dark:text-slate-300">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         Cargando riesgos SGC...
       </div>
@@ -122,15 +122,15 @@ export default function SGCRisks() {
         <RiskStatCard label="Puntos Críticos (NPR > 200)" value={`${stats.critical}`} icon={<ShieldAlert className="text-red-500" />} />
         <RiskStatCard label="Mitigaciones Activas" value={`${stats.active}`} icon={<FileWarning className="text-emerald-400" />} />
         <div className="flex items-center justify-end">
-          <Button variant="outline" size="sm" className="h-10 border-slate-800 text-slate-400">
+          <Button variant="outline" size="sm" className="h-10 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
             <Download className="w-3.5 h-3.5 mr-2" /> Exportar Matriz
           </Button>
         </div>
       </div>
 
-      <Card className="bg-slate-900/50 border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-slate-800/50">
-          <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+      <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+          <CardTitle className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" /> Matriz de Riesgos AMEF
           </CardTitle>
         </CardHeader>
@@ -138,33 +138,33 @@ export default function SGCRisks() {
           <ScrollArea className="h-[500px]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-950/20 border-b border-slate-800/50">
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Proceso</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Falla / Riesgo</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">S</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">O</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">D</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">NPR</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Estatus</th>
+                <tr className="bg-slate-50 dark:bg-slate-950/20 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Proceso</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Falla / Riesgo</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">S</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">O</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">D</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">NPR</th>
+                  <th className="p-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Estatus</th>
                 </tr>
               </thead>
               <tbody>
                 {riskRows.map((risk) => (
-                  <tr key={risk.id} className="border-b border-slate-800/30 hover:bg-white/5 transition-colors">
+                  <tr key={risk.id} className="border-b border-slate-200 dark:border-slate-800/30 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="p-4">
-                      <Badge variant="outline" className="bg-slate-800/50 text-slate-300 border-slate-700 text-[10px]">
+                      <Badge variant="outline" className="bg-slate-100 dark:bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 text-[10px]">
                         {risk.process_title}
                       </Badge>
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">{risk.risk_name}</span>
-                        <span className="text-xs text-slate-400 italic">Mitigación: {risk.mitigation_plan || "Sin plan definido"}</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{risk.risk_name}</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 italic">Mitigación: {risk.mitigation_plan || "Sin plan definido"}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-center text-sm font-mono text-slate-400">{risk.sev}</td>
-                    <td className="p-4 text-center text-sm font-mono text-slate-400">{risk.occ}</td>
-                    <td className="p-4 text-center text-sm font-mono text-slate-400">{risk.det}</td>
+                    <td className="p-4 text-center text-sm font-mono text-slate-600 dark:text-slate-400">{risk.sev}</td>
+                    <td className="p-4 text-center text-sm font-mono text-slate-600 dark:text-slate-400">{risk.occ}</td>
+                    <td className="p-4 text-center text-sm font-mono text-slate-600 dark:text-slate-400">{risk.det}</td>
                     <td className="p-4 text-center">
                       <span
                         className={cn(
@@ -202,16 +202,17 @@ export default function SGCRisks() {
 
 function RiskStatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
+    <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
       <CardContent className="p-4 flex items-center gap-4">
-        <div className="p-2.5 rounded-xl bg-slate-950 shadow-inner">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 shadow-inner">
           {icon}
         </div>
         <div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">{label}</p>
-          <h4 className="text-xl font-bold text-white mt-0.5">{value}</h4>
+          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-tight">{label}</p>
+          <h4 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{value}</h4>
         </div>
       </CardContent>
     </Card>
   );
 }
+

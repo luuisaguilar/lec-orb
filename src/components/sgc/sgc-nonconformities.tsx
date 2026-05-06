@@ -118,12 +118,12 @@ const STATUS_LABEL: Record<NcStatus, string> = {
     cancel: "Cancelada",
 };
 const STATUS_BADGE: Record<NcStatus, string> = {
-    draft: "bg-slate-700 text-slate-100",
-    analysis: "bg-blue-900/70 text-blue-200",
-    pending: "bg-amber-900/70 text-amber-200",
-    open: "bg-indigo-900/70 text-indigo-200",
-    done: "bg-emerald-900/70 text-emerald-200",
-    cancel: "bg-rose-900/70 text-rose-200",
+    draft: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-100",
+    analysis: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
+    pending: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
+    open: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300",
+    done: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
+    cancel: "bg-rose-200 dark:bg-rose-900/70 text-rose-800 dark:text-rose-200",
 };
 
 // Status transitions allowed
@@ -239,21 +239,21 @@ function NcDetailSheet({
         <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
             <SheetContent
                 side="right"
-                className="w-full sm:max-w-2xl bg-slate-950 border-slate-800 text-slate-100 flex flex-col gap-0 p-0"
+                className="w-full sm:max-w-2xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 flex flex-col gap-0 p-0"
             >
                 {isLoading || !nc ? (
-                    <div className="flex-1 flex items-center justify-center text-slate-400">
+                    <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
                         <Loader2 className="h-5 w-5 animate-spin mr-2" />
                         Cargando detalle...
                     </div>
                 ) : (
                     <>
                         {/* Header */}
-                        <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-800/60">
+                        <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800/60">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-1 min-w-0">
-                                    <p className="text-[11px] font-mono text-slate-500">{nc.ref}</p>
-                                    <SheetTitle className="text-lg font-semibold text-white leading-tight">
+                                    <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{nc.ref}</p>
+                                    <SheetTitle className="text-lg font-semibold text-slate-900 dark:text-white leading-tight">
                                         {nc.title || "Sin titulo"}
                                     </SheetTitle>
                                     <div className="flex flex-wrap gap-2 mt-2">
@@ -261,12 +261,12 @@ function NcDetailSheet({
                                             {STATUS_LABEL[nc.status]}
                                         </Badge>
                                         {nc.severity_id && (
-                                            <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-300">
+                                            <Badge variant="outline" className="text-[10px] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                                 {severityMap.get(nc.severity_id) ?? nc.severity_id}
                                             </Badge>
                                         )}
                                         {nc.stage_id && (
-                                            <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-300">
+                                            <Badge variant="outline" className="text-[10px] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                                 {stageMap.get(nc.stage_id) ?? nc.stage_id}
                                             </Badge>
                                         )}
@@ -275,7 +275,7 @@ function NcDetailSheet({
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="border-slate-700 text-slate-200 hover:bg-slate-800"
+                                        className="border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800"
                                         onClick={() => {
                                             if (!nc) return;
                                             exportNcToPdf({
@@ -310,7 +310,7 @@ function NcDetailSheet({
                                         size="sm"
                                         variant="outline"
                                         disabled={!hasPermission("sgc", "edit") || (nc.status === "done" && !isAdmin)}
-                                        className="border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-30"
+                                        className="border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 disabled:opacity-30"
                                         onClick={() => { onClose(); onEdit(nc.id); }}
                                     >
                                         <Pencil className="h-3.5 w-3.5 mr-1.5" />
@@ -334,7 +334,7 @@ function NcDetailSheet({
                                             size="sm"
                                             disabled={transitioning}
                                             onClick={() => transitionStatus(nextStatus)}
-                                            className="bg-primary/90 hover:bg-primary text-white"
+                                            className="bg-primary/90 hover:bg-primary text-slate-900 dark:text-white"
                                         >
                                             {transitioning ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <ArrowRight className="h-3.5 w-3.5 mr-1.5" />}
                                             Avanzar a {STATUS_LABEL[nextStatus]}
@@ -358,31 +358,31 @@ function NcDetailSheet({
                             <div className="px-6 py-5 space-y-6">
                                 {/* Description */}
                                 <section className="space-y-1.5">
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Descripcion</p>
-                                    <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{nc.description}</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Descripcion</p>
+                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{nc.description}</p>
                                 </section>
 
                                 {/* Analysis / Plan / Eval */}
                                 {(nc.analysis || nc.action_plan_comments || nc.evaluation_comments) && (
                                     <>
-                                        <Separator className="bg-slate-800/60" />
+                                        <Separator className="bg-slate-100 dark:bg-slate-800/60" />
                                         <div className="grid gap-4 sm:grid-cols-3">
                                             {nc.analysis && (
                                                 <section className="space-y-1.5">
-                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Analisis</p>
-                                                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.analysis}</p>
+                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Analisis</p>
+                                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.analysis}</p>
                                                 </section>
                                             )}
                                             {nc.action_plan_comments && (
                                                 <section className="space-y-1.5">
-                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Plan de Accion</p>
-                                                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.action_plan_comments}</p>
+                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Plan de Accion</p>
+                                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.action_plan_comments}</p>
                                                 </section>
                                             )}
                                             {nc.evaluation_comments && (
                                                 <section className="space-y-1.5">
-                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Evaluacion de Cierre</p>
-                                                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.evaluation_comments}</p>
+                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Evaluacion de Cierre</p>
+                                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{nc.evaluation_comments}</p>
                                                 </section>
                                             )}
                                         </div>
@@ -392,14 +392,14 @@ function NcDetailSheet({
                                 {/* Origins + Causes */}
                                 {((nc.origin_ids?.length ?? 0) > 0 || (nc.cause_ids?.length ?? 0) > 0) && (
                                     <>
-                                        <Separator className="bg-slate-800/60" />
+                                        <Separator className="bg-slate-100 dark:bg-slate-800/60" />
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             {(nc.origin_ids?.length ?? 0) > 0 && (
                                                 <section className="space-y-2">
-                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Origenes</p>
+                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Origenes</p>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {nc.origin_ids!.map((id) => (
-                                                            <Badge key={id} variant="outline" className="text-[10px] border-slate-700 text-slate-300">
+                                                            <Badge key={id} variant="outline" className="text-[10px] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                                                 {originMap.get(id) ?? id}
                                                             </Badge>
                                                         ))}
@@ -408,10 +408,10 @@ function NcDetailSheet({
                                             )}
                                             {(nc.cause_ids?.length ?? 0) > 0 && (
                                                 <section className="space-y-2">
-                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Causas</p>
+                                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Causas</p>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {nc.cause_ids!.map((id) => (
-                                                            <Badge key={id} variant="outline" className="text-[10px] border-slate-700 text-slate-300">
+                                                            <Badge key={id} variant="outline" className="text-[10px] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                                                 {causeMap.get(id) ?? id}
                                                             </Badge>
                                                         ))}
@@ -425,27 +425,27 @@ function NcDetailSheet({
                                 {/* Linked actions */}
                                 {(nc.action_links?.length ?? 0) > 0 && (
                                     <>
-                                        <Separator className="bg-slate-800/60" />
+                                        <Separator className="bg-slate-100 dark:bg-slate-800/60" />
                                         <section className="space-y-2">
-                                            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Acciones CAPA vinculadas</p>
+                                            <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">Acciones CAPA vinculadas</p>
                                             <div className="space-y-2">
                                                 {nc.action_links!.map((link) => {
                                                     const action = actionMap.get(link.action_id);
                                                     return (
-                                                        <div key={link.action_id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                                                        <div key={link.action_id} className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 px-3 py-2">
                                                             <div className="space-y-0.5 min-w-0">
-                                                                <p className="text-[11px] font-mono text-slate-500">{action?.ref ?? link.action_id.slice(0, 8)}</p>
-                                                                <p className="text-xs text-slate-200 truncate">{action?.title ?? "Accion"}</p>
+                                                                <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{action?.ref ?? link.action_id.slice(0, 8)}</p>
+                                                                <p className="text-xs text-slate-800 dark:text-slate-200 truncate">{action?.title ?? "Accion"}</p>
                                                             </div>
                                                             <div className="flex items-center gap-2 shrink-0 ml-3">
-                                                                <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-400 capitalize">
+                                                                <Badge variant="outline" className="text-[10px] border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 capitalize">
                                                                     {link.relation_type}
                                                                 </Badge>
                                                                 {action && (
                                                                     <Badge className={cn("text-[10px] border-none",
                                                                         action.status === "done" ? "bg-emerald-900/70 text-emerald-200" :
                                                                         action.status === "cancel" ? "bg-rose-900/70 text-rose-200" :
-                                                                        "bg-slate-700 text-slate-200"
+                                                                        "bg-slate-700 text-slate-800 dark:text-slate-200"
                                                                     )}>
                                                                         {action.status}
                                                                     </Badge>
@@ -459,9 +459,9 @@ function NcDetailSheet({
                                     </>
                                 )}
 
-                                <Separator className="bg-slate-800/60" />
+                                <Separator className="bg-slate-100 dark:bg-slate-800/60" />
                                 <section className="space-y-3">
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">
                                         Evidencias de la no conformidad
                                     </p>
                                     {hasPermission("sgc", "edit") && (
@@ -482,8 +482,8 @@ function NcDetailSheet({
                                 </section>
 
                                 {/* Meta */}
-                                <Separator className="bg-slate-800/60" />
-                                <div className="grid grid-cols-2 gap-3 text-xs text-slate-400">
+                                <Separator className="bg-slate-100 dark:bg-slate-800/60" />
+                                <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-400">
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest text-slate-600">Creado</p>
                                         <p className="mt-0.5">{toLocalDateTime(nc.created_at)}</p>
@@ -497,13 +497,13 @@ function NcDetailSheet({
                                 {/* Timeline */}
                                 {timeline.length > 0 && (
                                     <>
-                                        <Separator className="bg-slate-800/60" />
+                                        <Separator className="bg-slate-100 dark:bg-slate-800/60" />
                                         <section className="space-y-3">
-                                            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold flex items-center gap-1.5">
+                                            <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
                                                 <Clock className="h-3.5 w-3.5" />
                                                 Historial de cambios
                                             </p>
-                                            <div className="relative space-y-0 pl-4 border-l border-slate-800">
+                                            <div className="relative space-y-0 pl-4 border-l border-slate-200 dark:border-slate-800">
                                                 {timeline.map((entry) => {
                                                     const statusChange = getStatusChange(entry);
                                                     const label =
@@ -517,15 +517,15 @@ function NcDetailSheet({
                                                         ? <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                                                         : statusChange?.includes("Cancelada")
                                                         ? <XCircle className="h-3 w-3 text-rose-400" />
-                                                        : <Pencil className="h-3 w-3 text-slate-400" />;
+                                                        : <Pencil className="h-3 w-3 text-slate-600 dark:text-slate-400" />;
                                                     return (
                                                         <div key={entry.id} className="relative pb-4 last:pb-0">
-                                                            <span className="absolute -left-[17px] top-0 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 ring-1 ring-slate-800">
+                                                            <span className="absolute -left-[17px] top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-slate-800">
                                                                 {icon}
                                                             </span>
                                                             <div className="ml-2">
-                                                                <p className="text-xs text-slate-200 font-medium">{label}</p>
-                                                                <p className="text-[11px] text-slate-500 mt-0.5">{toLocalDateTime(entry.created_at)}</p>
+                                                                <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">{label}</p>
+                                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{toLocalDateTime(entry.created_at)}</p>
                                                             </div>
                                                         </div>
                                                     );
@@ -617,7 +617,7 @@ export default function SGCNonconformities() {
     // This MUST be after all hooks to follow the Rules of Hooks
     if (userLoading) {
         return (
-            <div className="flex items-center justify-center h-64 text-slate-500">
+            <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400">
                 <Loader2 className="w-6 h-6 animate-spin mr-2" />
                 Validando permisos...
             </div>
@@ -754,14 +754,14 @@ export default function SGCNonconformities() {
         <div className="space-y-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold text-white">No Conformidades</h3>
-                    <p className="text-sm text-slate-400">Gestion diaria de hallazgos, analisis y cierre CAPA.</p>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No Conformidades</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Gestion diaria de hallazgos, analisis y cierre CAPA.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant={view === "table" ? "default" : "outline"}
                         size="sm"
-                        className="border-slate-700"
+                        className="border-slate-300 dark:border-slate-700"
                         onClick={() => setView("table")}
                     >
                         <LayoutList className="h-4 w-4 mr-2" />
@@ -770,7 +770,7 @@ export default function SGCNonconformities() {
                     <Button
                         variant={view === "kanban" ? "default" : "outline"}
                         size="sm"
-                        className="border-slate-700"
+                        className="border-slate-300 dark:border-slate-700"
                         onClick={() => setView("kanban")}
                     >
                         <KanbanSquare className="h-4 w-4 mr-2" />
@@ -791,14 +791,14 @@ export default function SGCNonconformities() {
                     <Card
                         key={status}
                         className={cn(
-                            "bg-slate-900/50 border-slate-800 cursor-pointer transition-colors hover:border-slate-700",
+                            "bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 cursor-pointer transition-colors hover:border-slate-300 dark:border-slate-700",
                             statusFilter === status && "ring-1 ring-primary/60",
                         )}
                         onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}
                     >
                         <CardContent className="p-3">
-                            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{STATUS_LABEL[status]}</p>
-                            <p className="text-2xl font-bold text-white mt-1">{counters[status] ?? 0}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">{STATUS_LABEL[status]}</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{counters[status] ?? 0}</p>
                         </CardContent>
                     </Card>
                 ))}
@@ -807,16 +807,16 @@ export default function SGCNonconformities() {
             {/* Search bar */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div className="relative w-full lg:max-w-sm">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                     <Input
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        className="pl-9 bg-slate-900/50 border-slate-700"
+                        className="pl-9 bg-white dark:bg-slate-900/50 border-slate-300 dark:border-slate-700"
                         placeholder="Buscar por ref, titulo o descripcion..."
                     />
                 </div>
                 {statusFilter !== "all" && (
-                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setStatusFilter("all")}>
+                    <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white" onClick={() => setStatusFilter("all")}>
                         <XCircle className="h-3.5 w-3.5 mr-1.5" />
                         Limpiar filtro
                     </Button>
@@ -825,14 +825,14 @@ export default function SGCNonconformities() {
 
             {/* Table / Kanban */}
             {isLoading ? (
-                <div className="h-64 flex items-center justify-center text-slate-400">
+                <div className="h-64 flex items-center justify-center text-slate-600 dark:text-slate-400">
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     Cargando no conformidades...
                 </div>
             ) : view === "table" ? (
-                <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
-                    <CardHeader className="pb-3 border-b border-slate-800/60">
-                        <CardTitle className="text-sm uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800/60">
+                        <CardTitle className="text-sm uppercase tracking-widest text-slate-600 dark:text-slate-400 flex items-center gap-2">
                             <ClipboardList className="h-4 w-4 text-primary" />
                             Registro de No Conformidades
                         </CardTitle>
@@ -840,21 +840,21 @@ export default function SGCNonconformities() {
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-950/40 border-b border-slate-800/60">
+                                <thead className="bg-slate-50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/60">
                                     <tr>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Ref</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Titulo</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Etapa</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Severidad</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Estatus</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Actualizado</th>
-                                        <th className="px-3 py-2.5 text-right text-[10px] uppercase tracking-widest text-slate-500">Acciones</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Ref</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Titulo</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Etapa</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Severidad</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Estatus</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Actualizado</th>
+                                        <th className="px-3 py-2.5 text-right text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.length === 0 && (
                                         <tr>
-                                            <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                                            <td colSpan={7} className="px-3 py-8 text-center text-slate-500 dark:text-slate-400">
                                                 Sin no conformidades para los filtros actuales.
                                             </td>
                                         </tr>
@@ -862,30 +862,30 @@ export default function SGCNonconformities() {
                                     {items.map((item) => (
                                         <tr
                                             key={item.id}
-                                            className="border-b border-slate-800/40 hover:bg-white/5 cursor-pointer"
+                                            className="border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer"
                                             onClick={() => openDetail(item.id)}
                                         >
-                                            <td className="px-3 py-2.5 font-mono text-xs text-slate-300">{item.ref}</td>
+                                            <td className="px-3 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-300">{item.ref}</td>
                                             <td className="px-3 py-2.5">
                                                 <div className="space-y-1">
-                                                    <p className="font-semibold text-slate-100">{item.title || "Sin titulo"}</p>
-                                                    <p className="text-xs text-slate-400 line-clamp-2">{item.description}</p>
+                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">{item.title || "Sin titulo"}</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{item.description}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2.5 text-slate-300 text-xs">{stageMap.get(item.stage_id || "") ?? "—"}</td>
-                                            <td className="px-3 py-2.5 text-slate-300 text-xs">{severityMap.get(item.severity_id || "") ?? "—"}</td>
+                                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300 text-xs">{stageMap.get(item.stage_id || "") ?? "—"}</td>
+                                            <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300 text-xs">{severityMap.get(item.severity_id || "") ?? "—"}</td>
                                             <td className="px-3 py-2.5">
                                                 <Badge className={cn("text-[10px] border-none", STATUS_BADGE[item.status])}>
                                                     {STATUS_LABEL[item.status]}
                                                 </Badge>
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-400">{toLocalDate(item.updated_at)}</td>
+                                            <td className="px-3 py-2.5 text-xs text-slate-600 dark:text-slate-400">{toLocalDate(item.updated_at)}</td>
                                             <td className="px-3 py-2.5">
                                                 <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                                                     <Button
                                                         size="icon"
                                                         variant="ghost"
-                                                        className="h-8 w-8 text-slate-400 hover:text-white"
+                                                        className="h-8 w-8 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white"
                                                         onClick={() => openDetail(item.id)}
                                                     >
                                                         <Eye className="h-4 w-4" />
@@ -945,16 +945,16 @@ export default function SGCNonconformities() {
 
             {/* Edit Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-5xl bg-slate-950 border-slate-800 text-slate-100">
+                <DialogContent className="max-w-5xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
                     <DialogHeader>
                         <DialogTitle>{editingId ? "Editar No Conformidad" : "Nueva No Conformidad"}</DialogTitle>
-                        <DialogDescription className="text-slate-400">
+                        <DialogDescription className="text-slate-600 dark:text-slate-400">
                             Define el hallazgo, su analisis y los vinculos CAPA para seguimiento.
                         </DialogDescription>
                     </DialogHeader>
 
                     {loadingDetails ? (
-                        <div className="h-40 flex items-center justify-center text-slate-400">
+                        <div className="h-40 flex items-center justify-center text-slate-600 dark:text-slate-400">
                             <Loader2 className="h-5 w-5 animate-spin mr-2" />
                             Cargando detalle...
                         </div>
@@ -969,7 +969,7 @@ export default function SGCNonconformities() {
                                             <FormItem>
                                                 <FormLabel>Titulo</FormLabel>
                                                 <FormControl>
-                                                    <Input {...field} value={field.value ?? ""} className="bg-slate-900/60 border-slate-700" />
+                                                    <Input {...field} value={field.value ?? ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -982,7 +982,7 @@ export default function SGCNonconformities() {
                                             <FormItem>
                                                 <FormLabel>Descripcion</FormLabel>
                                                 <FormControl>
-                                                    <Textarea {...field} value={field.value ?? ""} className="bg-slate-900/60 border-slate-700 min-h-[88px]" />
+                                                    <Textarea {...field} value={field.value ?? ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 min-h-[88px]" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -999,7 +999,7 @@ export default function SGCNonconformities() {
                                                 <FormLabel>Etapa</FormLabel>
                                                 <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Selecciona etapa" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -1021,7 +1021,7 @@ export default function SGCNonconformities() {
                                                 <FormLabel>Severidad</FormLabel>
                                                 <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Selecciona severidad" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -1045,7 +1045,7 @@ export default function SGCNonconformities() {
                                             <FormItem>
                                                 <FormLabel>Analisis</FormLabel>
                                                 <FormControl>
-                                                    <Textarea {...field} value={field.value ?? ""} className="bg-slate-900/60 border-slate-700 min-h-[100px]" />
+                                                    <Textarea {...field} value={field.value ?? ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 min-h-[100px]" />
                                                 </FormControl>
                                             </FormItem>
                                         )}
@@ -1057,7 +1057,7 @@ export default function SGCNonconformities() {
                                             <FormItem>
                                                 <FormLabel>Plan de Accion</FormLabel>
                                                 <FormControl>
-                                                    <Textarea {...field} value={field.value ?? ""} className="bg-slate-900/60 border-slate-700 min-h-[100px]" />
+                                                    <Textarea {...field} value={field.value ?? ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 min-h-[100px]" />
                                                 </FormControl>
                                             </FormItem>
                                         )}
@@ -1069,7 +1069,7 @@ export default function SGCNonconformities() {
                                             <FormItem>
                                                 <FormLabel>Evaluacion de cierre</FormLabel>
                                                 <FormControl>
-                                                    <Textarea {...field} value={field.value ?? ""} className="bg-slate-900/60 border-slate-700 min-h-[100px]" />
+                                                    <Textarea {...field} value={field.value ?? ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 min-h-[100px]" />
                                                 </FormControl>
                                             </FormItem>
                                         )}
@@ -1077,20 +1077,20 @@ export default function SGCNonconformities() {
                                 </div>
 
                                 <div className="grid gap-4 lg:grid-cols-3">
-                                    <Card className="bg-slate-900/40 border-slate-800">
+                                    <Card className="bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">Origenes</CardTitle>
+                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-600 dark:text-slate-400">Origenes</CardTitle>
                                         </CardHeader>
                                         <CardContent className="pt-0">
                                             <ScrollArea className="h-40 pr-2">
                                                 <div className="space-y-2">
                                                     {origins.map((origin) => (
-                                                        <label key={origin.id} className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                        <label key={origin.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedOriginIds.includes(origin.id)}
                                                                 onChange={() => toggleSelection("origin_ids", origin.id)}
-                                                                className="h-4 w-4 rounded border-slate-600 bg-slate-900"
+                                                                className="h-4 w-4 rounded border-slate-600 bg-white dark:bg-slate-900"
                                                             />
                                                             <span>{origin.name}</span>
                                                         </label>
@@ -1099,20 +1099,20 @@ export default function SGCNonconformities() {
                                             </ScrollArea>
                                         </CardContent>
                                     </Card>
-                                    <Card className="bg-slate-900/40 border-slate-800">
+                                    <Card className="bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">Causas</CardTitle>
+                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-600 dark:text-slate-400">Causas</CardTitle>
                                         </CardHeader>
                                         <CardContent className="pt-0">
                                             <ScrollArea className="h-40 pr-2">
                                                 <div className="space-y-2">
                                                     {causes.map((cause) => (
-                                                        <label key={cause.id} className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                        <label key={cause.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedCauseIds.includes(cause.id)}
                                                                 onChange={() => toggleSelection("cause_ids", cause.id)}
-                                                                className="h-4 w-4 rounded border-slate-600 bg-slate-900"
+                                                                className="h-4 w-4 rounded border-slate-600 bg-white dark:bg-slate-900"
                                                             />
                                                             <span>{cause.name}</span>
                                                         </label>
@@ -1121,20 +1121,20 @@ export default function SGCNonconformities() {
                                             </ScrollArea>
                                         </CardContent>
                                     </Card>
-                                    <Card className="bg-slate-900/40 border-slate-800">
+                                    <Card className="bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-400">Acciones vinculadas</CardTitle>
+                                            <CardTitle className="text-xs uppercase tracking-widest text-slate-600 dark:text-slate-400">Acciones vinculadas</CardTitle>
                                         </CardHeader>
                                         <CardContent className="pt-0">
                                             <ScrollArea className="h-40 pr-2">
                                                 <div className="space-y-2">
                                                     {actions.map((action) => (
-                                                        <label key={action.id} className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                        <label key={action.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedActionIds.includes(action.id)}
                                                                 onChange={() => toggleSelection("action_ids", action.id)}
-                                                                className="h-4 w-4 rounded border-slate-600 bg-slate-900"
+                                                                className="h-4 w-4 rounded border-slate-600 bg-white dark:bg-slate-900"
                                                             />
                                                             <span className="truncate">
                                                                 {action.ref} · {action.title}
@@ -1162,8 +1162,8 @@ export default function SGCNonconformities() {
                 </DialogContent>
             </Dialog>
 
-            <Card className="bg-slate-900/40 border-slate-800">
-                <CardContent className="p-4 text-xs text-slate-400 flex gap-2 items-start">
+            <Card className="bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
+                <CardContent className="p-4 text-xs text-slate-600 dark:text-slate-400 flex gap-2 items-start">
                     <ShieldAlert className="w-4 h-4 mt-0.5 text-amber-400" />
                     <span>
                         El cierre de NC depende de reglas de DB: requiere evaluacion final y acciones vinculadas en estado done.
@@ -1173,3 +1173,4 @@ export default function SGCNonconformities() {
         </div>
     );
 }
+

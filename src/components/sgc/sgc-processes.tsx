@@ -35,7 +35,7 @@ export default function SGCProcesses() {
       if (!diagramRef.current || !selectedProcess.mermaidCode) return;
       
       const node = diagramRef.current;
-      node.innerHTML = '<div class="flex items-center justify-center h-40 text-slate-500 text-sm"><Loader2 class="w-4 h-4 animate-spin mr-2" /> Renderizando diagrama...</div>';
+      node.innerHTML = '<div class="flex items-center justify-center h-40 text-slate-500 dark:text-slate-400 text-sm"><Loader2 class="w-4 h-4 animate-spin mr-2" /> Renderizando diagrama...</div>';
 
       try {
         mermaid.initialize({
@@ -71,7 +71,7 @@ export default function SGCProcesses() {
         console.error("Mermaid render error:", error);
         if (isMounted && node) {
           node.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-8 text-slate-500">
+            <div class="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
               <AlertCircle class="w-8 h-8 mb-2 text-slate-700" />
               <p class="text-xs text-center">No se pudo renderizar el diagrama.</p>
               <p class="text-[10px] mt-1 opacity-50 font-mono">${selectedProcess.id}</p>
@@ -93,7 +93,7 @@ export default function SGCProcesses() {
       {/* Sidebar List */}
       <div className="w-full lg:w-80 space-y-3">
         <div className="px-1 mb-2">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mapa de Procesos</h3>
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Mapa de Procesos</h3>
         </div>
         <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="space-y-1.5 pr-4">
@@ -105,13 +105,13 @@ export default function SGCProcesses() {
                   "w-full text-left p-3 rounded-xl border transition-all group relative overflow-hidden",
                   selectedId === process.id 
                     ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                    : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-600 hover:bg-slate-800"
+                    : "bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-600 hover:bg-slate-100 dark:bg-slate-800"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "p-2 rounded-lg transition-colors",
-                    selectedId === process.id ? "bg-white/20" : "bg-slate-800 group-hover:bg-slate-700"
+                    selectedId === process.id ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-700"
                   )}>
                     <Workflow className="w-4 h-4" />
                   </div>
@@ -141,12 +141,12 @@ export default function SGCProcesses() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Mermaid Diagram */}
-          <Card className="xl:col-span-2 bg-slate-900/50 border-slate-800 shadow-2xl relative overflow-hidden group">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-800/50">
-              <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <Card className="xl:col-span-2 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-2xl relative overflow-hidden group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+              <CardTitle className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Workflow className="w-4 h-4 text-primary" /> Diagrama de Flujo
               </CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">
                 <Maximize2 className="h-4 w-4" />
               </Button>
             </CardHeader>
@@ -160,16 +160,16 @@ export default function SGCProcesses() {
 
           {/* Docs & Risks */}
           <div className="space-y-6">
-            <Card className="bg-slate-900/50 border-slate-800">
+            <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-400" /> Documentación
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {selectedProcess.documents.split('\n').map((doc, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-colors">
-                    <span className="text-xs text-slate-300 truncate max-w-[180px]">{doc}</span>
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:border-slate-700 transition-colors">
+                    <span className="text-xs text-slate-700 dark:text-slate-300 truncate max-w-[180px]">{doc}</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-primary">
                       <FileText className="h-3 w-3" />
                     </Button>
@@ -178,9 +178,9 @@ export default function SGCProcesses() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/50 border-slate-800">
+            <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-red-400" /> Riesgos Críticos
                 </CardTitle>
               </CardHeader>
@@ -194,14 +194,14 @@ export default function SGCProcesses() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/50 border-slate-800 border-dashed">
+            <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 border-dashed">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-400" /> Oportunidades
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-slate-400 italic">&ldquo;{selectedProcess.improvements}&rdquo;</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 italic">&ldquo;{selectedProcess.improvements}&rdquo;</p>
               </CardContent>
             </Card>
           </div>
@@ -213,16 +213,17 @@ export default function SGCProcesses() {
 
 function DetailCard({ icon, title, content }: { icon: React.ReactNode, title: string, content: string }) {
   return (
-    <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors group">
+    <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:border-slate-700 transition-colors group">
       <CardContent className="p-4 flex gap-3">
-        <div className="p-2 rounded-xl bg-slate-950 group-hover:scale-110 transition-transform">
+        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 group-hover:scale-110 transition-transform">
           {icon}
         </div>
         <div className="overflow-hidden">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-          <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{content}</p>
+          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{title}</p>
+          <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">{content}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
+

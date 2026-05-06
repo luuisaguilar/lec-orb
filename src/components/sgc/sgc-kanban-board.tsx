@@ -110,8 +110,8 @@ function SortableNcCard({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "w-full text-left rounded-xl border border-slate-800 bg-slate-950/40 backdrop-blur-md p-3.5 hover:border-primary/40 transition-all group relative overflow-hidden",
-                isOverlay && "rotate-3 scale-105 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-primary/50 bg-slate-900 z-50 cursor-grabbing"
+                "w-full text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 backdrop-blur-md p-3.5 hover:border-primary/40 transition-all group relative overflow-hidden",
+                isOverlay && "rotate-3 scale-105 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-primary/50 bg-white dark:bg-slate-900 z-50 cursor-grabbing"
             )}
         >
             {/* Subtle Gradient Glow */}
@@ -127,7 +127,7 @@ function SortableNcCard({
                         <GripVertical className="h-4 w-4" />
                     </div>
                     <div className="flex flex-col">
-                        <p className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">{item.ref}</p>
+                        <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-tighter">{item.ref}</p>
                     </div>
                 </div>
                 <button
@@ -135,17 +135,17 @@ function SortableNcCard({
                         e.stopPropagation();
                         onDetail(item.id);
                     }}
-                    className="p-1.5 rounded-lg bg-slate-800/50 hover:bg-primary hover:text-white text-slate-400 transition-all"
+                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-100 dark:bg-slate-800/50 hover:bg-primary hover:text-slate-900 dark:text-white text-slate-600 dark:text-slate-400 transition-all"
                 >
                     <Eye className="h-3.5 w-3.5" />
                 </button>
             </div>
 
-            <p className="text-sm font-bold text-slate-100 mt-2.5 line-clamp-2 group-hover:text-white transition-colors">
+            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-2.5 line-clamp-2 group-hover:text-slate-900 dark:text-white transition-colors">
                 {item.title || "Sin título"}
             </p>
             
-            <p className="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
                 {item.description}
             </p>
 
@@ -157,7 +157,7 @@ function SortableNcCard({
                         </Badge>
                     )}
                 </div>
-                <div className="flex items-center gap-1 text-[9px] text-slate-500 font-medium">
+                <div className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400 font-medium">
                     <Clock className="h-3 w-3 opacity-70" />
                     {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true, locale: es })}
                 </div>
@@ -186,14 +186,14 @@ function KanbanColumn({
     severityMap: Map<string, string>;
 }) {
     return (
-        <Card className="bg-slate-900/30 border-slate-800/50 backdrop-blur-xl flex flex-col h-[calc(100vh-320px)] min-h-[550px] shadow-inner">
-            <CardHeader className="p-4 border-b border-slate-800/40 shrink-0 bg-slate-950/20">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center justify-between">
+        <Card className="bg-white dark:bg-slate-900/30 border-slate-200 dark:border-slate-200 dark:border-slate-800/50 backdrop-blur-xl flex flex-col h-[calc(100vh-320px)] min-h-[550px] shadow-inner">
+            <CardHeader className="p-4 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/40 shrink-0 bg-slate-50 dark:bg-slate-950/20">
+                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                     <span className="flex items-center gap-2">
                         <div className={cn("h-1.5 w-1.5 rounded-full", statusBadges[id].split(" ")[1] || "bg-primary")} />
                         {title}
                     </span>
-                    <Badge variant="secondary" className="bg-slate-800/50 text-slate-400 text-[10px] font-mono px-2 h-5 border-none">
+                    <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[10px] font-mono px-2 h-5 border-none">
                         {count.toString().padStart(2, '0')}
                     </Badge>
                 </CardTitle>
@@ -210,8 +210,8 @@ function KanbanColumn({
                             />
                         ))}
                         {items.length === 0 && (
-                            <div className="h-32 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800/50 bg-slate-900/10 group transition-all hover:bg-slate-900/20">
-                                <Sparkles className="h-5 w-5 text-slate-700 mb-2 group-hover:text-slate-500 transition-colors" />
+                            <div className="h-32 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900/10 group transition-all hover:bg-slate-50 dark:bg-white dark:bg-slate-900/20">
+                                <Sparkles className="h-5 w-5 text-slate-700 mb-2 group-hover:text-slate-500 dark:text-slate-400 transition-colors" />
                                 <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">Sin Pendientes</p>
                             </div>
                         )}
@@ -329,3 +329,4 @@ export default function SGCKanbanBoard({
         </DndContext>
     );
 }
+

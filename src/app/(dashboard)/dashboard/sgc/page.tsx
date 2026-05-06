@@ -37,7 +37,7 @@ export default function SGCDashboardPage() {
 
       <Tabs defaultValue="metrics" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-4 overflow-x-auto">
-          <TabsList className="bg-slate-900/40 border border-slate-800/60 p-1 h-auto min-w-max flex-nowrap backdrop-blur-sm shadow-inner">
+          <TabsList className="bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 p-1 h-auto min-w-max flex-nowrap backdrop-blur-sm shadow-inner">
             <TabsTrigger 
               value="metrics" 
               className="h-auto min-h-10 shrink-0 whitespace-nowrap leading-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 border border-transparent transition-all px-4 py-2.5 relative group"
@@ -147,3 +147,4 @@ export default function SGCDashboardPage() {
     </div>
   );
 }
+
