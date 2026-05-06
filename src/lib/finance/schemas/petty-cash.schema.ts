@@ -32,7 +32,7 @@ export const PettyCashMovementSchema = z.object({
     amount_out: z.number().min(0).default(0),
     receipt_url: z.string().optional().nullable(),
     status: z.enum(["posted", "cancelled"]).default("posted"),
-    metadata: z.record(z.any()).optional().default({}),
+    metadata: z.record(z.string(), z.unknown()).optional().default({}),
 }).refine(data => {
     // Exact only one > 0
     return (data.amount_in > 0 && data.amount_out === 0) || (data.amount_in === 0 && data.amount_out > 0);

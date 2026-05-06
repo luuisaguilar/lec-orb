@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getIcon } from "@/lib/icon-registry";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,107 +302,109 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <nav className={cn("h-full min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-1", className)}>
-            {navGroups.map((group, idx) => {
-                const GroupIcon = getIcon(group.icon);
+        <ScrollArea className={cn("h-full min-h-0", className)}>
+            <nav className="flex flex-col gap-1 pr-3">
+                {navGroups.map((group, idx) => {
+                    const GroupIcon = getIcon(group.icon);
 
-                // Single item with no category label — renders as a direct Link
-                if (!group.label && group.items.length === 1) {
-                    const item = group.items[0];
-                    const ItemIcon = getIcon(item.icon);
-                    const isActive =
-                        item.href === "/dashboard"
-                            ? pathname === "/dashboard"
-                            : pathname.startsWith(item.href);
+                    // Single item with no category label — renders as a direct Link
+                    if (!group.label && group.items.length === 1) {
+                        const item = group.items[0];
+                        const ItemIcon = getIcon(item.icon);
+                        const isActive =
+                            item.href === "/dashboard"
+                                ? pathname === "/dashboard"
+                                : pathname.startsWith(item.href);
 
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            title={isCollapsed ? item.label : undefined}
-                            className={cn(
-                                "group flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all",
-                                isCollapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-3",
-                                "hover:bg-accent hover:text-accent-foreground",
-                                isActive
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground"
-                            )}
-                        >
-                            <ItemIcon className={cn(
-                                "shrink-0 transition-transform duration-300",
-                                isCollapsed ? "h-5 w-5" : "h-4 w-4",
-                                "group-hover:scale-125 group-hover:rotate-6",
-                                isActive && "animate-pulse-once",
-                            )} />
-                            {!isCollapsed && <span className="truncate">{item.label}</span>}
-                        </Link>
-                    );
-                }
-
-                // Group with collapsible children
-                const isAnyChildActive = group.items.some((i) =>
-                    i.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(i.href)
-                );
-
-                return (
-                    <Collapsible key={`${group.label}-${idx}`} defaultOpen={isAnyChildActive} className="w-full">
-                        <CollapsibleTrigger asChild>
-                            <button
-                                title={isCollapsed ? (group.label ?? group.items[0]?.label) : undefined}
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                title={isCollapsed ? item.label : undefined}
                                 className={cn(
-                                    "flex w-full items-center justify-between rounded-lg py-2 text-sm font-medium transition-all group",
-                                    isCollapsed ? "px-0 h-10 w-10 mx-auto justify-center" : "px-3 gap-3",
-                                    "hover:bg-accent hover:text-accent-foreground text-muted-foreground",
-                                    isAnyChildActive && "text-foreground font-semibold"
+                                    "group flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all",
+                                    isCollapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-3",
+                                    "hover:bg-accent hover:text-accent-foreground",
+                                    isActive
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground"
                                 )}
                             >
-                                <div className="flex items-center gap-3">
-                                    <GroupIcon className={cn(
-                                        "shrink-0 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-6",
-                                        isCollapsed ? "h-5 w-5" : "h-4 w-4",
-                                    )} />
-                                    {!isCollapsed && (
-                                        <span className="truncate">{group.label ?? group.items[0]?.label}</span>
+                                <ItemIcon className={cn(
+                                    "shrink-0 transition-transform duration-300",
+                                    isCollapsed ? "h-5 w-5" : "h-4 w-4",
+                                    "group-hover:scale-125 group-hover:rotate-6",
+                                    isActive && "animate-pulse-once",
+                                )} />
+                                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                            </Link>
+                        );
+                    }
+
+                    // Group with collapsible children
+                    const isAnyChildActive = group.items.some((i) =>
+                        i.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(i.href)
+                    );
+
+                    return (
+                        <Collapsible key={`${group.label}-${idx}`} defaultOpen={isAnyChildActive} className="w-full">
+                            <CollapsibleTrigger asChild>
+                                <button
+                                    title={isCollapsed ? (group.label ?? group.items[0]?.label) : undefined}
+                                    className={cn(
+                                        "flex w-full items-center justify-between rounded-lg py-2 text-sm font-medium transition-all group",
+                                        isCollapsed ? "px-0 h-10 w-10 mx-auto justify-center" : "px-3 gap-3",
+                                        "hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+                                        isAnyChildActive && "text-foreground font-semibold"
                                     )}
-                                </div>
-                                {!isCollapsed && (
-                                    <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                )}
-                            </button>
-                        </CollapsibleTrigger>
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <GroupIcon className={cn(
+                                            "shrink-0 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-6",
+                                            isCollapsed ? "h-5 w-5" : "h-4 w-4",
+                                        )} />
+                                        {!isCollapsed && (
+                                            <span className="truncate">{group.label ?? group.items[0]?.label}</span>
+                                        )}
+                                    </div>
+                                    {!isCollapsed && (
+                                        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                    )}
+                                </button>
+                            </CollapsibleTrigger>
 
-                        {!isCollapsed && (
-                            <CollapsibleContent className="space-y-1 px-3 pt-1 pb-2">
-                                {group.items.map((item) => {
-                                    const SubIcon = getIcon(item.icon);
-                                    const isActive =
-                                        item.href === "/dashboard"
-                                            ? pathname === "/dashboard"
-                                            : pathname.startsWith(item.href);
+                            {!isCollapsed && (
+                                <CollapsibleContent className="space-y-1 px-3 pt-1 pb-2">
+                                    {group.items.map((item) => {
+                                        const SubIcon = getIcon(item.icon);
+                                        const isActive =
+                                            item.href === "/dashboard"
+                                                ? pathname === "/dashboard"
+                                                : pathname.startsWith(item.href);
 
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            className={cn(
-                                                "group/sub flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                                                "hover:bg-accent hover:text-accent-foreground",
-                                                isActive
-                                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                                    : "text-muted-foreground"
-                                            )}
-                                        >
-                                            <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:rotate-6" />
-                                            <span className="truncate">{item.label}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </CollapsibleContent>
-                        )}
-                    </Collapsible>
-                );
-            })}
-        </nav>
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={cn(
+                                                    "group/sub flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                                                    "hover:bg-accent hover:text-accent-foreground",
+                                                    isActive
+                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                        : "text-muted-foreground"
+                                                )}
+                                            >
+                                                <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:rotate-6" />
+                                                <span className="truncate">{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </CollapsibleContent>
+                            )}
+                        </Collapsible>
+                    );
+                })}
+            </nav>
+        </ScrollArea>
     );
 }

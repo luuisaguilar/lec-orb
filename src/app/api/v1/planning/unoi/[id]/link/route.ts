@@ -19,12 +19,13 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
     const body = await req.json().catch(() => ({}));
     const createIfMissing = Boolean(body?.createIfMissing);
 
-    const { data: row, error: rowErr } = await supabase
+    const { data: rowRaw, error: rowErr } = await supabase
         .from("unoi_planning_rows")
         .select("*")
         .eq("id", id)
         .eq("org_id", member.org_id)
-        .single<PlanningRow>();
+        .single();
+    const row = rowRaw as PlanningRow | null;
     if (rowErr || !row) {
         return NextResponse.json({ error: "Planning row not found" }, { status: 404 });
     }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, XCircle, UserPlus, AlertTriangle, Clock } from "lucide-react";
 import { getApplicatorPortalInviteResult } from "./queries";
 import { acceptApplicatorPortalInvitation } from "./actions";
+import { JoinPortalMagicLink } from "@/components/portal/join-portal-magic-link";
 
 export default async function JoinPortalPage({
     params,
@@ -96,6 +97,7 @@ export default async function JoinPortalPage({
                                 <Link href={`/login?next=/join-portal/${token}`}>Ya tengo cuenta</Link>
                             </Button>
                         </div>
+                        <JoinPortalMagicLink invitationToken={token} />
                     </CardContent>
                 </Card>
             </div>
