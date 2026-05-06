@@ -81,14 +81,21 @@ function cleanApplicatorInput(rawName: string): string {
  */
 const NAME_ALIASES: Record<string, string> = {
     "LUPITA ZATARAIN": "LAURA GUADALUPE ZATARAIN NOGALES",
-    "MAJO": "MARIA JOSE",
-    "MARIA JOSE": "MARIA JOSE",
-    "TONY": "TONY",
-    "SELENE M": "SELENE",
-    "MARISELA C": "MARISELA",
-    "VANESSA Z": "VANESSA",
-    "ZULEMA CORBALA": "ZULEMA CORBALÁ",
-    "RUTH Q": "RUTH",
+    "MAJO": "MARIA JESUS DOMINGUEZ RAMOS",
+    "MARIA JOSE": "MARIA JESUS DOMINGUEZ RAMOS",
+    "SELENE M": "SILVIA SELENE MORENO CARRASCO",
+    "SELENE MORENO": "SILVIA SELENE MORENO CARRASCO",
+    "MARISELA C": "MARISELA CASTILLO HUERTA",
+    "VANESSA Z": "YOLANDA MARIA FELIX MIRANDA",
+    "VANESSA": "YOLANDA MARIA FELIX MIRANDA",
+    "ZULEMA CORBALA": "JANETT HERNANDEZ ARRIAGA",
+    "RUTH Q": "RUTH HAYDEE QUINTERO ORTEGA",
+    "KAREN": "KAREN LOPEZ DEL CASTILLO",
+    "LESLIE": "LESLI FERNANDA MEJIA CHAVEZ",
+    "LESLI": "LESLI FERNANDA MEJIA CHAVEZ",
+    "GABRIELA DE LA ROSA": "GABRIELA DE LA ROSA ORNELAS",
+    "CLAUDIA CAMARENA": "CLAUDIA CAMARENA GOMEZ",
+    "MARIA NELLY": "MARIA NELLY GUTIERREZ ARVIZU",
 };
 
 const NOISE_TOKENS = new Set([
@@ -99,6 +106,8 @@ const NOISE_TOKENS = new Set([
     "INVIGILATOR",
     "ADMIN",
     "SUPER",
+    "SUPERVISOR",
+    "CALIFORNIA",
 ]);
 
 function resolveInputAlias(rawCleaned: string): string {
@@ -295,8 +304,8 @@ async function main() {
             events_count: 0,
         };
         g.lines.push(line);
-        g.total_hours += line.hours;
-        g.total_amount += line.total_amount;
+        g.total_hours = Number((g.total_hours + line.hours).toFixed(2));
+        g.total_amount = Number((g.total_amount + line.total_amount).toFixed(2));
         grouped.set(key, g);
     }
 

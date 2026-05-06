@@ -626,8 +626,11 @@ function UNOiPlanningPageContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
     const [bulkLinking, setBulkLinking] = useState(false);
     const currentYear = new Date().getFullYear();
-    const queryYear = Number(searchParams.get("year") ?? "");
-    const [planningYear, setPlanningYear] = useState(Number.isFinite(queryYear) ? queryYear : currentYear);
+    const queryYearRaw = searchParams.get("year");
+    const queryYear = queryYearRaw ? Number(queryYearRaw) : NaN;
+    const [planningYear, setPlanningYear] = useState(
+        Number.isFinite(queryYear) && queryYear > 2000 ? queryYear : currentYear
+    );
     const [planningCycle, setPlanningCycle] = useState("annual");
     const yearOptions = useMemo(() => {
         const set = new Set<number>([currentYear - 1, currentYear, currentYear + 1, planningYear]);
@@ -635,8 +638,11 @@ function UNOiPlanningPageContent() {
     }, [currentYear, planningYear]);
 
     useEffect(() => {
-        const y = Number(searchParams.get("year") ?? "");
-        if (Number.isFinite(y) && y !== planningYear) setPlanningYear(y);
+        const yRaw = searchParams.get("year");
+        const y = yRaw ? Number(yRaw) : NaN;
+        if (Number.isFinite(y) && y > 2000 && y !== planningYear) {
+            setPlanningYear(y);
+        }
     }, [searchParams, planningYear]);
 
     const qs = useMemo(() => {
