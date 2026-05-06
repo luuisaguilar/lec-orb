@@ -12,8 +12,6 @@ type PlanningRow = {
     city: string | null;
     project: string | null;
     students_planned: number | null;
-};
-
     planning_year?: number;
 };
 
@@ -65,7 +63,6 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
         }
     }
     if (!schoolId) {
-        return NextResponse.json({ error: "No matching school for planning row" }, { status: 400 });
         return NextResponse.json(
             {
                 error: "No matching school for planning row",

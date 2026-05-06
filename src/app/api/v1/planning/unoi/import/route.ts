@@ -42,7 +42,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
-    const rows = parseIHColegiosWorkbook(workbook);
     const rows = parseIHColegiosWorkbook(workbook, planningYear);
 
     const payload: PlanningInsert[] = rows
@@ -73,7 +72,6 @@ export const POST = withAuth(async (req, { supabase, member }) => {
             .from("unoi_planning_rows")
             .delete()
             .eq("org_id", member.org_id)
-            .eq("source_file", file.name);
             .eq("source_file", file.name)
             .eq("planning_year", planningYear)
             .eq("planning_cycle", planningCycle);

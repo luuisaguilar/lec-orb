@@ -26,7 +26,6 @@ function examPairsFromHeader(header: string[]): { label: string; countIdx: numbe
     return pairs;
 }
 
-export function parseIHColegiosWorkbook(wb: WorkBook): IHApplicationRecord[] {
 export function parseIHColegiosWorkbook(wb: WorkBook, planningYear = new Date().getFullYear()): IHApplicationRecord[] {
     const sh = wb.Sheets[SHEET];
     if (!sh) {
@@ -79,7 +78,6 @@ export function parseIHColegiosWorkbook(wb: WorkBook, planningYear = new Date().
             if (!examType) continue;
 
             const dateRaw = String(rawDate ?? "").trim();
-            const dateIso = cellToIsoDate(rawDate) ?? spanishOrLooseDateToIso(dateRaw, PLANNING_YEAR);
             const dateIso = cellToIsoDate(rawDate) ?? spanishOrLooseDateToIso(dateRaw, planningYear);
 
             out.push({

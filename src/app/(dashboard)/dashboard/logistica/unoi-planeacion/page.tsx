@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
@@ -610,7 +608,6 @@ function SyncedHorizontalScroll({
     );
 }
 
-export default function UNOiPlanningPage() {
 function UNOiPlanningPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -654,8 +651,6 @@ function UNOiPlanningPageContent() {
         if (school.trim()) p.set("school", school.trim());
         if (status.trim()) p.set("status", status.trim());
         if (q.trim()) p.set("q", q.trim());
-        return p.toString();
-    }, [city, school, status, q]);
         p.set("year", String(planningYear));
         p.set("cycle", planningCycle);
         return p.toString();
@@ -994,15 +989,6 @@ function UNOiPlanningPageContent() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Filtros</CardTitle>
-                    <CardDescription>Filtra por ciudad, colegio, estatus o texto libre (consulta al servidor).</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-4">
-                <PlanningWizardDialog triggerLabel="Nuevo evento (wizard)" defaultProjectType="unoi" onDone={() => mutate()} />
             </div>
 
             <Card>
