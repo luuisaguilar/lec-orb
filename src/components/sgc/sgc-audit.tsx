@@ -316,23 +316,23 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
       {/* ... header and cards ... */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={onBack} className="border-slate-800 h-9">
+          <Button variant="outline" size="sm" onClick={onBack} className="border-slate-200 dark:border-slate-800 h-9">
             <ArrowLeft className="h-4 w-4 mr-2" /> Volver
           </Button>
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
               {audit.title}
-              <Badge variant="outline" className="border-slate-700 text-slate-400 font-mono text-[10px]">
+              <Badge variant="outline" className="border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-mono text-[10px]">
                 {audit.ref}
               </Badge>
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Iniciada el {new Date(audit.created_at).toLocaleDateString()} · Responsable: {audit.audit_manager?.full_name ?? "No asignado"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-slate-800">
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-slate-200 dark:border-slate-800">
             <Download className="h-4 w-4 mr-2" /> Exportar PDF
           </Button>
            <Badge className={cn("px-3 py-1", audit.state === "done" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-primary/10 text-primary border-primary/20")}>
@@ -342,9 +342,9 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <Card className="h-fit border-slate-800 bg-slate-900/40 backdrop-blur-sm">
+        <Card className="h-fit border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 backdrop-blur-sm">
           <CardHeader className="p-4">
-            <CardTitle className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
               <LayoutGrid className="h-3.5 w-3.5" /> Clausulas ISO
             </CardTitle>
           </CardHeader>
@@ -357,19 +357,19 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                   "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all",
                   activeClause === clause
                     ? "bg-primary text-primary-foreground"
-                    : "text-slate-400 hover:bg-slate-800/50"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-100 dark:bg-slate-800/50"
                 )}
               >
                 <span>Clausula {clause}</span>
                 {activeClause === clause && <ChevronRight className="h-3 w-3" />}
               </button>
             ))}
-            <div className="mt-4 border-t border-slate-800 px-2 pt-4">
-              <div className="mb-2 flex justify-between text-[10px] font-bold uppercase text-slate-500">
+            <div className="mt-4 border-t border-slate-200 dark:border-slate-800 px-2 pt-4">
+              <div className="mb-2 flex justify-between text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
                 <span>Avance</span>
                 <span>{progress}%</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
               </div>
             </div>
@@ -378,33 +378,33 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
 
         <div className="md:col-span-3 space-y-6">
           <Tabs defaultValue="checklist" className="w-full">
-            <TabsList className="bg-slate-950/50 border-slate-800 p-1">
-              <TabsTrigger value="checklist" className="text-xs data-[state=active]:bg-slate-800">
+            <TabsList className="bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 p-1">
+              <TabsTrigger value="checklist" className="text-xs data-[state=active]:bg-slate-100 dark:bg-slate-800">
                 <ClipboardCheck className="mr-2 h-3.5 w-3.5" /> Checklist
               </TabsTrigger>
-              <TabsTrigger value="car" className="text-xs data-[state=active]:bg-slate-800">
+              <TabsTrigger value="car" className="text-xs data-[state=active]:bg-slate-100 dark:bg-slate-800">
                 <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Hallazgos (CAR)
                 {openCars > 0 && <Badge className="ml-2 h-4 min-w-4 bg-red-500 text-[9px]">{openCars}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="evidence" className="text-xs data-[state=active]:bg-slate-800">
+              <TabsTrigger value="evidence" className="text-xs data-[state=active]:bg-slate-100 dark:bg-slate-800">
                 <FileText className="mr-2 h-3.5 w-3.5" /> Evidencias
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="checklist" className="mt-4 space-y-4">
                {filteredItems.map((item) => (
-                 <Card key={item.id} className="border-slate-800 bg-slate-900/40">
+                 <Card key={item.id} className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
                    <CardContent className="p-5 space-y-4">
                       <div className="flex justify-between gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-primary">{item.clause_id}</span>
-                            <h4 className="text-sm font-semibold text-white">{item.title}</h4>
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</h4>
                           </div>
-                          <p className="text-xs text-slate-400">{item.question}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">{item.question}</p>
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          {item.tags.map(t => <Badge key={t} variant="outline" className="text-[9px] h-5 border-slate-800 text-slate-500">{t}</Badge>)}
+                          {item.tags.map(t => <Badge key={t} variant="outline" className="text-[9px] h-5 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">{t}</Badge>)}
                         </div>
                       </div>
 
@@ -414,7 +414,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                           size="sm"
                           disabled={savingItemId === item.id}
                           onClick={() => updateCheckStatus(item, "cumple")}
-                          className={cn("text-xs border-slate-800", item.status === "cumple" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/30")}
+                          className={cn("text-xs border-slate-200 dark:border-slate-800", item.status === "cumple" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/30")}
                         >
                           <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Cumple
                         </Button>
@@ -423,7 +423,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                           size="sm"
                           disabled={savingItemId === item.id}
                           onClick={() => updateCheckStatus(item, "noconf")}
-                          className={cn("text-xs border-slate-800", item.status === "noconf" && "bg-rose-500/10 text-rose-400 border-rose-500/30")}
+                          className={cn("text-xs border-slate-200 dark:border-slate-800", item.status === "noconf" && "bg-rose-500/10 text-rose-400 border-rose-500/30")}
                         >
                           <XCircle className="mr-2 h-3.5 w-3.5" /> No conformidad
                         </Button>
@@ -432,7 +432,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                           size="sm"
                           disabled={savingItemId === item.id}
                           onClick={() => updateCheckStatus(item, "oport")}
-                          className={cn("text-xs border-slate-800", item.status === "oport" && "bg-amber-500/10 text-amber-400 border-amber-500/30")}
+                          className={cn("text-xs border-slate-200 dark:border-slate-800", item.status === "oport" && "bg-amber-500/10 text-amber-400 border-amber-500/30")}
                         >
                           <AlertCircle className="mr-2 h-3.5 w-3.5" /> Oportunidad
                         </Button>
@@ -441,7 +441,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                       <div className="flex gap-3">
                         <Textarea
                           placeholder="Notas y evidencia..."
-                          className="bg-slate-950/50 border-slate-800 text-xs min-h-[60px]"
+                          className="bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-xs min-h-[60px]"
                           value={notesDraft[item.id] ?? ""}
                           onChange={(e) => setNotesDraft(prev => ({ ...prev, [item.id]: e.target.value }))}
                         />
@@ -459,23 +459,23 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
             
             <TabsContent value="car" className="mt-4 space-y-4">
                {cars.length === 0 ? (
-                 <div className="text-center py-10 text-slate-500 text-xs italic bg-slate-900/20 border border-dashed border-slate-800 rounded-lg">
+                 <div className="text-center py-10 text-slate-500 dark:text-slate-400 text-xs italic bg-slate-50 dark:bg-white dark:bg-slate-900/20 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
                    No se han registrado hallazgos o no conformidades en esta auditoria.
                  </div>
                ) : (
                  cars.map((car) => (
-                   <Card key={car.id} className="border-slate-800 bg-slate-900/40">
+                   <Card key={car.id} className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
                      <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="font-mono text-[10px] border-slate-700 text-primary">
+                              <Badge variant="outline" className="font-mono text-[10px] border-slate-300 dark:border-slate-700 text-primary">
                                 {car.car_code}
                               </Badge>
-                              <h4 className="text-sm font-semibold text-white">{car.finding_title}</h4>
+                              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{car.finding_title}</h4>
                             </div>
-                            <p className="text-xs text-slate-400 line-clamp-1 italic">Clausula {car.finding_clause_id}</p>
-                            <p className="text-xs text-slate-500 mt-2">{car.description}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1 italic">Clausula {car.finding_clause_id}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{car.description}</p>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
                              <Badge className={cn(
@@ -489,7 +489,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                              <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-7 text-[10px] text-slate-400 hover:text-primary"
+                              className="h-7 text-[10px] text-slate-600 dark:text-slate-400 hover:text-primary"
                               onClick={() => setSelectedCarId(car.id)}
                             >
                                Gestionar <ChevronRight className="h-3 w-3 ml-1" />
@@ -498,14 +498,14 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                         </div>
 
                         {(car.root_cause || car.action_plan) && (
-                          <div className="mt-3 grid grid-cols-2 gap-3 pt-3 border-t border-slate-800/50">
+                          <div className="mt-3 grid grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
                             <div>
-                               <p className="text-[9px] uppercase font-bold text-slate-500 mb-1">Causa Raiz</p>
-                               <p className="text-[11px] text-slate-300 line-clamp-2">{car.root_cause || "-"}</p>
+                               <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Causa Raiz</p>
+                               <p className="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2">{car.root_cause || "-"}</p>
                             </div>
                             <div>
-                               <p className="text-[9px] uppercase font-bold text-slate-500 mb-1">Plan de Accion</p>
-                               <p className="text-[11px] text-slate-300 line-clamp-2">{car.action_plan || "-"}</p>
+                               <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Plan de Accion</p>
+                               <p className="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2">{car.action_plan || "-"}</p>
                             </div>
                           </div>
                         )}
@@ -516,15 +516,15 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
 
                {/* CAR Editor Dialog */}
                <Dialog open={!!selectedCarId} onOpenChange={(open) => !open && setSelectedCarId(null)}>
-                 <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-2xl">
+                 <DialogContent className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-2xl">
                    <DialogHeader>
                      <DialogTitle className="flex items-center gap-2">
                        Gestionar Hallazgo 
-                       <Badge variant="outline" className="font-mono text-xs border-slate-700 text-primary">
+                       <Badge variant="outline" className="font-mono text-xs border-slate-300 dark:border-slate-700 text-primary">
                          {selectedCar?.car_code}
                        </Badge>
                      </DialogTitle>
-                     <DialogDescription className="text-slate-400 text-xs">
+                     <DialogDescription className="text-slate-600 dark:text-slate-400 text-xs">
                        Completa el análisis de causa raíz y define el plan de acción correctiva.
                      </DialogDescription>
                    </DialogHeader>
@@ -532,33 +532,33 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                    <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Responsable</label>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Responsable</label>
                           <div className="relative">
-                            <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                            <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <Input 
                               placeholder="Nombre del responsable"
                               value={carOwner}
                               onChange={(e) => setCarOwner(e.target.value)}
-                              className="pl-10 bg-slate-900 border-slate-800 text-sm"
+                              className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm"
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Fecha Compromiso</label>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Fecha Compromiso</label>
                           <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <Input 
                               type="date"
                               value={carDueDate}
                               onChange={(e) => setCarDueDate(e.target.value)}
-                              className="pl-10 bg-slate-900 border-slate-800 text-sm"
+                              className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm"
                             />
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Estatus de Hallazgo</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Estatus de Hallazgo</label>
                         <div className="flex gap-2">
                           {["open", "in_progress", "closed"].map((s) => (
                             <Button
@@ -568,7 +568,7 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                               type="button"
                               onClick={() => setCarStatus(s as CarStatus)}
                               className={cn(
-                                "flex-1 text-[10px] h-8 border-slate-800",
+                                "flex-1 text-[10px] h-8 border-slate-200 dark:border-slate-800",
                                 carStatus === s && (
                                   s === "open" ? "bg-rose-500/10 text-rose-400 border-rose-500/30" :
                                   s === "in_progress" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
@@ -583,22 +583,22 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Analisis de Causa Raiz</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Analisis de Causa Raiz</label>
                         <Textarea 
                           placeholder="Describe por que ocurrio la no conformidad..."
                           value={carRootCause}
                           onChange={(e) => setCarRootCause(e.target.value)}
-                          className="bg-slate-900 border-slate-800 text-sm min-h-[80px]"
+                          className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm min-h-[80px]"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Plan de Accion / Correccion</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Plan de Accion / Correccion</label>
                         <Textarea 
                           placeholder="Describe que acciones se tomaran para evitar recurrencia..."
                           value={carActionPlan}
                           onChange={(e) => setCarActionPlan(e.target.value)}
-                          className="bg-slate-900 border-slate-800 text-sm min-h-[80px]"
+                          className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm min-h-[80px]"
                         />
                       </div>
                    </div>
@@ -616,12 +616,12 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
 
 
             <TabsContent value="evidence" className="mt-4">
-              <Card className="border-slate-800 bg-slate-900/40">
-                <CardHeader className="pb-3 border-b border-slate-800/50">
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+              <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
+                <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
                     Evidencias de auditoria
                   </CardTitle>
-                  <CardDescription className="text-xs text-slate-500">
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
                     Adjunta listas, actas, fotos o evidencia objetiva del ciclo.
                   </CardDescription>
                 </CardHeader>
@@ -691,7 +691,7 @@ export default function SGCAudit() {
   // Prevent flicker by showing a blank state or skeleton while user/data loads
   if (userLoading || (isLoading && !data)) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
+      <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm">Iniciando sistema de auditoria...</p>
       </div>
@@ -706,8 +706,8 @@ export default function SGCAudit() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Auditorias SGC</h2>
-          <p className="text-sm text-slate-400">Ciclos de auditoria interna para cumplimiento normativo.</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Auditorias SGC</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Ciclos de auditoria interna para cumplimiento normativo.</p>
         </div>
         {isAtLeastSupervisor && (
           <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
@@ -718,39 +718,39 @@ export default function SGCAudit() {
 
       <div className="grid gap-4">
         {audits.length === 0 ? (
-          <Card className="border-dashed border-slate-800 bg-slate-900/20 py-20">
+          <Card className="border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white dark:bg-slate-900/20 py-20">
             <CardContent className="flex flex-col items-center gap-4">
               <ClipboardCheck className="h-12 w-12 text-slate-700 opacity-20" />
-              <p className="text-slate-500 text-sm">No se han registrado ciclos de auditoria.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">No se han registrado ciclos de auditoria.</p>
               {isAtLeastSupervisor && (
-                <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)} className="border-slate-800">
+                <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)} className="border-slate-200 dark:border-slate-800">
                   Comenzar primera auditoria
                 </Button>
               )}
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-slate-800 bg-slate-900/40 overflow-hidden">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 overflow-hidden">
             <Table>
-              <TableHeader className="bg-slate-950/40">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Referencia</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Titulo / Objetivo</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Fecha</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Estatus</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 text-right">Accion</TableHead>
+              <TableHeader className="bg-slate-50 dark:bg-slate-950/40">
+                <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Referencia</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Titulo / Objetivo</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Fecha</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Estatus</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 text-right">Accion</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {audits.map((audit) => (
                   <TableRow 
                     key={audit.id} 
-                    className="border-slate-800/40 hover:bg-white/5 cursor-pointer group"
+                    className="border-slate-200 dark:border-slate-200 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer group"
                     onClick={() => setSelectedAuditId(audit.id)}
                   >
-                    <TableCell className="font-mono text-xs text-slate-400">{audit.ref}</TableCell>
-                    <TableCell className="font-medium text-slate-200">{audit.title}</TableCell>
-                    <TableCell className="text-xs text-slate-500">
+                    <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">{audit.ref}</TableCell>
+                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">{audit.title}</TableCell>
+                    <TableCell className="text-xs text-slate-500 dark:text-slate-400">
                       {new Date(audit.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
@@ -759,7 +759,7 @@ export default function SGCAudit() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-slate-400 group-hover:text-primary">
+                      <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 group-hover:text-primary">
                         Gestionar <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </TableCell>
@@ -772,20 +772,20 @@ export default function SGCAudit() {
       </div>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="bg-slate-950 border-slate-800 text-slate-100">
+        <DialogContent className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
           <DialogHeader>
             <DialogTitle>Nueva Auditoria Interna</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-600 dark:text-slate-400">
               Crea un nuevo ciclo de auditoria. Se generará un checklist basado en las cláusulas ISO estándar.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Titulo de la Auditoria</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">Titulo de la Auditoria</label>
             <Input 
               placeholder="Ej: Auditoria Interna QMS 2024 - Q1"
               value={newAuditTitle}
               onChange={(e) => setNewAuditTitle(e.target.value)}
-              className="bg-slate-900 border-slate-700"
+              className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
             />
           </div>
           <DialogFooter>
@@ -800,3 +800,5 @@ export default function SGCAudit() {
     </div>
   );
 }
+
+
