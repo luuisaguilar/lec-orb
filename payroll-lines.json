@@ -1,3 +1,7 @@
+
+> lec-platform@0.1.0 export:logistica-payroll
+> npx tsx scripts/export-logistica-payroll-lines.ts C:\Users\luuis\Downloads\logistica cambridge\LOGISTICA_UNOi 2026.xlsx
+
 {
   "sourceFile": "C:\\Users\\luuis\\Downloads\\logistica cambridge\\LOGISTICA_UNOi 2026.xlsx",
   "totalLines": 113,

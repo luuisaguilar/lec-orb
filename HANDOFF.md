@@ -127,6 +127,30 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ---
 
+## Dashboard Ejecutivo + Observabilidad (estado actual)
+
+### Completado (MVP base)
+
+- [x] Documentacion integral del frente en `docs/executive-observability/`
+  - `README.md`, `SCREENS_AND_KPIS.md`, `BACKLOG_MVP_V2.md`
+  - `HANDOFF_DASHBOARDS.md`, `RUNBOOK_DASHBOARD_OBSERVABILITY.md`
+  - `PATHS_AND_ROUTES.md`, `TICKETS_SPRINT_BOARD.md`
+  - `DB_SCHEMA_PROPOSAL.md`, `KPI_MATRIX_BY_ROLE.md`
+- [x] ADR de arquitectura publicado: `docs/adr/ADR-008-executive-dashboard-and-observability.md`
+- [x] API inicial implementada: `GET /api/v1/executive/overview`
+- [x] Rutas UI navegables implementadas:
+  - `/dashboard/executive` + subrutas (`finanzas`, `operacion`, `riesgo`)
+  - `/dashboard/ops/observability` + subrutas (`logs`, `errors`, `apis`, `audit`)
+
+### Pendiente inmediato (siguiente iteracion)
+
+- [ ] Conectar `Finanzas` a endpoint agregado dedicado (`/api/v1/executive/finanzas`)
+- [ ] Implementar primer endpoint tecnico real de observabilidad (`/api/v1/ops/audit`)
+- [ ] Cerrar definiciones de fuente para `Ingresos MTD` (facturado vs cobrado)
+- [ ] Activar filtros globales (periodo / unidad) en todas las vistas ejecutivas
+
+---
+
 ## Proximos pasos concretos
 
 ### Alta prioridad

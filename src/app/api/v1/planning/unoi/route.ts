@@ -62,6 +62,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     const { data, error } = await query;
     if (error) throw error;
+    return NextResponse.json({ rows: data ?? [], total: data?.length ?? 0 });
     return NextResponse.json({ rows: data ?? [], total: data?.length ?? 0, year: planningYear, cycle });
 }, { module: "events", action: "view" });
 

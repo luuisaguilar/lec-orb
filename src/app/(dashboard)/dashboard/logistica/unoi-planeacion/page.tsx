@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
@@ -989,7 +989,6 @@ function UNOiPlanningPageContent() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <PlanningWizardDialog triggerLabel="Nuevo evento (wizard)" defaultProjectType="unoi" onDone={() => mutate()} />
             </div>
 
             <Card>
@@ -1497,6 +1496,7 @@ function UNOiPlanningPageContent() {
                         <TabsContent value="matrix" className="mt-0">
                             <p className="mb-3 text-xs text-muted-foreground">
                                 Una fila por colegio (misma ciudad, proyecto, colegio y nivel). Columnas de examen como en el Excel:{" "}
+                                <strong>Alumnos</strong> y <strong>Fecha</strong>. Los filtros de la tabla aplican también aquí.
                                 <strong>Alumnos</strong> and <strong>Fecha</strong>. Los filtros de la tabla aplican también aquí.
                             </p>
                             {examCols.length === 0 && !isLoading ? (
