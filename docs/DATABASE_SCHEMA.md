@@ -839,3 +839,12 @@ Comprobantes individuales adjuntos a un reporte.
 | `uploaded_by` | uuid | |
 | `created_at` | timestamptz | |
 - `audit_log` es append-only — no modificar registros existentes.
+
+---
+
+## 15. Dashboards Ejecutivos y Observabilidad (propuesto)
+
+La planeacion del dashboard ejecutivo y el modulo de observabilidad (incluyendo tablas opcionales de cache/alertas) vive en:
+
+- `docs/adr/ADR-008-executive-dashboard-and-observability.md`
+- `docs/executive-observability/DB_SCHEMA_PROPOSAL.md`
