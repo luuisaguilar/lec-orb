@@ -1,35 +1,55 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Clock, Calendar, CheckSquare, TrendingUp } from "lucide-react";
-import {
-    mockPayrollEntries,
-    mockSlots,
-    mockEventExams,
-} from "@/lib/demo/data";
+import { portalApiGet } from "@/lib/portal/server-fetch";
 
-const APPLICATOR_ID = "applicator-001"; // Hardcoded for demo
+type MetricasResponse = {
+    total_hours: number;
+    total_events: number;
+    total_slots: number;
+    pending_balance: number;
+    total_paid: number;
+    role_distribution: Record<string, number>;
+    certified_levels: string[] | null;
+};
 
-export default function PortalMetricsPage() {
-    // 1. Get Payroll Metrics
-    const myPayroll = mockPayrollEntries.filter((p) => p.applicator_id === APPLICATOR_ID);
+export default async function PortalMetricsPage() {
+    const res = await portalApiGet<MetricasResponse>("/api/v1/portal/metricas");
 
-    const totalHours = myPayroll.reduce((sum, p) => sum + p.hours_worked, 0);
-    const totalEvents = myPayroll.reduce((sum, p) => sum + p.events_count, 0);
-    const totalSlots = myPayroll.reduce((sum, p) => sum + p.slots_count, 0);
+    if (!res.ok) {
+        if (res.status === 401) {
+            return (
+                <div className="rounded-md border p-8 text-center text-muted-foreground">
+                    Debes iniciar sesión para ver tus métricas.
+                </div>
+            );
+        }
+        if (res.status === 403) {
+            return (
+                <div className="rounded-md border p-8 text-center text-muted-foreground">
+                    Tu usuario no está vinculado a un aplicador.
+                </div>
+            );
+        }
+        return (
+            <div className="rounded-md border p-8 text-center text-muted-foreground">
+                No se pudieron cargar las métricas: {res.message}
+            </div>
+        );
+    }
 
-    // 2. Get Exams / Level Distribution
-    const mySlots = mockSlots.filter((s) => s.applicator_id === APPLICATOR_ID);
-    const examCounts: Record<string, number> = {};
+    const {
+        total_hours,
+        total_events,
+        total_slots,
+        role_distribution,
+        certified_levels: levelsRaw,
+    } = res.data;
 
-    mySlots.forEach((slot) => {
-        const ee = mockEventExams.find((e) => e.id === slot.event_exam_id);
-        const name = ee?.exam_name || "Otros";
-        examCounts[name] = (examCounts[name] || 0) + 1;
-    });
+    const sortedRoles = Object.entries(role_distribution ?? {}).sort((a, b) => b[1] - a[1]);
+    const maxRoles = sortedRoles.length > 0 ? Math.max(...sortedRoles.map((e) => e[1])) : 1;
 
-    const sortedExams = Object.entries(examCounts)
-        .sort((a, b) => b[1] - a[1]);
-
-    const maxExams = sortedExams.length > 0 ? Math.max(...sortedExams.map(e => e[1])) : 1;
+    const certifiedLevels =
+        levelsRaw && levelsRaw.length > 0 ? levelsRaw : ["Sin certificaciones cargadas"];
 
     return (
         <div className="space-y-6">
@@ -47,7 +67,7 @@ export default function PortalMetricsPage() {
                         <Clock className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalHours.toFixed(1)}h</div>
+                        <div className="text-2xl font-bold">{Number(total_hours ?? 0).toFixed(1)}h</div>
                         <p className="text-xs text-muted-foreground mt-1">Total histórico</p>
                     </CardContent>
                 </Card>
@@ -58,7 +78,7 @@ export default function PortalMetricsPage() {
                         <Calendar className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalEvents}</div>
+                        <div className="text-2xl font-bold">{total_events}</div>
                         <p className="text-xs text-muted-foreground mt-1">Total histórico</p>
                     </CardContent>
                 </Card>
@@ -69,19 +89,19 @@ export default function PortalMetricsPage() {
                         <CheckSquare className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalSlots}</div>
+                        <div className="text-2xl font-bold">{total_slots}</div>
                         <p className="text-xs text-muted-foreground mt-1">Total histórico</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Nivel Frecuente</CardTitle>
+                        <CardTitle className="text-sm font-medium">Rol frecuente</CardTitle>
                         <TrendingUp className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{sortedExams[0]?.[0] || "-"}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Examen más aplicado</p>
+                        <div className="text-2xl font-bold">{sortedRoles[0]?.[0] || "-"}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Rol más registrado en nómina</p>
                     </CardContent>
                 </Card>
             </div>
@@ -89,28 +109,28 @@ export default function PortalMetricsPage() {
             <div className="grid gap-6 md:grid-cols-2">
                 <Card className="col-span-1">
                     <CardHeader>
-                        <CardTitle>Distribución por Examen</CardTitle>
+                        <CardTitle>Distribución por rol</CardTitle>
                         <CardDescription>
-                            Frecuencia de aplicación segmentada por certificación Cambridge.
+                            Frecuencia de líneas de trabajo en tu nómina (por rol asignado).
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {sortedExams.length === 0 ? (
+                        {sortedRoles.length === 0 ? (
                             <div className="text-muted-foreground text-sm text-center py-4">
                                 No hay datos suficientes.
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {sortedExams.map(([examName, count]) => (
-                                    <div key={examName} className="space-y-1">
+                                {sortedRoles.map(([roleName, count]) => (
+                                    <div key={roleName} className="space-y-1">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium">{examName}</span>
-                                            <span className="text-muted-foreground">{count} turnos</span>
+                                            <span className="font-medium">{roleName}</span>
+                                            <span className="text-muted-foreground">{count} líneas</span>
                                         </div>
                                         <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-primary transition-all rounded-full"
-                                                style={{ width: `${(count / maxExams) * 100}%` }}
+                                                style={{ width: `${(count / maxRoles) * 100}%` }}
                                             />
                                         </div>
                                     </div>
@@ -123,15 +143,15 @@ export default function PortalMetricsPage() {
                 <Card className="col-span-1 border-dashed bg-muted/20">
                     <CardHeader>
                         <CardTitle>Certificaciones Activas</CardTitle>
-                        <CardDescription>
-                            Niveles autorizados para aplicar por Cambridge.
-                        </CardDescription>
+                        <CardDescription>Niveles autorizados para aplicar por Cambridge.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-wrap gap-2">
-                            {/* In a real app we'd map over applicator.certified_levels */}
-                            {["Starters", "Movers", "Flyers"].map((level) => (
-                                <div key={level} className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card text-sm font-medium shadow-sm">
+                            {certifiedLevels.map((level: string) => (
+                                <div
+                                    key={level}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card text-sm font-medium shadow-sm"
+                                >
                                     <CheckSquare className="h-4 w-4 text-green-500" />
                                     {level}
                                 </div>

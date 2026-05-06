@@ -25,6 +25,8 @@ export type Module =
     | "documents"
     | "notifications"
     | "studio"
+    | "budget"
+    | "petty-cash"
     | "courses"
     | "audit-log";
 
@@ -155,6 +157,18 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
     studio: {
         read: ["admin"],
         manage: ["admin"],
+    },
+    budget: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    "petty-cash": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
     },
     "audit-log": {
         read: ["admin", "supervisor"],

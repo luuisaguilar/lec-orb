@@ -22,6 +22,13 @@ interface SendInvitationEmailResult {
     error?: string;
 }
 
+interface SendApplicatorPortalInviteParams {
+    to: string;
+    orgName: string;
+    applicatorName: string;
+    joinUrl: string;
+}
+
 interface SendCertificateEmailParams {
     to: string;
     studentName: string;
@@ -61,6 +68,55 @@ export async function sendCertificateEmail({
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unknown email error";
         console.error("[email] sendCertificateEmail failed:", message);
+        return { sent: false, error: message };
+    }
+}
+
+export async function sendApplicatorPortalInviteEmail({
+    to,
+    orgName,
+    applicatorName,
+    joinUrl,
+}: SendApplicatorPortalInviteParams): Promise<SendInvitationEmailResult> {
+    if (!resend) {
+        console.warn(
+            "[email] RESEND_API_KEY is not configured; applicator portal invite email was not sent."
+        );
+        return { sent: false, error: "RESEND_API_KEY not configured" };
+    }
+
+    try {
+        const from =
+            process.env.RESEND_FROM_EMAIL ||
+            "LEC Platform <onboarding@updates.luisaguilaraguila.com>";
+        const subject = `Acceso al portal de aplicadores — ${orgName}`;
+        const html = `
+          <p>Hola${applicatorName ? ` <strong>${applicatorName}</strong>` : ""},</p>
+          <p>Te invitaron a acceder al <strong>portal de aplicadores</strong> de <strong>${orgName}</strong> en LEC Platform.</p>
+          <p><a href="${joinUrl}">Abrir enlace de acceso</a></p>
+          <p>Si el botón no funciona, copia y pega esta URL en tu navegador:<br/><code>${joinUrl}</code></p>
+          <p>Este enlace expira en unos días. Debes iniciar sesión con el mismo correo al que llegó este mensaje.</p>
+        `;
+        const text = `Portal de aplicadores (${orgName})\n\nAbre: ${joinUrl}\n\nInicia sesión con el correo que recibió esta invitación.`;
+
+        const { error } = await resend.emails.send({
+            from,
+            to,
+            subject,
+            html,
+            text,
+        });
+
+        if (error) {
+            console.error("[email] Resend error (applicator portal):", error);
+            return { sent: false, error: error.message };
+        }
+
+        return { sent: true };
+    } catch (error: unknown) {
+        const message =
+            error instanceof Error ? error.message : "Unknown email error";
+        console.error("[email] sendApplicatorPortalInviteEmail failed:", message);
         return { sent: false, error: message };
     }
 }

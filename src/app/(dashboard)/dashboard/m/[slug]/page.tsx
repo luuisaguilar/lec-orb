@@ -66,6 +66,7 @@ export default async function DynamicModulePage({ params }: PageProps) {
         "payroll": "/dashboard/nomina",
         "users": "/dashboard/users",
         "audit-log": "/dashboard/actividad",
+        "unoi-planning": "/dashboard/logistica/unoi-planeacion",
     };
 
     if (module.is_native && NATIVE_ROUTES[slug]) {

@@ -256,19 +256,19 @@ export default function DocumentExplorer({
               <FolderOpen className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="font-outfit text-2xl font-bold tracking-tight text-white">Lista Maestra de Documentos</h1>
+              <h1 className="font-outfit text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Lista Maestra de Documentos</h1>
               <p className="text-sm text-muted-foreground">Control documental centralizado por organizacion</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 shadow-sm backdrop-blur-md">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 p-4 shadow-sm backdrop-blur-md">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full lg:max-w-sm">
             <Input
               placeholder="Buscar por nombre, codigo, proceso o responsable..."
-              className="border-slate-700 bg-slate-950/50 text-white"
+              className="border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 text-slate-900 dark:text-white"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -287,7 +287,7 @@ export default function DocumentExplorer({
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-700 text-slate-300"
+              className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
               onClick={() => mutate()}
               disabled={isLoading}
             >
@@ -298,27 +298,27 @@ export default function DocumentExplorer({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/30 backdrop-blur-sm">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 backdrop-blur-sm">
         <Table className="min-w-[1250px]">
-          <TableHeader className="bg-slate-950/60">
-            <TableRow className="border-slate-800 hover:bg-transparent">
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documento</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Codigo</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tipo</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Revision</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dueno documento</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dueno proceso</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ult. revision</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prox. revision</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Estatus</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tamano</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">Acciones</TableHead>
+          <TableHeader className="bg-slate-50 dark:bg-slate-950/60">
+            <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Documento</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Codigo</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Tipo</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Dueno documento</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Dueno proceso</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Ult. revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Prox. revision</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Estatus</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Tamano</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && filteredDocs.length === 0 && (
-              <TableRow className="border-slate-800">
-                <TableCell colSpan={11} className="py-14 text-center text-slate-400">
+              <TableRow className="border-slate-200 dark:border-slate-800">
+                <TableCell colSpan={11} className="py-14 text-center text-slate-600 dark:text-slate-400">
                   <Loader2 className="mx-auto mb-3 h-7 w-7 animate-spin text-primary" />
                   Cargando lista maestra...
                 </TableCell>
@@ -326,8 +326,8 @@ export default function DocumentExplorer({
             )}
 
             {!isLoading && filteredDocs.length === 0 && (
-              <TableRow className="border-slate-800">
-                <TableCell colSpan={11} className="py-14 text-center text-slate-500">
+              <TableRow className="border-slate-200 dark:border-slate-800">
+                <TableCell colSpan={11} className="py-14 text-center text-slate-500 dark:text-slate-400">
                   <FolderOpen className="mx-auto mb-3 h-10 w-10 opacity-40" />
                   No se encontraron documentos para ese criterio.
                 </TableCell>
@@ -337,14 +337,14 @@ export default function DocumentExplorer({
             {filteredDocs.map((doc) => {
               const Icon = getFileIcon(doc.mime_type);
               return (
-                <TableRow key={doc.id} className="border-slate-800 hover:bg-slate-800/30">
+                <TableRow key={doc.id} className="border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800/30">
                   <TableCell>
                     <div className="flex items-start gap-3">
-                      <div className="rounded-md border border-slate-800 bg-slate-950/50 p-2">
-                        <Icon className="h-4 w-4 text-slate-300" />
+                      <div className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 p-2">
+                        <Icon className="h-4 w-4 text-slate-700 dark:text-slate-300" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-100" title={doc.file_name}>
+                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" title={doc.file_name}>
                           {doc.file_name}
                         </p>
                         <p className="text-[10px] uppercase tracking-wider text-primary/80">{humanizeSlug(doc.module_slug)}</p>
@@ -353,27 +353,27 @@ export default function DocumentExplorer({
                   </TableCell>
                   <TableCell className="font-mono text-xs text-primary">{doc.control.code}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-700 bg-slate-800/60 text-slate-300">
+                    <Badge variant="outline" className="border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300">
                       {doc.document_type || "General"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-300">Rev. {doc.version || "1.0"}</TableCell>
+                  <TableCell className="text-xs text-slate-700 dark:text-slate-300">Rev. {doc.version || "1.0"}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                      <UserRound className="h-3.5 w-3.5 text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                      <UserRound className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                       {doc.control.documentOwner}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                      <UsersRound className="h-3.5 w-3.5 text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                      <UsersRound className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                       {doc.control.processOwner}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-300">{formatDateLabel(doc.control.lastReviewDate)}</TableCell>
+                  <TableCell className="text-xs text-slate-700 dark:text-slate-300">{formatDateLabel(doc.control.lastReviewDate)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                      <CalendarClock className="h-3.5 w-3.5 text-slate-500" />
+                    <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                      <CalendarClock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                       {formatDateLabel(doc.control.nextReviewDate)}
                     </div>
                   </TableCell>
@@ -382,7 +382,7 @@ export default function DocumentExplorer({
                       {doc.control.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-400">{getFormatSize(doc.file_size)}</TableCell>
+                  <TableCell className="text-xs text-slate-600 dark:text-slate-400">{getFormatSize(doc.file_size)}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -414,3 +414,4 @@ export default function DocumentExplorer({
     </div>
   );
 }
+

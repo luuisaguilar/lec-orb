@@ -40,7 +40,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { LogisticsInventoryImportDialog } from "@/components/inventory/logistics-inventory-import-dialog";
 
 // Re-using the same Dialog implementation if needed or importing from correct path
 // I'll stick to @/components/ui/dialog as verified before
@@ -65,6 +67,16 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function InventoryPage() {
     const [isTransferOpen, setIsTransferOpen] = useState(false);
+    const [isNewItemOpen, setIsNewItemOpen] = useState(false);
+    const [isImportOpen, setIsImportOpen] = useState(false);
+    const [isSavingItem, setIsSavingItem] = useState(false);
+    const [newItem, setNewItem] = useState({
+        name: "",
+        sku: "",
+        category: "",
+        min_stock_level: "5",
+        description: "",
+    });
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     
@@ -83,6 +95,45 @@ export default function InventoryPage() {
         setSelectedItem(item);
         setTransferData({ toLocationId: "", quantity: 0 });
         setIsTransferOpen(true);
+    };
+
+    const resetNewItemForm = () =>
+        setNewItem({ name: "", sku: "", category: "", min_stock_level: "5", description: "" });
+
+    const handleCreateItem = async () => {
+        const name = newItem.name.trim();
+        if (!name) {
+            toast.error("El nombre del producto es obligatorio");
+            return;
+        }
+        const min = Number(newItem.min_stock_level);
+        setIsSavingItem(true);
+        try {
+            const res = await fetch("/api/v1/inventory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name,
+                    sku: newItem.sku.trim() || undefined,
+                    category: newItem.category.trim() || undefined,
+                    min_stock_level: Number.isFinite(min) ? Math.max(0, Math.floor(min)) : 5,
+                    description: newItem.description.trim() || undefined,
+                }),
+            });
+            if (res.ok) {
+                toast.success("Producto creado");
+                mutate("/api/v1/inventory");
+                setIsNewItemOpen(false);
+                resetNewItemForm();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                toast.error(err.error || "No se pudo crear (¿permiso de edición en inventario?)");
+            }
+        } catch {
+            toast.error("Error de conexión");
+        } finally {
+            setIsSavingItem(false);
+        }
     };
 
     const handleProcessTransfer = async () => {
@@ -138,8 +189,14 @@ export default function InventoryPage() {
                     <p className="text-muted-foreground">Control real de stock y movimientos entre sedes y eventos.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Importar Excel</Button>
-                    <Button className="bg-primary text-primary-foreground">
+                    <Button variant="outline" type="button" onClick={() => setIsImportOpen(true)}>
+                        Importar Excel
+                    </Button>
+                    <Button
+                        type="button"
+                        className="bg-primary text-primary-foreground"
+                        onClick={() => setIsNewItemOpen(true)}
+                    >
                         <Plus className="w-4 h-4 mr-2" />
                         Nuevo Item
                     </Button>
@@ -337,6 +394,102 @@ export default function InventoryPage() {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            <LogisticsInventoryImportDialog
+                open={isImportOpen}
+                onOpenChange={setIsImportOpen}
+                onSuccess={() => mutate("/api/v1/inventory")}
+            />
+
+            <ShDialog
+                open={isNewItemOpen}
+                onOpenChange={(open) => {
+                    setIsNewItemOpen(open);
+                    if (!open) resetNewItemForm();
+                }}
+            >
+                <ShDialogContent className="sm:max-w-md">
+                    <ShDialogHeader>
+                        <ShDialogTitle>Nuevo producto</ShDialogTitle>
+                        <ShDialogDescription>
+                            Se guarda en inventario multi-ubicación. El stock por almacén se registra
+                            después con transferencias o ajustes.
+                        </ShDialogDescription>
+                    </ShDialogHeader>
+                    <div className="grid gap-3 py-2">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="inv-name">Nombre</Label>
+                            <Input
+                                id="inv-name"
+                                value={newItem.name}
+                                onChange={(e) => setNewItem((s) => ({ ...s, name: e.target.value }))}
+                                placeholder="Ej. Speaking Pack A2"
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="inv-sku">SKU (opcional)</Label>
+                            <Input
+                                id="inv-sku"
+                                value={newItem.sku}
+                                onChange={(e) => setNewItem((s) => ({ ...s, sku: e.target.value }))}
+                                placeholder="Código interno"
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="inv-cat">Categoría (opcional)</Label>
+                            <Input
+                                id="inv-cat"
+                                value={newItem.category}
+                                onChange={(e) => setNewItem((s) => ({ ...s, category: e.target.value }))}
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="inv-min">Stock mínimo</Label>
+                            <Input
+                                id="inv-min"
+                                type="number"
+                                min={0}
+                                value={newItem.min_stock_level}
+                                onChange={(e) =>
+                                    setNewItem((s) => ({ ...s, min_stock_level: e.target.value }))
+                                }
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="inv-desc">Notas (opcional)</Label>
+                            <Textarea
+                                id="inv-desc"
+                                rows={2}
+                                value={newItem.description}
+                                onChange={(e) =>
+                                    setNewItem((s) => ({ ...s, description: e.target.value }))
+                                }
+                            />
+                        </div>
+                    </div>
+                    <ShDialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsNewItemOpen(false);
+                                resetNewItemForm();
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleCreateItem} disabled={isSavingItem}>
+                            {isSavingItem ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Guardando…
+                                </>
+                            ) : (
+                                "Guardar"
+                            )}
+                        </Button>
+                    </ShDialogFooter>
+                </ShDialogContent>
+            </ShDialog>
 
             {/* Transfer Modal */}
             <ShDialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>

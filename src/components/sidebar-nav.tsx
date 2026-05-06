@@ -71,6 +71,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "documentos": "/dashboard/documentos",
     "courses": "/dashboard/academico/cursos",
     "inventory": "/dashboard/logistica/inventario",
+    "unoi-planning": "/dashboard/logistica/unoi-planeacion",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -201,9 +202,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
         // Top-level items (e.g. Dashboard — no category)
         for (const mod of topLevel) {
-            const href = mod.is_native
-                ? (NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`)
-                : `/dashboard/m/${mod.slug}`;
+            const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
             result.push({
                 label: null,
                 icon: mod.icon,
@@ -232,9 +231,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             if (!mods || mods.length === 0) continue;
 
             const items: NavItem[] = mods.map((mod) => {
-                const href = mod.is_native
-                    ? (NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`)
-                    : `/dashboard/m/${mod.slug}`;
+                const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
                 return { label: mod.name, href, icon: mod.icon, module: mod.slug };
             });
 
