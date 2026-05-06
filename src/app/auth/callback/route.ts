@@ -16,6 +16,7 @@ function safeAppPath(next: string | null, fallback = "/dashboard"): string {
     return trimmed;
 }
 
+
 /**
  * OAuth / magic-link callback: exchanges ?code= for a session and redirects to ?next=
  */

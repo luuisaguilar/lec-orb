@@ -2,6 +2,9 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense, type ReactNode } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Grid3x3, LayoutGrid, Link2, ListFilter, Loader2, Table2, Upload, X } from "lucide-react";
+import { PlanningWizardDialog } from "@/components/planning/planning-wizard-dialog";
 
 type PlanningRow = {
     id: string;
@@ -46,6 +50,8 @@ type PlanningRow = {
     planning_status: "proposed" | "linked" | "confirmed" | "rescheduled" | "cancelled";
     event_id: string | null;
     event_session_id: string | null;
+    planning_year?: number;
+    planning_cycle?: string;
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -605,6 +611,9 @@ function SyncedHorizontalScroll({
 }
 
 export default function UNOiPlanningPage() {
+function UNOiPlanningPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [city, setCity] = useState("");
     const [school, setSchool] = useState("");
     const [status, setStatus] = useState("");
@@ -619,6 +628,25 @@ export default function UNOiPlanningPage() {
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
     const [bulkLinking, setBulkLinking] = useState(false);
+    const currentYear = new Date().getFullYear();
+    const queryYearRaw = searchParams.get("year");
+    const queryYear = queryYearRaw ? Number(queryYearRaw) : NaN;
+    const [planningYear, setPlanningYear] = useState(
+        Number.isFinite(queryYear) && queryYear > 2000 ? queryYear : currentYear
+    );
+    const [planningCycle, setPlanningCycle] = useState("annual");
+    const yearOptions = useMemo(() => {
+        const set = new Set<number>([currentYear - 1, currentYear, currentYear + 1, planningYear]);
+        return [...set].sort((a, b) => a - b);
+    }, [currentYear, planningYear]);
+
+    useEffect(() => {
+        const yRaw = searchParams.get("year");
+        const y = yRaw ? Number(yRaw) : NaN;
+        if (Number.isFinite(y) && y > 2000 && y !== planningYear) {
+            setPlanningYear(y);
+        }
+    }, [searchParams, planningYear]);
 
     const qs = useMemo(() => {
         const p = new URLSearchParams();
@@ -628,6 +656,10 @@ export default function UNOiPlanningPage() {
         if (q.trim()) p.set("q", q.trim());
         return p.toString();
     }, [city, school, status, q]);
+        p.set("year", String(planningYear));
+        p.set("cycle", planningCycle);
+        return p.toString();
+    }, [city, school, status, q, planningYear, planningCycle]);
 
     const { data, isLoading, mutate } = useSWR<{ rows: PlanningRow[]; total: number }>(
         `/api/v1/planning/unoi${qs ? `?${qs}` : ""}`,
@@ -840,6 +872,8 @@ export default function UNOiPlanningPage() {
             const fd = new FormData();
             fd.append("file", uploadFile);
             fd.append("replace", replaceByFileName ? "true" : "false");
+            fd.append("year", String(planningYear));
+            fd.append("cycle", planningCycle);
             const res = await fetch("/api/v1/planning/unoi/import", {
                 method: "POST",
                 body: fd,
@@ -901,6 +935,38 @@ export default function UNOiPlanningPage() {
                                     onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
                                 />
                             </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label>Año</Label>
+                                    <Select value={String(planningYear)} onValueChange={(v) => setPlanningYear(Number(v))}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {yearOptions.map((y) => (
+                                                <SelectItem key={`import-${y}`} value={String(y)}>
+                                                    {y}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Ciclo</Label>
+                                    <Select value={planningCycle} onValueChange={setPlanningCycle}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="annual">Anual</SelectItem>
+                                            <SelectItem value="spring">Primavera</SelectItem>
+                                            <SelectItem value="summer">Verano</SelectItem>
+                                            <SelectItem value="fall">Otoño</SelectItem>
+                                            <SelectItem value="winter">Invierno</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                             <label className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <input
                                     type="checkbox"
@@ -936,6 +1002,55 @@ export default function UNOiPlanningPage() {
                     <CardDescription>Filtra por ciudad, colegio, estatus o texto libre (consulta al servidor).</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-4">
+                <PlanningWizardDialog triggerLabel="Nuevo evento (wizard)" defaultProjectType="unoi" onDone={() => mutate()} />
+            </div>
+
+            <Card>
+                <CardHeader className="space-y-1">
+                    <CardTitle>Filtros</CardTitle>
+                    <CardDescription>Filtra por ciudad, colegio, estatus o texto libre (consulta al servidor).</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-6">
+                    <div className="space-y-1">
+                        <Label>Año</Label>
+                        <Select
+                            value={String(planningYear)}
+                            onValueChange={(value) => {
+                                const y = Number(value);
+                                if (!Number.isFinite(y)) return;
+                                setPlanningYear(y);
+                                const next = new URLSearchParams(searchParams.toString());
+                                next.set("year", String(y));
+                                router.replace(`?${next.toString()}`);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {yearOptions.map((y) => (
+                                    <SelectItem key={y} value={String(y)}>
+                                        {y}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label>Ciclo</Label>
+                        <Select value={planningCycle} onValueChange={setPlanningCycle}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="annual">Anual</SelectItem>
+                                <SelectItem value="spring">Primavera</SelectItem>
+                                <SelectItem value="summer">Verano</SelectItem>
+                                <SelectItem value="fall">Otoño</SelectItem>
+                                <SelectItem value="winter">Invierno</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-1">
                         <Label>Ciudad</Label>
                         <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="HMO, OBRE..." />
@@ -1396,6 +1511,7 @@ export default function UNOiPlanningPage() {
                             <p className="mb-3 text-xs text-muted-foreground">
                                 Una fila por colegio (misma ciudad, proyecto, colegio y nivel). Columnas de examen como en el Excel:{" "}
                                 <strong>Alumnos</strong> y <strong>Fecha</strong>. Los filtros de la tabla aplican también aquí.
+                                <strong>Alumnos</strong> and <strong>Fecha</strong>. Los filtros de la tabla aplican también aquí.
                             </p>
                             {examCols.length === 0 && !isLoading ? (
                                 <p className="py-8 text-center text-sm text-muted-foreground">
@@ -1700,3 +1816,16 @@ export default function UNOiPlanningPage() {
         </div>
     );
 }
+
+export default function UNOiPlanningPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        }>
+            <UNOiPlanningPageContent />
+        </Suspense>
+    );
+}
+

@@ -20,12 +20,17 @@ type PlanningInsert = {
     source_file: string;
     source_row: number;
     notes: string | null;
+    planning_year: number;
+    planning_cycle: string;
 };
 
 export const POST = withAuth(async (req, { supabase, member }) => {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const replace = (String(formData.get("replace") ?? "true").toLowerCase() !== "false");
+    const yearRaw = Number(formData.get("year"));
+    const planningYear = Number.isFinite(yearRaw) ? yearRaw : new Date().getFullYear();
+    const planningCycle = String(formData.get("cycle") ?? "annual").trim() || "annual";
 
     if (!file) {
         return NextResponse.json({ error: "file is required" }, { status: 400 });
@@ -38,6 +43,7 @@ export const POST = withAuth(async (req, { supabase, member }) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
     const rows = parseIHColegiosWorkbook(workbook);
+    const rows = parseIHColegiosWorkbook(workbook, planningYear);
 
     const payload: PlanningInsert[] = rows
         .filter((r) => Boolean(r.dateIso))
@@ -58,6 +64,8 @@ export const POST = withAuth(async (req, { supabase, member }) => {
             source_file: file.name,
             source_row: r.rowIndex,
             notes: null,
+            planning_year: planningYear,
+            planning_cycle: planningCycle,
         }));
 
     if (replace) {
@@ -66,6 +74,9 @@ export const POST = withAuth(async (req, { supabase, member }) => {
             .delete()
             .eq("org_id", member.org_id)
             .eq("source_file", file.name);
+            .eq("source_file", file.name)
+            .eq("planning_year", planningYear)
+            .eq("planning_cycle", planningCycle);
         if (delErr) throw delErr;
     }
 
@@ -81,6 +92,8 @@ export const POST = withAuth(async (req, { supabase, member }) => {
         inserted: data?.length ?? 0,
         skipped_without_date: rows.length - payload.length,
         replace,
+        planning_year: planningYear,
+        planning_cycle: planningCycle,
     });
 }, { module: "events", action: "edit" });
 

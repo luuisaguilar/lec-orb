@@ -14,6 +14,18 @@ type PlanningRow = {
     students_planned: number | null;
 };
 
+    planning_year?: number;
+};
+
+function normalizeSchoolName(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
 export const POST = withAuth(async (req, { supabase, member }, { params }) => {
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
@@ -39,12 +51,30 @@ export const POST = withAuth(async (req, { supabase, member }, { params }) => {
             .ilike("name", row.school_name)
             .maybeSingle();
         schoolId = school?.id ?? null;
+        if (!schoolId) {
+            const { data: schools } = await supabase
+                .from("schools")
+                .select("id, name")
+                .eq("org_id", member.org_id);
+            const target = normalizeSchoolName(row.school_name);
+            const match = (schools ?? []).find((s: { id: string; name: string }) => normalizeSchoolName(s.name) === target);
+            schoolId = match?.id ?? null;
+        }
         if (schoolId) {
             await supabase.from("unoi_planning_rows").update({ school_id: schoolId }).eq("id", row.id);
         }
     }
     if (!schoolId) {
         return NextResponse.json({ error: "No matching school for planning row" }, { status: 400 });
+        return NextResponse.json(
+            {
+                error: "No matching school for planning row",
+                match_status: "missing_school",
+                school_name: row.school_name,
+                suggested_action: "Create or rename school in catalog before linking.",
+            },
+            { status: 400 }
+        );
     }
 
     const dayStart = `${row.proposed_date}T00:00:00.000Z`;

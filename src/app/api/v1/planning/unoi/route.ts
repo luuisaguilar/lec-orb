@@ -21,6 +21,8 @@ const planningRowSchema = z.object({
     source_file: z.string().optional().nullable(),
     source_row: z.number().int().optional().nullable(),
     notes: z.string().optional().nullable(),
+    planning_year: z.number().int().min(2000).max(2200).optional(),
+    planning_cycle: z.string().trim().min(1).optional().default("annual"),
 });
 
 const createSchema = z.object({
@@ -33,6 +35,9 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const school = url.searchParams.get("school");
     const status = url.searchParams.get("status");
     const q = url.searchParams.get("q");
+    const cycle = (url.searchParams.get("cycle") ?? "annual").trim() || "annual";
+    const yearParam = Number(url.searchParams.get("year") ?? "");
+    const planningYear = Number.isFinite(yearParam) ? yearParam : new Date().getFullYear();
 
     let query = supabase
         .from("unoi_planning_rows")
@@ -43,6 +48,8 @@ export const GET = withAuth(async (req, { supabase, member }) => {
             session:event_sessions(id, exam_type, date)
         `)
         .eq("org_id", member.org_id)
+        .eq("planning_year", planningYear)
+        .eq("planning_cycle", cycle)
         .order("proposed_date", { ascending: true })
         .order("school_name", { ascending: true });
 
@@ -56,6 +63,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const { data, error } = await query;
     if (error) throw error;
     return NextResponse.json({ rows: data ?? [], total: data?.length ?? 0 });
+    return NextResponse.json({ rows: data ?? [], total: data?.length ?? 0, year: planningYear, cycle });
 }, { module: "events", action: "view" });
 
 export const POST = withAuth(async (req, { supabase, member }) => {
@@ -68,6 +76,8 @@ export const POST = withAuth(async (req, { supabase, member }) => {
     const payload = parsed.data.rows.map((row) => ({
         ...row,
         org_id: member.org_id,
+        planning_year: row.planning_year ?? new Date(row.proposed_date).getUTCFullYear(),
+        planning_cycle: row.planning_cycle ?? "annual",
     }));
 
     const { data, error } = await supabase

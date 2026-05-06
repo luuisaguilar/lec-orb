@@ -1,6 +1,6 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-05-04
+Ultima actualizacion: 2026-05-05
 
 ---
 
@@ -56,6 +56,12 @@ Diagnostico E2E actual:
 ### 2. Automatización de Auditoría SGC
 - [ ] Notificaciones automáticas por CAR vencidas.
 - [ ] Generación de PDF para reportes de Auditoría Interna.
+
+### 3. Base del módulo Project Management (nuevo)
+- [x] ADR del módulo PM documentado (`docs/adr/ADR-007-project-management-module-foundation.md`)
+- [ ] Diseñar y aplicar migración base `pm_*` con RLS
+- [ ] Exponer endpoints `/api/v1/pm/*` (projects, boards, tasks)
+- [ ] Construir UI MVP en `/dashboard/proyectos` (kanban + tabla)
 
 ---
 

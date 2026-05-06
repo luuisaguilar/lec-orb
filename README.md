@@ -37,6 +37,17 @@ The app is built with Next.js App Router and Supabase, with tenant isolation by 
 - Invitations: create, resend, accept via RPC, expiration flow
 - Multi-tenant org management: RBAC, audit log, notifications, documents
 
+## Project Management Module (Planned)
+
+LEC Orb now has a documented foundation to add a transversal work management module (Asana/Trello/Monday style) reusing the existing multi-tenant architecture.
+
+- Scope target: projects, boards, columns, tasks, assignees, due dates, labels
+- UI target: kanban + table first, timeline in later phase
+- Backend target: `/api/v1/pm/*` with `withAuth` + `logAudit`
+- DB target: dedicated `pm_*` tables with RLS from day one
+
+Decision log: `docs/adr/ADR-007-project-management-module-foundation.md`
+
 ## Getting Started
 
 ### Prerequisites
@@ -60,11 +71,15 @@ npm run dev
 ## Documentation Index
 
 - [Handoff Guide](./HANDOFF.md) - current status, risks, next steps
+- [Infrastructure Status](./INFRASTRUCTURE_STATUS.md) - launch readiness and live execution status
 - [Project Roadmap](./docs/ROADMAP.md) - backlog and prioritization
+- [ADR-007 Project Management Module Foundation](./docs/adr/ADR-007-project-management-module-foundation.md) - architecture decision for PM module rollout
 - [Testing Guide](./docs/TESTING_GUIDE.md) - current test strategy and known gaps
 - [Finance Modules Guide](./docs/FINANCE_MODULES.md) - Caja Chica and Presupuesto details
 - [Database Schema](./docs/DATABASE_SCHEMA.md) - entities, enums, RPCs
 - [API Modules](./docs/API_MODULES.md) - route reference
+- [Executive Dashboard + Observability](./docs/executive-observability/README.md) - screens, KPIs, backlog, handoff, runbook, and paths
+- [Executive Dashboard Ticket Board](./docs/executive-observability/TICKETS_SPRINT_BOARD.md) - sprint-ready tickets with estimates and dependencies
 
 ---
 

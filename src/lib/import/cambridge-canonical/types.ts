@@ -53,3 +53,4 @@ export type LogisticaPayrollLineRecord = {
     oralDayRaw: string | null;
     writtenDayRaw: string | null;
 };
+
