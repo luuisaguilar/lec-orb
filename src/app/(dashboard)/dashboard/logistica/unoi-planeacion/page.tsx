@@ -263,6 +263,111 @@ const defaultTableFilters: TableColumnFilters = {
     vinculo: "all",
 };
 
+/** Radix Select no admite value vacío; se usa como opción “sin filtro”. */
+const TABLE_PLAN_QUICK_PICK_CLEAR = "__unoi_table_plan_clear__";
+
+type TablePlanQuickPickLists = {
+    fechas: string[];
+    cities: string[];
+    projects: string[];
+    colegios: string[];
+    niveles: string[];
+    examenes: string[];
+    estados: PlanningRow["planning_status"][];
+};
+
+function TablePlanQuickPickBar({
+    filters,
+    setPatch,
+    lists,
+    disabled,
+}: {
+    filters: TableColumnFilters;
+    setPatch: (p: Partial<TableColumnFilters>) => void;
+    lists: TablePlanQuickPickLists;
+    disabled?: boolean;
+}) {
+    const selStr = (v: string) => (v.trim() === "" ? TABLE_PLAN_QUICK_PICK_CLEAR : v);
+
+    const strField = (
+        label: string,
+        key: "fecha" | "city" | "project" | "colegio" | "nivel" | "examen" | "estado",
+        options: string[],
+        noneLabel = "Cualquiera"
+    ) => (
+        <div className="min-w-0 space-y-1">
+            <Label className="text-[10px] font-normal text-muted-foreground">{label}</Label>
+            <Select
+                value={selStr(filters[key])}
+                onValueChange={(v) => setPatch({ [key]: v === TABLE_PLAN_QUICK_PICK_CLEAR ? "" : v } as Partial<TableColumnFilters>)}
+                disabled={disabled}
+            >
+                <SelectTrigger size="sm" className="h-8 w-full min-w-0 text-xs shadow-xs">
+                    <SelectValue placeholder={noneLabel} />
+                </SelectTrigger>
+                <SelectContent position="popper" className="max-h-60 w-[var(--radix-select-trigger-width)] min-w-[12rem]">
+                    <SelectItem value={TABLE_PLAN_QUICK_PICK_CLEAR} className="text-xs">
+                        {noneLabel}
+                    </SelectItem>
+                    {options.map((opt) => (
+                        <SelectItem key={`${key}:${opt}`} value={opt} className="max-w-[min(100vw-3rem,28rem)] truncate text-xs" title={opt}>
+                            {opt}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+
+    return (
+        <div className="space-y-2 rounded-lg border border-border/70 bg-muted/20 p-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <Label className="text-xs text-muted-foreground">Selección rápida</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                        Elige valores que ya existen en los datos cargados (mismos filtros que por columna). La búsqueda libre de
+                        arriba sigue funcionando en paralelo.
+                    </p>
+                </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {strField("Fecha", "fecha", lists.fechas)}
+                {strField("City", "city", lists.cities)}
+                {strField("Proyecto", "project", lists.projects)}
+                {strField("Colegio", "colegio", lists.colegios)}
+                {strField("Nivel", "nivel", lists.niveles)}
+                {strField("Examen", "examen", lists.examenes)}
+                {strField("Estado", "estado", lists.estados)}
+                <div className="min-w-0 space-y-1">
+                    <Label className="text-[10px] font-normal text-muted-foreground">Evento</Label>
+                    <Select
+                        value={filters.vinculo}
+                        onValueChange={(v) =>
+                            setPatch({ vinculo: v as TableColumnFilters["vinculo"] })
+                        }
+                        disabled={disabled}
+                    >
+                        <SelectTrigger size="sm" className="h-8 w-full min-w-0 text-xs shadow-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="max-h-60">
+                            <SelectItem value="all" className="text-xs">
+                                Todos
+                            </SelectItem>
+                            <SelectItem value="yes" className="text-xs">
+                                Con evento
+                            </SelectItem>
+                            <SelectItem value="no" className="text-xs">
+                                Sin evento
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function EventPlannerLink({ eventId, className }: { eventId: string; className?: string }) {
     return (
         <Link
@@ -529,6 +634,34 @@ export default function UNOiPlanningPage() {
         fetcher
     );
     const rows = useMemo(() => data?.rows ?? [], [data]);
+
+    const tablePlanQuickPickLists = useMemo((): TablePlanQuickPickLists => {
+        const fechas = new Set<string>();
+        const cities = new Set<string>();
+        const projects = new Set<string>();
+        const colegios = new Set<string>();
+        const niveles = new Set<string>();
+        const examenes = new Set<string>();
+        const estados = new Set<PlanningRow["planning_status"]>();
+        for (const r of rows) {
+            fechas.add(r.proposed_date);
+            if (r.city?.trim()) cities.add(r.city.trim());
+            if (r.project?.trim()) projects.add(r.project.trim());
+            if (r.school_name?.trim()) colegios.add(r.school_name.trim());
+            if (r.nivel?.trim()) niveles.add(r.nivel.trim());
+            if (r.exam_type?.trim()) examenes.add(r.exam_type.trim().toLowerCase());
+            estados.add(r.planning_status);
+        }
+        return {
+            fechas: [...fechas].sort(),
+            cities: [...cities].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })),
+            projects: [...projects].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })),
+            colegios: [...colegios].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })),
+            niveles: [...niveles].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })),
+            examenes: sortExamCols([...examenes]),
+            estados: [...estados].sort(),
+        };
+    }, [rows]);
 
     const rowsForViews = useMemo(
         () =>
@@ -949,6 +1082,13 @@ export default function UNOiPlanningPage() {
                                     Limpiar todo
                                 </Button>
                             </div>
+
+                            <TablePlanQuickPickBar
+                                filters={tableFilters}
+                                setPatch={setTbl}
+                                lists={tablePlanQuickPickLists}
+                                disabled={isLoading}
+                            />
 
                             {(activeTableFilterChips.length > 0 || quickTableSearch.trim()) && (
                                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 px-3 py-2">
