@@ -12,7 +12,8 @@
     "lint": "eslint",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "export:logistica-payroll": "npx tsx scripts/export-logistica-payroll-lines.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

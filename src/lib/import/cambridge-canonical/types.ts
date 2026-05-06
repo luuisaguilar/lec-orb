@@ -33,3 +33,23 @@ export type LogisticaSessionRecord = {
     supervisorLabels: string[];
     sourceRow: number;
 };
+
+/** Payroll block: columns Personal / Actividad / Duración / Tarifa / Subtotal (regional sheets). */
+export type LogisticaPayrollLineRecord = {
+    sheetName: string;
+    venueLabel: string;
+    sourceRow: number;
+    personName: string;
+    activityRaw: string;
+    /** Orb / event_staff style: SE | INVIGILATOR | SUPER | ADMIN; null if unrecognized */
+    roleCode: string | null;
+    hours: number | null;
+    /** When the "Duración" cell is a date (Excel) instead of numeric hours */
+    workDateIso: string | null;
+    tariff: number | null;
+    subtotal: number | null;
+    oralExamRaw: string | null;
+    writtenExamRaw: string | null;
+    oralDayRaw: string | null;
+    writtenDayRaw: string | null;
+};
