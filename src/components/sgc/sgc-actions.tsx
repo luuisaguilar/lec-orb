@@ -79,7 +79,7 @@ const STATUS_LABEL: Record<SgcAction["status"], string> = {
 };
 
 const STATUS_STYLE: Record<SgcAction["status"], string> = {
-    draft: "bg-slate-700 text-slate-100",
+    draft: "bg-slate-700 text-slate-900 dark:text-slate-100",
     open: "bg-blue-900/70 text-blue-200",
     in_progress: "bg-amber-900/70 text-amber-200",
     done: "bg-emerald-900/70 text-emerald-200",
@@ -155,7 +155,7 @@ export default function SGCActions() {
     // This MUST be after all hooks to follow the Rules of Hooks
     if (userLoading) {
         return (
-            <div className="flex items-center justify-center h-64 text-slate-500">
+            <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400">
                 <Loader2 className="w-6 h-6 animate-spin mr-2" />
                 Validando permisos...
             </div>
@@ -256,8 +256,8 @@ export default function SGCActions() {
         <div className="space-y-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold text-white">Acciones CAPA</h3>
-                    <p className="text-sm text-slate-400">Planeacion, ejecucion y cierre de acciones correctivas/preventivas.</p>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Acciones CAPA</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Planeacion, ejecucion y cierre de acciones correctivas/preventivas.</p>
                 </div>
                 {hasPermission("sgc", "edit") && (
                     <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
@@ -276,9 +276,9 @@ export default function SGCActions() {
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div className="relative w-full lg:max-w-sm">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                     <Input
-                        className="pl-9 bg-slate-900/50 border-slate-700"
+                        className="pl-9 bg-white dark:bg-slate-900/50 border-slate-300 dark:border-slate-700"
                         placeholder="Buscar por ref, titulo o descripcion..."
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
@@ -286,7 +286,7 @@ export default function SGCActions() {
                 </div>
                 <div className="flex gap-2">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="bg-slate-900/50 border-slate-700 w-[180px]">
+                        <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 w-[180px]">
                             <SelectValue placeholder="Estatus" />
                         </SelectTrigger>
                         <SelectContent>
@@ -297,7 +297,7 @@ export default function SGCActions() {
                         </SelectContent>
                     </Select>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger className="bg-slate-900/50 border-slate-700 w-[180px]">
+                        <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 w-[180px]">
                             <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -311,54 +311,54 @@ export default function SGCActions() {
             </div>
 
             {isLoading ? (
-                <div className="h-64 flex items-center justify-center text-slate-400">
+                <div className="h-64 flex items-center justify-center text-slate-600 dark:text-slate-400">
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
                     Cargando acciones...
                 </div>
             ) : (
-                <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
-                    <CardHeader className="pb-3 border-b border-slate-800/60">
-                        <CardTitle className="text-sm uppercase tracking-widest text-slate-400">Listado CAPA</CardTitle>
+                <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800/60">
+                        <CardTitle className="text-sm uppercase tracking-widest text-slate-600 dark:text-slate-400">Listado CAPA</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-950/40 border-b border-slate-800/60">
+                                <thead className="bg-slate-50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/60">
                                     <tr>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Ref</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Titulo</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Tipo</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Etapa</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Estatus</th>
-                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500">Fecha limite</th>
-                                        <th className="px-3 py-2.5 text-right text-[10px] uppercase tracking-widest text-slate-500">Acciones</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Ref</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Titulo</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Tipo</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Etapa</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Estatus</th>
+                                        <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Fecha limite</th>
+                                        <th className="px-3 py-2.5 text-right text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.length === 0 && (
                                         <tr>
-                                            <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                                            <td colSpan={7} className="px-3 py-8 text-center text-slate-500 dark:text-slate-400">
                                                 Sin acciones para los filtros actuales.
                                             </td>
                                         </tr>
                                     )}
                                     {items.map((item) => (
-                                        <tr key={item.id} className="border-b border-slate-800/40 hover:bg-white/5">
-                                            <td className="px-3 py-2.5 font-mono text-xs text-slate-300">{item.ref}</td>
+                                        <tr key={item.id} className="border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-white/5">
+                                            <td className="px-3 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-300">{item.ref}</td>
                                             <td className="px-3 py-2.5">
                                                 <div className="space-y-1">
-                                                    <p className="font-semibold text-slate-100">{item.title}</p>
-                                                    <p className="text-xs text-slate-400 line-clamp-2">{item.description || "Sin descripcion"}</p>
+                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{item.description || "Sin descripcion"}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-300">{TYPE_LABEL[item.type_action]}</td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-300">{stageMap.get(item.stage_id || "") ?? "Sin etapa"}</td>
+                                            <td className="px-3 py-2.5 text-xs text-slate-700 dark:text-slate-300">{TYPE_LABEL[item.type_action]}</td>
+                                            <td className="px-3 py-2.5 text-xs text-slate-700 dark:text-slate-300">{stageMap.get(item.stage_id || "") ?? "Sin etapa"}</td>
                                             <td className="px-3 py-2.5">
                                                 <Badge className={`${STATUS_STYLE[item.status]} text-[10px] border-none`}>
                                                     {STATUS_LABEL[item.status]}
                                                 </Badge>
                                             </td>
-                                            <td className="px-3 py-2.5 text-xs text-slate-400">{formatDate(item.deadline_at)}</td>
+                                            <td className="px-3 py-2.5 text-xs text-slate-600 dark:text-slate-400">{formatDate(item.deadline_at)}</td>
                                             <td className="px-3 py-2.5">
                                                 <div className="flex justify-end gap-1">
                                                     <Button
@@ -391,15 +391,15 @@ export default function SGCActions() {
             )}
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 text-slate-100">
+                <DialogContent className="max-w-3xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
                     <DialogHeader>
                         <DialogTitle>{editingId ? "Editar Accion CAPA" : "Nueva Accion CAPA"}</DialogTitle>
-                        <DialogDescription className="text-slate-400">
+                        <DialogDescription className="text-slate-600 dark:text-slate-400">
                             Configura tipo, etapa y compromiso de fecha para controlar cumplimiento.
                         </DialogDescription>
                     </DialogHeader>
                     {loadingDetails ? (
-                        <div className="h-36 flex items-center justify-center text-slate-400">
+                        <div className="h-36 flex items-center justify-center text-slate-600 dark:text-slate-400">
                             <Loader2 className="h-5 w-5 animate-spin mr-2" />
                             Cargando accion...
                         </div>
@@ -413,7 +413,7 @@ export default function SGCActions() {
                                         <FormItem>
                                             <FormLabel>Titulo</FormLabel>
                                             <FormControl>
-                                                <Input {...field} value={field.value || ""} className="bg-slate-900/60 border-slate-700" />
+                                                <Input {...field} value={field.value || ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -427,7 +427,7 @@ export default function SGCActions() {
                                         <FormItem>
                                             <FormLabel>Descripcion</FormLabel>
                                             <FormControl>
-                                                <Textarea {...field} value={field.value || ""} className="bg-slate-900/60 border-slate-700 min-h-[90px]" />
+                                                <Textarea {...field} value={field.value || ""} className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 min-h-[90px]" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -443,7 +443,7 @@ export default function SGCActions() {
                                                 <FormLabel>Tipo</FormLabel>
                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Tipo" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -464,7 +464,7 @@ export default function SGCActions() {
                                                 <FormLabel>Prioridad</FormLabel>
                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Prioridad" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -484,7 +484,7 @@ export default function SGCActions() {
                                                 <FormLabel>Estatus</FormLabel>
                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Estatus" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -505,7 +505,7 @@ export default function SGCActions() {
                                                 <FormLabel>Etapa</FormLabel>
                                                 <Select value={field.value || "__none__"} onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}>
                                                     <FormControl>
-                                                        <SelectTrigger className="bg-slate-900/60 border-slate-700">
+                                                        <SelectTrigger className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700">
                                                             <SelectValue placeholder="Etapa" />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -530,7 +530,7 @@ export default function SGCActions() {
                                                         type="date"
                                                         value={field.value || ""}
                                                         onChange={field.onChange}
-                                                        className="bg-slate-900/60 border-slate-700"
+                                                        className="bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700"
                                                     />
                                                 </FormControl>
                                             </FormItem>
@@ -539,7 +539,7 @@ export default function SGCActions() {
                                 </div>
 
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" className="border-slate-700" onClick={() => setDialogOpen(false)}>
+                                    <Button type="button" variant="outline" className="border-slate-300 dark:border-slate-700" onClick={() => setDialogOpen(false)}>
                                         Cancelar
                                     </Button>
                                     <Button type="submit" disabled={saving}>
@@ -558,14 +558,15 @@ export default function SGCActions() {
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
     return (
-        <Card className="bg-slate-900/50 border-slate-800">
+        <Card className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
             <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-slate-950">{icon}</div>
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950">{icon}</div>
                 <div>
-                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{label}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{value}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-semibold">{label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
                 </div>
             </CardContent>
         </Card>
     );
 }
+

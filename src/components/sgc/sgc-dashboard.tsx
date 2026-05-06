@@ -38,7 +38,7 @@ export default function SGCDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-slate-500 font-medium animate-pulse">Calculando indicadores clave...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium animate-pulse">Calculando indicadores clave...</p>
       </div>
     );
   }
@@ -48,8 +48,8 @@ export default function SGCDashboard() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center p-8 bg-rose-500/5 border border-rose-500/20 rounded-2xl max-w-md">
           <AlertCircle className="h-10 w-10 text-rose-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2">Error al cargar métricas</h3>
-          <p className="text-sm text-slate-400">{error.message}</p>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Error al cargar métricas</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{error.message}</p>
         </div>
       </div>
     );
@@ -93,12 +93,12 @@ export default function SGCDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-slate-800 bg-slate-900/40 backdrop-blur-md overflow-hidden relative group">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 backdrop-blur-md overflow-hidden relative group">
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
             <TrendingUp className="h-32 w-32" />
           </div>
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
               Distribución por Severidad
             </CardTitle>
             <CardDescription className="text-xs">
@@ -107,15 +107,15 @@ export default function SGCDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
              {Object.entries(data?.ncBySeverity || {}).length === 0 ? (
-               <p className="text-center py-8 text-slate-500 text-sm italic">Sin datos de severidad</p>
+               <p className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm italic">Sin datos de severidad</p>
              ) : (
                Object.entries(data?.ncBySeverity || {}).map(([key, count]: [string, any]) => (
                  <div key={key} className="space-y-1.5">
                    <div className="flex justify-between text-xs">
-                     <span className="text-slate-300 font-medium capitalize">{key}</span>
-                     <span className="text-slate-500">{count} NCs</span>
+                     <span className="text-slate-700 dark:text-slate-300 font-medium capitalize">{key}</span>
+                     <span className="text-slate-500 dark:text-slate-400">{count} NCs</span>
                    </div>
-                   <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                      <div 
                         className={cn(
                           "h-full bg-primary transition-all duration-1000",
@@ -130,9 +130,9 @@ export default function SGCDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/40 backdrop-blur-md overflow-hidden relative group">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 backdrop-blur-md overflow-hidden relative group">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
               Estatus General CAPA
             </CardTitle>
             <CardDescription className="text-xs">
@@ -144,11 +144,11 @@ export default function SGCDashboard() {
                <StatusCircle label="Cerradas" value={data?.capas?.completed || 0} color="emerald" total={data?.capas?.total} />
                <StatusCircle label="Pendientes" value={data?.capas?.pending || 0} color="amber" total={data?.capas?.total} />
             </div>
-            <div className="mt-6 pt-6 border-t border-slate-800/50">
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                    <span className="text-[11px] text-slate-400">Riesgos Críticos:</span>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-400">Riesgos Críticos:</span>
                   </div>
                   <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px]">
                     {data?.risks?.critical || 0} Hallazgos
@@ -161,10 +161,10 @@ export default function SGCDashboard() {
       
       <SGCCarTracker />
 
-      <Card className="border-slate-800 bg-slate-900/40 backdrop-blur-md">
+      <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 backdrop-blur-md">
         <CardHeader className="flex flex-row items-center justify-between">
            <div>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
               Insights del Sistema
             </CardTitle>
             <CardDescription className="text-xs">
@@ -204,21 +204,21 @@ function MetricCard({ title, value, description, icon, trend, trendType = 'up', 
   };
 
   return (
-    <Card className={cn("bg-slate-900/40 border-slate-800 backdrop-blur-sm relative overflow-hidden transition-all hover:translate-y-[-2px] hover:shadow-xl group")}>
+    <Card className={cn("bg-white dark:bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 backdrop-blur-sm relative overflow-hidden transition-all hover:translate-y-[-2px] hover:shadow-xl group")}>
       <div className={cn("absolute inset-0 bg-linear-to-br opacity-0 group-hover:opacity-100 transition-opacity", colors[color])} />
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{title}</CardTitle>
-        <div className={cn("p-1.5 rounded-lg bg-slate-950/50 border border-slate-800", colors[color])}>
+        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{title}</CardTitle>
+        <div className={cn("p-1.5 rounded-lg bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800", colors[color])}>
           {icon}
         </div>
       </CardHeader>
       <CardContent className="relative z-10">
-        <div className="text-2xl font-bold text-white tracking-tight">{value}</div>
-        <p className="text-[10px] text-slate-500 mt-1">{description}</p>
+        <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{value}</div>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{description}</p>
         {trend && (
           <div className="mt-3 flex items-center gap-1.5">
             <Badge variant="outline" className={cn(
-              "text-[9px] px-1.5 py-0 font-medium border-transparent bg-slate-950/50",
+              "text-[9px] px-1.5 py-0 font-medium border-transparent bg-slate-50 dark:bg-slate-950/50",
               trendType === 'up' ? "text-emerald-400" : "text-rose-400"
             )}>
               {trend}
@@ -245,7 +245,7 @@ function StatusCircle({ label, value, color, total }: any) {
       )}>
         <span className="text-xl font-bold">{value}</span>
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-tighter text-slate-500">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-tighter text-slate-500 dark:text-slate-400">{label}</p>
       <p className="text-[9px] text-slate-600 font-medium">
         {total > 0 ? Math.round((value / total) * 100) : 0}%
       </p>
@@ -269,3 +269,4 @@ function InsightItem({ title, content, type }: any) {
     </div>
   );
 }
+

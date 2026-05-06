@@ -154,7 +154,7 @@ export default function SGCReviews() {
 
   if (userLoading || (isLoading && !data)) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
+      <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm">Iniciando ciclo de revisión...</p>
       </div>
@@ -183,23 +183,23 @@ export default function SGCReviews() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => setSelectedId(null)} className="border-slate-800">
+            <Button variant="outline" size="sm" onClick={() => setSelectedId(null)} className="border-slate-200 dark:border-slate-800">
               <ArrowLeft className="h-4 w-4 mr-2" /> Volver
             </Button>
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-3">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                 {review.title}
-                <Badge variant="outline" className="border-slate-700 text-slate-400 font-mono text-[10px]">
+                <Badge variant="outline" className="border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-mono text-[10px]">
                   {review.ref}
                 </Badge>
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Fecha de Revisión: {new Date(review.review_date).toLocaleDateString()} · Creado por: {review.creator?.full_name ?? "Sistema"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-slate-800">
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="border-slate-200 dark:border-slate-800">
               <Download className="h-3.5 w-3.5 mr-2" /> Exportar PDF
             </Button>
             {review.state === "open" ? (
@@ -222,14 +222,14 @@ export default function SGCReviews() {
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
-            <Card className="border-slate-800 bg-slate-900/40">
-              <CardHeader className="pb-3 border-b border-slate-800/50">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">1. Politica y Objetivos</CardTitle>
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
+              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">1. Politica y Objetivos</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                <p className="text-xs text-slate-500 italic">Evaluación de la adecuación y eficacia de la política de calidad y los objetivos estratégicos.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">Evaluación de la adecuación y eficacia de la política de calidad y los objetivos estratégicos.</p>
                 <Textarea 
-                  className="bg-slate-950/50 border-slate-800 min-h-[150px]"
+                  className="bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 min-h-[150px]"
                   placeholder="Describe el estado de la política..."
                   value={formDraft.policy ?? ""}
                   onChange={(e) => setFormDraft(p => ({ ...p, policy: e.target.value }))}
@@ -238,14 +238,14 @@ export default function SGCReviews() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-800 bg-slate-900/40">
-              <CardHeader className="pb-3 border-b border-slate-800/50">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">2. Cambios y Desempeño</CardTitle>
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
+              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">2. Cambios y Desempeño</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                <p className="text-xs text-slate-500 italic">Cambios en las cuestiones externas e internas, desempeño de los procesos y conformidad de los productos/servicios.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">Cambios en las cuestiones externas e internas, desempeño de los procesos y conformidad de los productos/servicios.</p>
                 <Textarea 
-                  className="bg-slate-950/50 border-slate-800 min-h-[150px]"
+                  className="bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 min-h-[150px]"
                   placeholder="Resultados de auditorías, retroalimentación del cliente..."
                   value={formDraft.changes ?? ""}
                   onChange={(e) => setFormDraft(p => ({ ...p, changes: e.target.value }))}
@@ -256,14 +256,14 @@ export default function SGCReviews() {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-slate-800 bg-slate-900/40">
-              <CardHeader className="pb-3 border-b border-slate-800/50">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">Conclusiones</CardTitle>
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
+              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">Conclusiones</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                <p className="text-xs text-slate-500 italic">Decisiones relacionadas con oportunidades de mejora y necesidades de cambio.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">Decisiones relacionadas con oportunidades de mejora y necesidades de cambio.</p>
                 <Textarea 
-                  className="bg-slate-950/50 border-slate-800 min-h-[200px]"
+                  className="bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 min-h-[200px]"
                   placeholder="Resumen ejecutivo y próximos pasos..."
                   value={formDraft.conclusion ?? ""}
                   onChange={(e) => setFormDraft(p => ({ ...p, conclusion: e.target.value }))}
@@ -272,9 +272,9 @@ export default function SGCReviews() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-800 bg-slate-900/40">
-              <CardHeader className="pb-3 border-b border-slate-800/50">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">Evidencias</CardTitle>
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40">
+              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800/50">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">Evidencias</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {hasPermission("sgc", "edit") && (
@@ -316,8 +316,8 @@ export default function SGCReviews() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Revisión por la Dirección</h2>
-          <p className="text-sm text-slate-400">Evaluación periódica del SGC para asegurar su conveniencia y adecuación.</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Revisión por la Dirección</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Evaluación periódica del SGC para asegurar su conveniencia y adecuación.</p>
         </div>
         {isAtLeastSupervisor && (
           <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
@@ -328,39 +328,39 @@ export default function SGCReviews() {
 
       <div className="grid gap-4">
         {reviews.length === 0 ? (
-          <Card className="border-dashed border-slate-800 bg-slate-900/20 py-20">
+          <Card className="border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white dark:bg-slate-900/20 py-20">
             <CardContent className="flex flex-col items-center gap-4">
               <FileText className="h-12 w-12 text-slate-700 opacity-20" />
-              <p className="text-slate-500 text-sm">No se han registrado ciclos de revisión directiva.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">No se han registrado ciclos de revisión directiva.</p>
               {isAtLeastSupervisor && (
-                <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)} className="border-slate-800">
+                <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)} className="border-slate-200 dark:border-slate-800">
                   Iniciar ciclo anual/semestral
                 </Button>
               )}
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-slate-800 bg-slate-900/40 overflow-hidden">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-white dark:bg-slate-900/40 overflow-hidden">
             <Table>
-              <TableHeader className="bg-slate-950/40">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Ref</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Titulo / Periodo</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Fecha</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500">Estatus</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 text-right">Accion</TableHead>
+              <TableHeader className="bg-slate-50 dark:bg-slate-950/40">
+                <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Ref</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Titulo / Periodo</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Fecha</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Estatus</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 text-right">Accion</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reviews.map((rev) => (
                   <TableRow 
                     key={rev.id} 
-                    className="border-slate-800/40 hover:bg-white/5 cursor-pointer group"
+                    className="border-slate-200 dark:border-slate-200 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer group"
                     onClick={() => setSelectedId(rev.id)}
                   >
-                    <TableCell className="font-mono text-xs text-slate-400">{rev.ref}</TableCell>
-                    <TableCell className="font-medium text-slate-200">{rev.title}</TableCell>
-                    <TableCell className="text-xs text-slate-500">
+                    <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">{rev.ref}</TableCell>
+                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">{rev.title}</TableCell>
+                    <TableCell className="text-xs text-slate-500 dark:text-slate-400">
                       {new Date(rev.review_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
@@ -369,7 +369,7 @@ export default function SGCReviews() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-slate-400 group-hover:text-primary">
+                      <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-400 group-hover:text-primary">
                         Abrir Acta <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </TableCell>
@@ -382,20 +382,20 @@ export default function SGCReviews() {
       </div>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="bg-slate-950 border-slate-800 text-slate-100">
+        <DialogContent className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
           <DialogHeader>
             <DialogTitle>Nuevo Acta de Revisión</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-600 dark:text-slate-400">
               Inicia una nueva revisión directiva para evaluar el desempeño global del sistema.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Titulo del Acta</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">Titulo del Acta</label>
             <Input 
               placeholder="Ej: Revision Anual SGC 2024"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              className="bg-slate-900 border-slate-700"
+              className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
             />
           </div>
           <DialogFooter>
@@ -410,3 +410,4 @@ export default function SGCReviews() {
     </div>
   );
 }
+
