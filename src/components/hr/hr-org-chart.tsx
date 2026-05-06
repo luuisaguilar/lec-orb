@@ -295,13 +295,11 @@ export default function HROrgChart() {
 
         toast.success("Documento guardado en SGC", { id: toastId });
       } else {
-        // Trigger browser download
+        // Open PDF in a new tab for viewing
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(url);
+        window.open(url, '_blank');
+        // Revoke after a short delay to ensure the new tab has loaded it
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
         toast.success("Documento generado", { id: toastId });
       }
     } catch {
@@ -954,8 +952,8 @@ export default function HROrgChart() {
                 <div className="border-t border-slate-800 p-4 bg-slate-950/95 backdrop-blur-xl flex flex-col gap-2 shrink-0">
                   <div className="flex gap-2 w-full">
                     <Button 
-                      variant="outline" 
-                      className="flex-1 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-11 rounded-xl"
+                      variant="secondary" 
+                      className="flex-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 font-bold h-11 rounded-xl"
                       onClick={() => setIsEditing(true)}
                     >
                       <Edit3 className="w-4 h-4 mr-2" />

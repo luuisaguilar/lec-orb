@@ -156,7 +156,7 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button className="gap-2.5 bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 px-5">
+                <Button className="gap-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 px-5">
                     <UserPlus className="h-4.5 w-4.5" />
                     Invitar Usuario
                 </Button>
@@ -175,7 +175,7 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                             {inviteResult.sendEmailRequested && inviteResult.emailSent ? (
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                             ) : (
-                                <Link2 className="h-4 w-4 text-[#002e5d]" />
+                                <Link2 className="h-4 w-4 text-blue-400" />
                             )}
                             <AlertTitle>
                                 {inviteResult.sendEmailRequested && inviteResult.emailSent
@@ -226,7 +226,7 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                             <Button
                                 type="button"
                                 onClick={copyLink}
-                                className="gap-2 bg-[#002e5d] hover:bg-[#001f3f]"
+                                className="gap-2 bg-blue-600 hover:bg-blue-700"
                             >
                                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                 {copied ? "Copiado" : "Copiar enlace"}
@@ -301,7 +301,7 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting} className="bg-[#002e5d] hover:bg-[#001f3f]">
+                                <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {sendEmail ? "Crear y enviar" : "Crear y copiar enlace"}
                                 </Button>
@@ -313,3 +313,4 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
         </Dialog>
     );
 }
+

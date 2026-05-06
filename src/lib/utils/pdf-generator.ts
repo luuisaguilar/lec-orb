@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { OrgNode } from '@/lib/data/hr';
 
 /**
@@ -23,138 +23,306 @@ async function imageUrlToBase64(url: string): Promise<string | null> {
 }
 
 /**
+ * Helper: check if we need a new page and add one if so
+ */
+function ensureSpace(doc: jsPDF, currentY: number, needed: number, margin: number): number {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  if (currentY + needed > pageHeight - 25) {
+    doc.addPage();
+    return margin;
+  }
+  return currentY;
+}
+
+/**
  * Generates a professional Job Profile PDF for a given organizational node.
+ * Follows the original LEC Excel template structure (RRHH-F-01).
  */
 export async function generateJobProfilePDF(node: OrgNode) {
-  // Initialize jsPDF (A4 format)
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  // 1. ASYNC ASSETS LOADING
-  // In a real environment, this would be an absolute URL or a path from public
   const logoBase64 = await imageUrlToBase64('/lec_logo_pack/lec_logo_full.png');
 
-  // 2. STYLING CONFIG
-  const primaryColor = [59, 130, 246]; // #3b82f6
-  const secondaryColor = [15, 23, 42]; // #0f172a
-  
-  const margin = 20;
+  const primaryColor: [number, number, number] = [59, 130, 246];
+  const headerColor: [number, number, number] = [15, 23, 42];
+  const margin = 15;
   const pageWidth = doc.internal.pageSize.getWidth();
-  let currentY = margin;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
 
-  // 3. HEADER SECTION
+  // ─── HEADER ───
   if (logoBase64) {
-    doc.addImage(logoBase64, 'PNG', margin, currentY, 40, 10);
+    doc.addImage(logoBase64, 'PNG', margin, y, 38, 10);
   }
-  
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('SISTEMA DE GESTIÓN DE CALIDAD', pageWidth - margin, currentY + 5, { align: 'right' });
-  doc.text('RRHH-F-01 | v2.1', pageWidth - margin, currentY + 10, { align: 'right' });
-
-  currentY += 25;
-
-  // Title Box
-  doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.rect(margin, currentY, pageWidth - (margin * 2), 15, 'F');
-  
   doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text('FICHA TÉCNICA DE PERFIL DE PUESTO', pageWidth / 2, currentY + 10, { align: 'center' });
+  doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
+  doc.text('PERFIL DE PUESTOS', margin + 45, y + 7);
 
-  currentY += 25;
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('Revisión: 4', pageWidth - margin, y + 4, { align: 'right' });
+  doc.text('RRHH-F-01', pageWidth - margin, y + 8, { align: 'right' });
 
-  // 4. GENERAL INFORMATION TABLE
-  (doc as any).autoTable({
-    startY: currentY,
-    head: [[{ content: 'IDENTIFICACIÓN DEL PUESTO', colSpan: 2, styles: { halign: 'left', fillColor: primaryColor } }]],
+  y += 14;
+
+  // ISO references
+  doc.setFontSize(7);
+  doc.setTextColor(120);
+  doc.text('Ref. ISO 9001:2015 – 5.3, 7.1.2, 7.1.6, 7.2', margin, y);
+  y += 3.5;
+  doc.text('Ref. ISO 21001:2018 – 5.3, 7.1.6.1, 7.1.2.2', margin, y);
+
+  y += 8;
+
+  // ─── INFORMACIÓN GENERAL ───
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'INFORMACIÓN GENERAL', colSpan: 2, styles: { halign: 'left', fillColor: headerColor, textColor: [255, 255, 255] } }]],
     body: [
-      ['Título del Puesto:', node.role],
-      ['Titular Actual:', node.name],
-      ['Área / Departamento:', node.area],
-      ['Nivel Jerárquico:', node.type.toUpperCase()],
-      ['Reporta a:', 'Dirección General'], // In a real app, this would be dynamic
+      ['NOMBRE DEL PUESTO', node.role],
+      ['PUESTO AL QUE REPORTA', node.parentId || 'N/A'],
+      ['TITULAR ACTUAL', node.name || 'Vacante / Por asignar'],
+      ['NIVEL JERÁRQUICO', node.type.toUpperCase()],
+      ['ÁREA', node.area],
     ],
     theme: 'grid',
-    headStyles: { fontStyle: 'bold', fontSize: 10 },
-    bodyStyles: { fontSize: 9 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } },
-    margin: { left: margin, right: margin }
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [241, 245, 249] } },
+    margin: { left: margin, right: margin },
   });
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  currentY = (doc as any).lastAutoTable.finalY + 10;
+  // ─── MISIÓN DEL PUESTO ───
+  y = ensureSpace(doc, y, 30, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'MISIÓN DEL PUESTO', styles: { fillColor: primaryColor, textColor: [255, 255, 255] } }]],
+    body: [[node.mission || 'Sin misión definida.']],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5, fontStyle: 'italic' },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  // 5. MISSION SECTION
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text('MISIÓN DEL PUESTO', margin, currentY);
-  
-  currentY += 5;
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(9);
-  doc.setTextColor(60);
-  const missionLines = doc.splitTextToSize(node.mission || 'Sin misión definida.', pageWidth - (margin * 2));
-  doc.text(missionLines, margin, currentY);
+  // ─── DATOS PERSONALES ───
+  y = ensureSpace(doc, y, 25, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'DATOS PERSONALES', colSpan: 4, styles: { fillColor: headerColor, textColor: [255, 255, 255] } }]],
+    body: [
+      ['SEXO', node.sex || 'Indistinto', 'AÑOS DE EXPERIENCIA', node.experience || 'N/A'],
+      ['DISPONIBILIDAD PARA VIAJAR', node.travel || 'N/A', '', ''],
+    ],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 45, fillColor: [241, 245, 249] },
+      2: { fontStyle: 'bold', cellWidth: 45, fillColor: [241, 245, 249] },
+    },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  currentY += (missionLines.length * 5) + 10;
+  // ─── EDUCACIÓN ───
+  y = ensureSpace(doc, y, 25, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'EDUCACIÓN', colSpan: 2, styles: { fillColor: primaryColor, textColor: [255, 255, 255] } }]],
+    body: [
+      ['ESCOLARIDAD', node.education || 'N/A'],
+      ['ESPECIALIDAD', node.specialty || 'N/A'],
+    ],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [241, 245, 249] } },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  // 6. RESPONSIBILITIES TABLE
-  const responsibilities = typeof node.responsibilities === 'string' 
-    ? node.responsibilities.split('\n').filter(r => r.trim()) 
+  // ─── CONOCIMIENTOS ───
+  const knowledgeText = node.knowledge || 'N/A';
+  y = ensureSpace(doc, y, 20, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'CONOCIMIENTOS', styles: { fillColor: headerColor, textColor: [255, 255, 255] } }]],
+    body: [[knowledgeText]],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // ─── HABILIDADES ───
+  const skillsText = node.skills || 'N/A';
+  y = ensureSpace(doc, y, 20, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'HABILIDADES', styles: { fillColor: primaryColor, textColor: [255, 255, 255] } }]],
+    body: [[skillsText]],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // ─── IDIOMAS ───
+  y = ensureSpace(doc, y, 15, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'IDIOMAS', styles: { fillColor: headerColor, textColor: [255, 255, 255] } }]],
+    body: [[node.languages || 'N/A']],
+    theme: 'grid',
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5 },
+    margin: { left: margin, right: margin },
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // ─── RESPONSABILIDADES ───
+  const responsibilities = typeof node.responsibilities === 'string'
+    ? node.responsibilities.split('\n').filter(r => r.trim())
     : (node.responsibilities || []);
 
-  (doc as any).autoTable({
-    startY: currentY,
-    head: [[{ content: 'FUNCIONES Y RESPONSABILIDADES CLAVE', styles: { fillColor: primaryColor } }]],
+  y = ensureSpace(doc, y, 30, margin);
+  autoTable(doc, {
+    startY: y,
+    head: [[{ content: 'RESPONSABILIDADES', styles: { fillColor: primaryColor, textColor: [255, 255, 255] } }]],
     body: responsibilities.map((res, i) => [`${i + 1}. ${res.trim()}`]),
     theme: 'striped',
-    headStyles: { fontStyle: 'bold', fontSize: 10 },
-    bodyStyles: { fontSize: 8.5 },
-    margin: { left: margin, right: margin }
+    headStyles: { fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
   });
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  currentY = (doc as any).lastAutoTable.finalY + 10;
+  // ─── OTROS ROLES (if available) ───
+  // Read from OrgNode extended props if present
+  const otherRoles = (node as any).otherRoles;
+  if (otherRoles) {
+    y = ensureSpace(doc, y, 20, margin);
+    autoTable(doc, {
+      startY: y,
+      head: [[{ content: 'OTROS ROLES QUE PUEDE DESEMPEÑAR', styles: { fillColor: headerColor, textColor: [255, 255, 255] } }]],
+      body: [[otherRoles]],
+      theme: 'grid',
+      headStyles: { fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+      margin: { left: margin, right: margin },
+    });
+    y = (doc as any).lastAutoTable.finalY + 6;
+  }
 
-  // 7. REQUIREMENTS GRID
-  (doc as any).autoTable({
-    startY: currentY,
-    head: [[{ content: 'PERFIL Y REQUISITOS', colSpan: 2, styles: { fillColor: primaryColor } }]],
+  // ─── ATRIBUTOS DESEADOS (if available) ───
+  const attributes = (node as any).attributes;
+  if (attributes) {
+    y = ensureSpace(doc, y, 20, margin);
+    autoTable(doc, {
+      startY: y,
+      head: [[{ content: 'ATRIBUTOS DESEADOS', styles: { fillColor: primaryColor, textColor: [255, 255, 255] } }]],
+      body: [[attributes]],
+      theme: 'grid',
+      headStyles: { fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+      margin: { left: margin, right: margin },
+    });
+    y = (doc as any).lastAutoTable.finalY + 6;
+  }
+
+  // ─── FIRMAS ───
+  y = ensureSpace(doc, y, 40, margin);
+  const sigY = y + 5;
+  autoTable(doc, {
+    startY: sigY,
+    head: [[
+      { content: 'REVISADO POR:', styles: { fillColor: [241, 245, 249], textColor: [0, 0, 0] } },
+      { content: 'FECHA:', styles: { fillColor: [241, 245, 249], textColor: [0, 0, 0] } },
+    ]],
     body: [
-      ['Educación:', node.education || 'N/A'],
-      ['Experiencia:', node.experience || 'N/A'],
-      ['Idiomas:', node.languages || 'N/A'],
-      ['Conocimientos:', node.knowledge || 'N/A'],
+      ['', ''],
+      [{ content: 'APROBADO POR:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }, { content: 'FECHA:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }],
+      ['', ''],
+      [{ content: 'AUTORIZADO POR:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }, { content: 'FECHA:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }],
+      ['', ''],
     ],
     theme: 'grid',
-    headStyles: { fontStyle: 'bold', fontSize: 10 },
-    bodyStyles: { fontSize: 8.5 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } },
-    margin: { left: margin, right: margin }
+    headStyles: { fontStyle: 'bold', fontSize: 8, fillColor: [241, 245, 249], textColor: [0, 0, 0] },
+    bodyStyles: { fontSize: 8, minCellHeight: 12 },
+    margin: { left: margin, right: margin },
   });
 
-  // 8. FOOTER / SIGNATURES
-  const footerY = doc.internal.pageSize.getHeight() - 30;
-  doc.setDrawColor(200);
-  doc.line(margin, footerY, 80, footerY);
-  doc.line(pageWidth - margin - 60, footerY, pageWidth - margin, footerY);
-  
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text('Firma del Interesado', 50, footerY + 5, { align: 'center' });
-  doc.text('Autorización Dirección', pageWidth - 50, footerY + 5, { align: 'center' });
+  // ─── FOOTER ───
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(160);
+    doc.text(
+      `Languages Education Consulting — Perfil de Puesto — Pág. ${i}/${totalPages}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 8,
+      { align: 'center' }
+    );
+  }
 
-  // 9. OUTPUT
   const fileName = `Perfil_${node.role.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-  
-  return {
-    blob: doc.output('blob'),
-    fileName
+
+  return { blob: doc.output('blob'), fileName };
+}
+
+/**
+ * Generates a Job Profile PDF from the profile view data (used in hr-profiles.tsx).
+ */
+export async function generateJobProfilePDFFromView(profile: {
+  id: string;
+  title: string;
+  holderName?: string;
+  reportsTo: string[];
+  mission: string;
+  sex?: string;
+  experience?: string;
+  travel?: string;
+  education?: string;
+  specialty?: string;
+  knowledge?: string;
+  skills?: string;
+  languages?: string;
+  responsibilities: string;
+  otherRoles?: string;
+  attributes?: string;
+  processId?: string;
+}) {
+  // Map profile view to OrgNode shape for reuse
+  const node: OrgNode & { otherRoles?: string; attributes?: string } = {
+    id: profile.id,
+    role: profile.title,
+    name: profile.holderName || 'Vacante / Por asignar',
+    area: profile.id,
+    parentId: profile.reportsTo?.[0] || undefined,
+    type: 'operative',
+    mission: profile.mission,
+    sex: profile.sex,
+    experience: profile.experience,
+    travel: profile.travel,
+    education: profile.education,
+    specialty: profile.specialty,
+    knowledge: profile.knowledge,
+    skills: profile.skills,
+    languages: profile.languages,
+    responsibilities: profile.responsibilities,
+    processId: profile.processId,
+    otherRoles: profile.otherRoles,
+    attributes: profile.attributes,
   };
+
+  return generateJobProfilePDF(node);
 }
 
 /**

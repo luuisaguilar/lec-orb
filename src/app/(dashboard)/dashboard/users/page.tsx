@@ -165,8 +165,8 @@ export default function UsersPage() {
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 border-b">
                 <div className="space-y-1">
-                    <h2 className="text-3xl font-black tracking-tight text-white font-outfit">
-                        Usuarios y <span className="text-primary italic">Accesos</span>
+                    <h2 className="text-3xl font-black tracking-tight text-primary font-outfit">
+                        Usuarios y <span className="italic">Accesos</span>
                     </h2>
                     <p className="text-muted-foreground font-semibold">
                         Administración centralizada de miembros y matriz de permisos.
@@ -182,10 +182,10 @@ export default function UsersPage() {
 
             <Tabs defaultValue="active" className="space-y-4">
                 <TabsList className="bg-muted/50 border">
-                    <TabsTrigger value="active" className="data-[state=active]:bg-[#002e5d] data-[state=active]:text-white">
+                    <TabsTrigger value="active" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                         Usuarios Activos
                     </TabsTrigger>
-                    <TabsTrigger value="pending" className="relative data-[state=active]:bg-[#002e5d] data-[state=active]:text-white">
+                    <TabsTrigger value="pending" className="relative data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                         Invitaciones
                         {invitations.filter((i) => i.status === "pending").length > 0 && (
                             <span className="ml-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
@@ -196,7 +196,7 @@ export default function UsersPage() {
                 </TabsList>
 
                 <TabsContent value="active" className="space-y-4">
-                    <Card className="shadow-sm border-t-4 border-t-[#002e5d]">
+                    <Card className="shadow-sm border-t-4 border-t-blue-500">
                         <CardHeader>
                             <CardTitle>Miembros de la Organización</CardTitle>
                             <CardDescription>
@@ -228,7 +228,7 @@ export default function UsersPage() {
                                                             <AvatarFallback>{member.full_name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex flex-col">
-                                                            <span className="text-sm font-bold text-[#002e5d]">{member.full_name}</span>
+                                                            <span className="text-sm font-bold text-blue-400">{member.full_name}</span>
                                                             <span className="text-xs text-muted-foreground">{member.email}</span>
                                                         </div>
                                                     </div>
@@ -238,7 +238,7 @@ export default function UsersPage() {
                                                         variant="secondary"
                                                         className={
                                                             member.role === "admin"
-                                                                ? "bg-[#002e5d]/10 text-[#002e5d] border-[#002e5d]/20 uppercase text-[10px]"
+                                                                ? "bg-blue-600/10 text-blue-400 border-blue-500/20 uppercase text-[10px]"
                                                                 : member.role === "supervisor"
                                                                     ? "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 uppercase text-[10px]"
                                                                     : "uppercase text-[10px]"
@@ -253,7 +253,7 @@ export default function UsersPage() {
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className="text-sm font-medium text-[#002e5d]">
+                                                    <span className="text-sm font-medium text-blue-400">
                                                         {member.location || "N/A"}
                                                     </span>
                                                 </TableCell>
@@ -265,7 +265,7 @@ export default function UsersPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="text-[#002e5d] hover:bg-slate-100"
+                                                            className="text-blue-400 hover:bg-slate-800"
                                                             onClick={() => {
                                                                 setSelectedMemberId(member.id);
                                                                 setEditDialogOpen(true);
@@ -293,7 +293,7 @@ export default function UsersPage() {
                 </TabsContent>
 
                 <TabsContent value="pending" className="space-y-4">
-                    <Card className="shadow-sm border-t-4 border-t-[#002e5d]">
+                    <Card className="shadow-sm border-t-4 border-t-blue-500">
                         <CardHeader>
                             <div className="flex items-start justify-between gap-4">
                                 <div>
@@ -386,7 +386,7 @@ export default function UsersPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="px-3 font-bold text-[#002e5d] hover:bg-slate-100"
+                                                                className="px-3 font-bold text-blue-400 hover:bg-slate-800"
                                                                 disabled={resendingInviteId === inv.id}
                                                                 onClick={() => handleResendInvite(inv.id, inv.email)}
                                                             >
@@ -421,3 +421,4 @@ export default function UsersPage() {
         </div>
     );
 }
+
