@@ -40,6 +40,13 @@ interface NavGroup {
     items: NavItem[];
 }
 
+const GLOBAL_PROJECTS_ITEM: NavItem = {
+    label: "Proyectos (Empresa)",
+    href: "/dashboard/proyectos-global",
+    icon: "Kanban",
+    module: "project-management",
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Native module → route mapping
 // Maps a module slug to its actual Next.js route path.
@@ -75,6 +82,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "inventory": "/dashboard/logistica/inventario",
     "speaking-packs": "/dashboard/toefl/speaking-packs",
     "unoi-planning": "/dashboard/logistica/unoi-planeacion",
+    "event-documents": "/dashboard/institucional/documentos-eventos",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,6 +110,7 @@ async function navFetcher(url: string) {
 
 const MODULE_PERMISSION_ALIAS: Record<string, string> = {
     "travel-expenses": "finanzas",
+    "event-documents": "documents",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,7 +137,10 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
     const pathname = usePathname();
 
     // User data (permissions, role) — existing SWR call
-    const { data: userData, isLoading: userLoading } = useSWR("/api/v1/users/me", navFetcher);
+    const { data: userData, isLoading: userLoading } = useSWR(
+        variant === "dashboard" ? "/api/v1/users/me" : null,
+        navFetcher
+    );
 
     // Module registry — new SWR call
     const { data: modulesData, isLoading: modulesLoading } = useSWR(
@@ -140,26 +152,20 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
     // ── Build navigation groups from module_registry ──────────────────────────
     const navGroups = useMemo<NavGroup[]>(() => {
+        if (variant === "portal") {
+            // Portal stays static and independent from org_members profile checks.
+            return [{
+                label: null,
+                icon: "BarChart3",
+                items: PORTAL_ITEMS,
+            }];
+        }
+
         if (!userData || (userData as { __error?: boolean }).__error) {
             return [];
         }
         if (!(userData as { user?: unknown }).user) {
             return [];
-        }
-
-        if (variant === "portal") {
-            // Portal stays static, no module registry needed
-            const perms = userData.permissions || [];
-            const check = (module: string) => {
-                if (module === "dashboard") return true;
-                if (userData.role === "admin") return true;
-                return perms.find((p: any) => p.module === module)?.can_view;
-            };
-            return [{
-                label: null,
-                icon: "BarChart3",
-                items: PORTAL_ITEMS.filter((i) => check(i.module)),
-            }];
         }
 
         if (
@@ -183,6 +189,8 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             const perm = perms.find((p) => p.module === permissionSlug);
             return perm?.can_view ?? false;
         };
+
+        const canViewGlobalProjects = canViewModule("project-management");
 
         // Group by category
         const grouped: Record<string, ModuleRegistryEntry[]> = {};
@@ -234,6 +242,14 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             if (!mods || mods.length === 0) continue;
 
             const items: NavItem[] = mods.map((mod) => {
+                if (category === "Institucional" && mod.slug === "project-management") {
+                    return {
+                        label: "Proyectos (Coordinación)",
+                        href: "/dashboard/institucional/proyectos",
+                        icon: mod.icon,
+                        module: mod.slug,
+                    };
+                }
                 const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
                 return { label: mod.name, href, icon: mod.icon, module: mod.slug };
             });
@@ -243,6 +259,20 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                 icon: CATEGORY_ICONS[category] ?? "Layers",
                 items,
             });
+        }
+
+        if (canViewGlobalProjects) {
+            const globalGroup: NavGroup = {
+                label: null,
+                icon: GLOBAL_PROJECTS_ITEM.icon,
+                items: [GLOBAL_PROJECTS_ITEM],
+            };
+            const institucionalIndex = result.findIndex((group) => group.label === "Institucional");
+            if (institucionalIndex >= 0) {
+                result.splice(institucionalIndex + 1, 0, globalGroup);
+            } else {
+                result.push(globalGroup);
+            }
         }
 
         return result;
@@ -264,7 +294,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
         | { __error?: boolean; status?: number; error?: string; modules?: ModuleRegistryEntry[] }
         | undefined;
 
-    if (userPayload?.__error || !userPayload?.user) {
+    if (variant === "dashboard" && (userPayload?.__error || !userPayload?.user)) {
         const noOrg =
             userPayload?.status === 403 || userPayload?.error === "No organization found";
         return (
@@ -316,7 +346,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                         const isActive =
                             item.href === "/dashboard"
                                 ? pathname === "/dashboard"
-                                : pathname.startsWith(item.href);
+                                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                         return (
                             <Link
@@ -345,7 +375,9 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
                     // Group with collapsible children
                     const isAnyChildActive = group.items.some((i) =>
-                        i.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(i.href)
+                        i.href === "/dashboard"
+                            ? pathname === "/dashboard"
+                            : pathname === i.href || pathname.startsWith(`${i.href}/`)
                     );
 
                     return (
@@ -382,7 +414,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                         const isActive =
                                             item.href === "/dashboard"
                                                 ? pathname === "/dashboard"
-                                                : pathname.startsWith(item.href);
+                                                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                                         return (
                                             <Link

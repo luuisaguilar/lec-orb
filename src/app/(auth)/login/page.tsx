@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,7 +34,8 @@ import { GlobeBackground } from "@/components/auth/globe-background";
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const next = searchParams.get("next") ?? "/dashboard";
+    const next = searchParams.get("next");
+    const isPortalJoinFlow = (next ?? "").startsWith("/join-portal/");
     const { t } = useI18n();
     const [error, setError] = useState<string | null>(null);
 
@@ -58,12 +60,28 @@ function LoginForm() {
             return;
         }
 
-        router.push(next);
+        let destination = next;
+        if (!destination) {
+            try {
+                const res = await fetch("/api/v1/auth/post-login-redirect", {
+                    method: "GET",
+                    cache: "no-store",
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && typeof data?.redirectTo === "string") {
+                    destination = data.redirectTo;
+                }
+            } catch {
+                // Keep default fallback below when resolver fails.
+            }
+        }
+
+        router.push(destination ?? "/dashboard");
         router.refresh();
     }
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+        <div suppressHydrationWarning className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
             <GlobeBackground />
 
             <div className="w-full max-w-md space-y-8 relative z-10 animate-in fade-in zoom-in duration-1000">
@@ -75,6 +93,7 @@ function LoginForm() {
                             alt="LEC Logo"
                             width={240}
                             height={65}
+                            priority
                             className="h-16 w-auto object-contain"
                         />
                     </div>
@@ -94,6 +113,15 @@ function LoginForm() {
                         <CardDescription className="text-slate-400 font-medium text-base">{t("auth.loginSubtitle")}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6 pb-12 px-8">
+                        {isPortalJoinFlow && (
+                            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
+                                <p className="text-xs text-blue-100 leading-relaxed">
+                                    Estás entrando para vincular tu acceso al portal de aplicadores. Inicia sesión
+                                    con el <strong>mismo correo invitado</strong>.
+                                </p>
+                            </div>
+                        )}
+
                         {/* Login Form */}
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <div className="space-y-2">
@@ -157,14 +185,14 @@ function LoginForm() {
                         </form>
 
                         <div className="text-center pt-4">
-                            <a href="/register" className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
+                            <Link href="/register" className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
                                 {t("auth.noAccount" as any) || "¿No tienes cuenta? Regístrate"}
-                            </a>
+                            </Link>
                         </div>
                     </CardContent>
                 </Card>
 
-                <p className="text-center text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase opacity-50">
+                <p suppressHydrationWarning className="text-center text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase opacity-50">
                     © {new Date().getFullYear()} LEC • Languages Education Consulting
                 </p>
             </div>

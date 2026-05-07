@@ -186,10 +186,12 @@ export function GlobeBackground() {
 
     // ─── ANIMATION ───
     let frameId: number;
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect();
 
     const animate = () => {
-      const elapsedTime = clock.getElapsedTime();
+      timer.update();
+      const elapsedTime = timer.getElapsed();
       frameId = requestAnimationFrame(animate);
 
       // Rotate Globe
