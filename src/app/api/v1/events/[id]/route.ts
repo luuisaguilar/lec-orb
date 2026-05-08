@@ -53,7 +53,7 @@ export const GET = withAuth(async (req, { supabase, member }, { params }) => {
             ? supabase.from("schools").select("*").eq("id", event.school_id).maybeSingle()
             : Promise.resolve({ data: null } as any),
         supabase.from("event_sessions").select("*").eq("event_id", eventId),
-        supabase.from("event_staff").select("id, role, session_id, applicator_id, applicator:applicators(*)").eq("event_id", eventId),
+        supabase.from("event_staff").select("id, role, session_id, applicator_id, acknowledgment_status, acknowledged_at, applicator:applicators(*)").eq("event_id", eventId),
         supabase.from("event_slots").select("*").eq("event_id", eventId),
     ]);
 

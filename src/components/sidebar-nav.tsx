@@ -109,6 +109,7 @@ const MODULE_PERMISSION_ALIAS: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 const PORTAL_ITEMS: NavItem[] = [
     { label: "Portal", href: "/portal", icon: "BarChart3", module: "inventory" },
+    { label: "Mis eventos", href: "/portal/eventos", icon: "ClipboardList", module: "events" },
     { label: "Horarios", href: "/portal/horarios", icon: "Calendar", module: "events" },
     { label: "Nómina", href: "/portal/nomina", icon: "DollarSign", module: "payroll" },
     { label: "Métricas", href: "/portal/metricas", icon: "BarChart3", module: "dashboard" },
