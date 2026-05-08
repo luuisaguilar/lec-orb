@@ -43,6 +43,8 @@ interface EventStaff {
     hourly_rate: number | null;
     fixed_payment: number | null;
     notes: string | null;
+    acknowledgment_status?: string | null;
+    acknowledged_at?: string | null;
     applicator: {
         id: string;
         name: string;
@@ -75,6 +77,29 @@ export function EventStaffManager({ eventId }: { eventId: string }) {
 
     const staff: EventStaff[] = staffData?.staff || [];
     const applicators: Applicator[] = appData?.applicators || [];
+
+    const ackBadge = (s: EventStaff) => {
+        const a = s.acknowledgment_status ?? "pending";
+        if (a === "accepted") {
+            return (
+                <Badge className="text-[10px] bg-emerald-600/15 text-emerald-700 hover:bg-emerald-600/15 dark:text-emerald-400 border border-emerald-600/25">
+                    Confirmado
+                </Badge>
+            );
+        }
+        if (a === "declined") {
+            return (
+                <Badge variant="destructive" className="text-[10px]">
+                    Rechazó
+                </Badge>
+            );
+        }
+        return (
+            <Badge variant="outline" className="text-[10px] border-amber-500/60 text-amber-700 dark:text-amber-400">
+                Pendiente
+            </Badge>
+        );
+    };
 
     const handleAdd = async () => {
         if (!formData.applicator_id) {
@@ -259,10 +284,11 @@ export function EventStaffManager({ eventId }: { eventId: string }) {
                                         </div>
                                         <div>
                                             <p className="font-medium">{item.applicator.name}</p>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <Badge variant="secondary" className="text-[10px] uppercase">
                                                     {item.role}
                                                 </Badge>
+                                                {ackBadge(item)}
                                                 <span className="text-xs text-muted-foreground">
                                                     {item.applicator.email}
                                                 </span>
