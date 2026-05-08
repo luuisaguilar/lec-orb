@@ -83,6 +83,7 @@ npm run dev
 - [Finance Modules Guide](./docs/FINANCE_MODULES.md) - Caja Chica and Presupuesto details
 - [Database Schema](./docs/DATABASE_SCHEMA.md) - entities, enums, RPCs
 - [API Modules](./docs/API_MODULES.md) - route reference
+- [Project Management Module](./docs/PROJECT_MANAGEMENT_MODULE.md) - technical blueprint for PM MVP implementation
 - [Executive Dashboard + Observability](./docs/executive-observability/README.md) - screens, KPIs, backlog, handoff, runbook, and paths
 - [Executive Dashboard Ticket Board](./docs/executive-observability/TICKETS_SPRINT_BOARD.md) - sprint-ready tickets with estimates and dependencies
 

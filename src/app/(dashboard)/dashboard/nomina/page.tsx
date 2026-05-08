@@ -174,13 +174,21 @@ function PayrollDetail({
         status: string;
         total_amount: number;
     };
-    entries: any[];
+    entries: Array<
+        any & {
+            roles?: string[];
+            sources?: string[];
+            manual_lines_count?: number;
+            auto_lines_count?: number;
+        }
+    >;
     loading: boolean;
     onBack: () => void;
     onRefresh: () => void;
 }) {
     const { t } = useI18n();
     const [isCalculating, setIsCalculating] = useState(false);
+    const [view, setView] = useState<"all" | "manual" | "auto">("all");
 
     const handleRecalculate = async () => {
         try {
@@ -203,8 +211,16 @@ function PayrollDetail({
         }
     };
 
-    const totalAmount = entries.reduce((sum, e) => sum + e.total, 0);
-    const totalHours = entries.reduce((sum, e) => sum + e.hours_worked, 0);
+    const isManual = (e: any) =>
+        (e.manual_lines_count ?? 0) > 0 || (e.sources ?? []).includes("manual");
+    const isAuto = (e: any) =>
+        (e.auto_lines_count ?? 0) > 0 || (e.sources ?? []).includes("auto_event_staff");
+
+    const filteredEntries =
+        view === "manual" ? entries.filter(isManual) : view === "auto" ? entries.filter(isAuto) : entries;
+
+    const totalAmount = filteredEntries.reduce((sum, e) => sum + (e.total ?? 0), 0);
+    const totalHours = filteredEntries.reduce((sum, e) => sum + (e.hours_worked ?? 0), 0);
 
     return (
         <div className="space-y-6">
@@ -223,6 +239,29 @@ function PayrollDetail({
                         </Badge>
                     </div>
                     <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mr-2 flex-wrap">
+                            <Button
+                                variant={view === "all" ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => setView("all")}
+                            >
+                                Todo
+                            </Button>
+                            <Button
+                                variant={view === "manual" ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => setView("manual")}
+                            >
+                                Solo manual
+                            </Button>
+                            <Button
+                                variant={view === "auto" ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => setView("auto")}
+                            >
+                                Solo auto
+                            </Button>
+                        </div>
                         <Button 
                             variant="outline" 
                             size="sm"
@@ -297,6 +336,11 @@ function PayrollDetail({
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
+                            {filteredEntries.length === 0 ? (
+                                <div className="p-6 text-sm text-muted-foreground">
+                                    No hay datos para este filtro. Prueba con <strong>Todo</strong>.
+                                </div>
+                            ) : null}
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/50">
@@ -313,7 +357,7 @@ function PayrollDetail({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {entries.map((entry) => (
+                                    {filteredEntries.map((entry) => (
                                         <tr
                                             key={entry.id}
                                             className="border-b transition-colors hover:bg-muted/50"
@@ -367,18 +411,18 @@ function PayrollDetail({
                                         <td className="px-4 py-3">Total</td>
                                         <td className="px-4 py-3"></td>
                                         <td className="px-4 py-3 text-center">
-                                            {entries.reduce((s, e) => s + e.events_count, 0)}
+                                            {filteredEntries.reduce((s, e) => s + (e.events_count ?? 0), 0)}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {entries.reduce((s, e) => s + e.slots_count, 0)}
+                                            {filteredEntries.reduce((s, e) => s + (e.slots_count ?? 0), 0)}
                                         </td>
                                         <td className="px-4 py-3 text-center">{totalHours}h</td>
                                         <td className="px-4 py-3"></td>
                                         <td className="px-4 py-3 text-right">
-                                            ${entries.reduce((s, e) => s + e.subtotal, 0).toLocaleString("es-MX")}
+                                            ${filteredEntries.reduce((s, e) => s + (e.subtotal ?? 0), 0).toLocaleString("es-MX")}
                                         </td>
                                         <td className="px-4 py-3 text-right">
-                                            ${entries.reduce((s, e) => s + e.adjustments, 0).toLocaleString("es-MX")}
+                                            ${filteredEntries.reduce((s, e) => s + (e.adjustments ?? 0), 0).toLocaleString("es-MX")}
                                         </td>
                                         <td className="px-4 py-3 text-right text-green-600">
                                             ${totalAmount.toLocaleString("es-MX")}
