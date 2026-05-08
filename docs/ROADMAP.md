@@ -1,6 +1,6 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-05-05
+Ultima actualizacion: 2026-05-07
 
 ---
 
@@ -59,9 +59,11 @@ Diagnostico E2E actual:
 
 ### 3. Base del módulo Project Management (nuevo)
 - [x] ADR del módulo PM documentado (`docs/adr/ADR-007-project-management-module-foundation.md`)
-- [ ] Diseñar y aplicar migración base `pm_*` con RLS
-- [ ] Exponer endpoints `/api/v1/pm/*` (projects, boards, tasks)
-- [ ] Construir UI MVP en `/dashboard/proyectos` (kanban + tabla)
+- [x] Diseñar y aplicar migración base `pm_*` con RLS
+- [x] Exponer endpoints `/api/v1/pm/*` (projects, boards, tasks)
+- [x] Construir UI MVP inicial en `/dashboard/proyectos`
+- [x] Fase 1.1: agregar `scope`, `role_target`, `is_private` para tareas por equipo/rol/personal
+- [ ] Fase 1.2: formulario UI completo para crear/editar tareas por alcance
 
 ---
 

@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import {
     Users, School, Calendar as CalendarIcon, FileText,
-    ChevronLeft, ChevronRight, MapPin
+    ChevronLeft, ChevronRight, MapPin,
+    TrendingUp, TrendingDown, AlertTriangle, DollarSign, Wallet, ListTodo
 } from "lucide-react";
 import {
     format, addMonths, subMonths, startOfMonth, endOfMonth,
@@ -122,6 +123,11 @@ function CalendarMonthView({ events, currentMonth, onMonthChange }: {
     );
 }
 
+// ── Currency formatter ───────────────────────────────────────────────────────
+function fmt(n: number) {
+    return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
+}
+
 // ── Main Dashboard Page ──────────────────────────────────────────────────────
 export default function UnifiedDashboardPage() {
     const [stats, setStats] = useState<any>(null);
@@ -129,24 +135,26 @@ export default function UnifiedDashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
+    const [year, setYear] = useState(new Date().getFullYear().toString());
+    const [ihSummary, setIhSummary] = useState<any>(null);
+    const [pettyCashBalance, setPettyCashBalance] = useState<number>(0);
+    const [payrollPeriods, setPayrollPeriods] = useState<any[]>([]);
+    const [financeLoading, setFinanceLoading] = useState(false);
+    const [myTasks, setMyTasks] = useState<any[]>([]);
+
     useEffect(() => {
         async function loadData() {
             try {
                 setIsLoading(true);
                 const [statsRes, eventsRes] = await Promise.all([
                     fetch("/api/v1/dashboard/stats"),
-                    fetch("/api/v1/events?limit=100") // Fetch recent events for calendar
+                    fetch("/api/v1/events?limit=100")
                 ]);
 
-                if (statsRes.ok) {
-                    const statsData = await statsRes.json();
-                    setStats(statsData);
-                }
-
-                if (eventsRes.ok) {
-                    const eventsData = await eventsRes.json();
-                    setEvents(eventsData.events || []);
-                }
+                if (statsRes.ok) setStats(await statsRes.json());
+                if (eventsRes.ok) setEvents((await eventsRes.json()).events || []);
+                const tasksRes = await fetch("/api/v1/pm/tasks?mine=true");
+                if (tasksRes.ok) setMyTasks((await tasksRes.json()).tasks || []);
             } catch (err) {
                 console.error("Failed to load dashboard data", err);
             } finally {
@@ -155,6 +163,27 @@ export default function UnifiedDashboardPage() {
         }
         loadData();
     }, []);
+
+    useEffect(() => {
+        async function loadFinance() {
+            setFinanceLoading(true);
+            try {
+                const [ihRes, pcRes, prRes] = await Promise.all([
+                    fetch(`/api/v1/finance/ih/summary?year=${year}`),
+                    fetch(`/api/v1/finance/petty-cash/balance?year=${year}`),
+                    fetch("/api/v1/payroll"),
+                ]);
+                if (ihRes.ok) setIhSummary(await ihRes.json());
+                if (pcRes.ok) setPettyCashBalance((await pcRes.json()).balance ?? 0);
+                if (prRes.ok) setPayrollPeriods((await prRes.json()).periods ?? []);
+            } catch (err) {
+                console.error("Failed to load finance data", err);
+            } finally {
+                setFinanceLoading(false);
+            }
+        }
+        loadFinance();
+    }, [year]);
 
     if (isLoading) {
         return (
@@ -167,6 +196,24 @@ export default function UnifiedDashboardPage() {
     if (!stats) return null;
 
     const { general, events: eventsStats, applicators, cenni } = stats;
+
+    const payrollYearTotal = payrollPeriods
+        .filter((p: any) => p.start_date?.startsWith(year))
+        .reduce((sum: number, p: any) => sum + Number(p.total_amount ?? 0), 0);
+
+    const allAlerts = ihSummary
+        ? [
+            ...(ihSummary.byRegion?.SONORA?.alerts ?? []).map((a: any) => ({ ...a, region: "Sonora" })),
+            ...(ihSummary.byRegion?.BAJA_CALIFORNIA?.alerts ?? []).map((a: any) => ({ ...a, region: "BC" })),
+          ].sort((a, b) => b.balance - a.balance)
+        : [];
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const myPending = myTasks.filter((task) => !task.completed_at);
+    const myToday = myPending.filter((task) => task.due_date === todayIso);
+    const myOverdue = myPending.filter((task) => task.due_date && task.due_date < todayIso);
+    const myNext = myPending.filter((task) => task.due_date && task.due_date > todayIso).slice(0, 8);
+    const myUnscheduled = myPending.filter((task) => !task.due_date);
 
     return (
         <div className="space-y-6 pb-12">
@@ -183,6 +230,7 @@ export default function UnifiedDashboardPage() {
                     <TabsTrigger value="events" className="w-[150px] data-[state=active]:shadow-sm">Eventos</TabsTrigger>
                     <TabsTrigger value="cenni" className="w-[150px] data-[state=active]:shadow-sm">Trámites CENNI</TabsTrigger>
                     <TabsTrigger value="applicators" className="w-[150px] data-[state=active]:shadow-sm">Aplicadores</TabsTrigger>
+                    <TabsTrigger value="gerencial" className="w-[170px] data-[state=active]:shadow-sm">P&amp;L Gerencial</TabsTrigger>
                 </TabsList>
 
                 {/* ── GENERAL TAB ── */}
@@ -237,6 +285,24 @@ export default function UnifiedDashboardPage() {
                             onMonthChange={setCurrentMonth}
                         />
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <ListTodo className="h-5 w-5 text-primary" />
+                                Mi trabajo
+                            </CardTitle>
+                            <CardDescription>Vista rápida de tareas asignadas a ti.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <TaskBucket title="Hoy" count={myToday.length} tasks={myToday} />
+                                <TaskBucket title="Con atraso" count={myOverdue.length} tasks={myOverdue} />
+                                <TaskBucket title="Siguiente" count={myNext.length} tasks={myNext} />
+                                <TaskBucket title="Sin programar" count={myUnscheduled.length} tasks={myUnscheduled} />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 {/* ── EVENTS TAB ── */}
@@ -369,6 +435,31 @@ export default function UnifiedDashboardPage() {
                 </TabsContent>
 
             </Tabs>
+        </div>
+    );
+}
+
+function TaskBucket({
+    title,
+    count,
+    tasks,
+}: {
+    title: string;
+    count: number;
+    tasks: any[];
+}) {
+    return (
+        <div className="rounded-lg border bg-card p-3">
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="mb-2 text-xs text-muted-foreground">{count} tarea(s)</p>
+            <div className="space-y-1">
+                {tasks.slice(0, 4).map((task) => (
+                    <p key={task.id} className="truncate text-xs text-foreground">
+                        - {task.title}
+                    </p>
+                ))}
+                {tasks.length === 0 ? <p className="text-xs text-muted-foreground">Sin tareas.</p> : null}
+            </div>
         </div>
     );
 }

@@ -37,16 +37,19 @@ The app is built with Next.js App Router and Supabase, with tenant isolation by 
 - Invitations: create, resend, accept via RPC, expiration flow
 - Multi-tenant org management: RBAC, audit log, notifications, documents
 
-## Project Management Module (Planned)
+## Project Management Module (In Progress)
 
-LEC Orb now has a documented foundation to add a transversal work management module (Asana/Trello/Monday style) reusing the existing multi-tenant architecture.
+LEC Orb now has a transversal work management module in MVP implementation (Asana/Trello/Monday style) reusing the existing multi-tenant architecture.
 
 - Scope target: projects, boards, columns, tasks, assignees, due dates, labels
-- UI target: kanban + table first, timeline in later phase
+- Added in phase 1.1: `team/role/personal` task scope with private personal tracking
+- UI target: `/dashboard/proyectos` with `Equipo / Por puesto / Mi registro`
 - Backend target: `/api/v1/pm/*` with `withAuth` + `logAudit`
 - DB target: dedicated `pm_*` tables with RLS from day one
 
-Decision log: `docs/adr/ADR-007-project-management-module-foundation.md`
+Decision log: `docs/adr/ADR-007-project-management-module-foundation.md`  
+Runbook: `docs/PM_RUNBOOK.md`  
+Paths and routes: `docs/PM_PATHS_AND_ROUTES.md`
 
 ## Getting Started
 
@@ -74,6 +77,8 @@ npm run dev
 - [Infrastructure Status](./INFRASTRUCTURE_STATUS.md) - launch readiness and live execution status
 - [Project Roadmap](./docs/ROADMAP.md) - backlog and prioritization
 - [ADR-007 Project Management Module Foundation](./docs/adr/ADR-007-project-management-module-foundation.md) - architecture decision for PM module rollout
+- [PM Runbook](./docs/PM_RUNBOOK.md) - PM operational checks and troubleshooting
+- [PM Paths and Routes](./docs/PM_PATHS_AND_ROUTES.md) - PM files, routes, and migrations map
 - [Testing Guide](./docs/TESTING_GUIDE.md) - current test strategy and known gaps
 - [Finance Modules Guide](./docs/FINANCE_MODULES.md) - Caja Chica and Presupuesto details
 - [Database Schema](./docs/DATABASE_SCHEMA.md) - entities, enums, RPCs

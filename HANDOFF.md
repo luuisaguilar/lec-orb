@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-05 (PM module documentation baseline) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-07 (PM phase 1.1 scope-role-personal) |
 
 ---
 
@@ -21,7 +21,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Finance - Dashboard P&L | **EN DESARROLLO** - Consolidación de ingresos/egresos |
 | SGC (Calidad) | **COMPLETADO** - Estabilización técnica (Stats API + Timeline NC resiliente) |
 | Cursos e Inventario | **COMPLETADO** - Simulador ROI + Control de stock multi-ubicación |
-| Project Management (Asana/Trello/Monday style) | **PLANIFICADO** - ADR y alcance definidos; implementación pendiente |
+| Project Management (Asana/Trello/Monday style) | **EN DESARROLLO** - MVP DB/API/UI activo + scope team/role/personal |
 
 ---
 
@@ -159,9 +159,11 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 - [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
 - [x] Plan Dashboard Ejecutivo + Observabilidad documentado
 - [x] Documentar decision arquitectonica del modulo PM (`ADR-007`)
-- [ ] Definir esquema SQL `pm_*` (proyectos, tableros, columnas, tareas, comentarios)
-- [ ] Implementar API base `/api/v1/pm/projects|boards|tasks`
-- [ ] Implementar UI MVP (kanban + tabla) en `/dashboard/proyectos`
+- [x] Definir esquema SQL `pm_*` (proyectos, tableros, columnas, tareas, comentarios)
+- [x] Implementar API base `/api/v1/pm/projects|boards|tasks`
+- [x] Implementar UI MVP inicial en `/dashboard/proyectos`
+- [x] Agregar fase 1.1 de segmentacion de tareas (`scope`, `role_target`, `is_private`)
+- [ ] Completar UI de creacion/edicion de tareas por alcance (team/role/personal)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
@@ -219,6 +221,8 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | `docs/ROADMAP.md` | Priorizacion actualizada |
 | `INFRASTRUCTURE_STATUS.md` | Estado operativo y readiness de lanzamiento |
 | `docs/adr/ADR-007-project-management-module-foundation.md` | Decision del modulo PM transversal |
+| `docs/PM_RUNBOOK.md` | Operacion, validacion y troubleshooting del modulo PM |
+| `docs/PM_PATHS_AND_ROUTES.md` | Mapa de rutas/archivos/migraciones del modulo PM |
 | `docs/TESTING_GUIDE.md` | Estado real de build, Vitest y Playwright |
 | `docs/TESTING_PATTERNS.md` | Patrones Vitest y notas del harness E2E |
 | `docs/API_MODULES.md` | Referencia de rutas API |

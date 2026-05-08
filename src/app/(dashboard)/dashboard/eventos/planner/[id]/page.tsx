@@ -314,25 +314,52 @@ export default function EventShellPlannerPage() {
         }
     }, [eventId]);
 
-    const isReadyToPublish = ((event?.sessions?.length > 0) && event.sessions.every((session: any) => {
-        const sessionStaff = event.staff?.filter((s: any) => s.session_id === session.id) || [];
-        const sessionSlots = event.slots?.filter((s: any) => s.session_id === session.id) || [];
+    const sessionsReady =
+        !!event &&
+        (event.sessions?.length ?? 0) > 0 &&
+        event.sessions.every((session: any) => {
+            const sessionStaff =
+                event.staff?.filter((s: any) => s.session_id === session.id) || [];
+            const sessionSlots =
+                event.slots?.filter((s: any) => s.session_id === session.id) || [];
 
-        // 1. Must have staff assigned to the session record
-        if (sessionStaff.length === 0) return false;
+            // 1. Must have staff assigned to the session record
+            if (sessionStaff.length === 0) return false;
 
-        // 2. Must have slots generated
-        if (sessionSlots.length === 0) return false;
+            // 2. Must have slots generated
+            if (sessionSlots.length === 0) return false;
 
-        // 3. Every slot that is NOT a break must have an applicator assigned
-        const unassignedSlots = sessionSlots.filter((s: any) => !s.is_break && (!s.applicator_id || s.applicator_id === 'none'));
+            // 3. Every slot that is NOT a break must have an applicator assigned
+            const unassignedSlots = sessionSlots.filter(
+                (s: any) =>
+                    !s.is_break &&
+                    (!s.applicator_id || s.applicator_id === "none")
+            );
 
-        return unassignedSlots.length === 0;
-    })) ?? false;
+            return unassignedSlots.length === 0;
+        });
+
+    const allStaffAssignmentsConfirmed = (event?.staff ?? []).every((s: any) => {
+        const a = s.acknowledgment_status;
+        if (a === "declined" || a === "pending") return false;
+        return true;
+    });
+
+    const isReadyToPublish = Boolean(
+        event && sessionsReady && allStaffAssignmentsConfirmed
+    );
 
     const handlePublishEvent = async () => {
         if (!isReadyToPublish) {
-            toast.error("No se puede publicar el evento. Asegúrate de que todas las sesiones tengan personal asignado.");
+            if (!sessionsReady) {
+                toast.error(
+                    "No se puede publicar el evento. Asegúrate de que todas las sesiones tengan personal y turnos completos."
+                );
+            } else if (!allStaffAssignmentsConfirmed) {
+                toast.error(
+                    "No se puede publicar hasta que todo el personal asignado confirme (o hasta corregir asignaciones rechazadas)."
+                );
+            }
             return;
         }
         try {
@@ -487,6 +514,13 @@ export default function EventShellPlannerPage() {
                     </Dialog>
                     <Button variant="outline" onClick={handleExportConsolidado} className="gap-2 border-primary/20 text-primary hover:bg-primary/5">
                         <Download className="h-4 w-4" /> Exportar Consolidado
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => router.push(`/dashboard/institucional/documentos-eventos/${eventId}`)}
+                        className="gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                    >
+                        <FileText className="h-4 w-4" /> Abrir Docs & Resultados
                     </Button>
                     <AddEventSessionDialog eventId={eventId} onSessionAdded={fetchEventData} schoolHours={event?.school?.operating_hours} />
                 </div>
@@ -695,10 +729,17 @@ export default function EventShellPlannerPage() {
             </div>
 
             <div className="mt-8 flex flex-col items-end gap-3">
-                {!isReadyToPublish && (
+                {!sessionsReady && (
                     <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-sm font-medium bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800">
                         <AlertTriangle className="h-4 w-4" />
-                        Todas las sesiones deben tener personal asignado para poder publicar.
+                        Todas las sesiones deben tener personal asignado y turnos listos para poder publicar.
+                    </div>
+                )}
+                {sessionsReady && !allStaffAssignmentsConfirmed && (
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-sm font-medium bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <AlertTriangle className="h-4 w-4" />
+                        Falta confirmación del personal desde el portal: hay asignaciones pendientes o
+                        rechazadas.
                     </div>
                 )}
                 {(isReadyToPublish || event.status === 'PUBLISHED') && (

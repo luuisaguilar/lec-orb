@@ -26,14 +26,17 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const LOCATIONS = [
-    "Hermosillo",
-    "Obregón",
-    "Baja California",
-    "Estatal",
-    "Nacional",
-    "Oficina Central"
-];
+interface OrgLoc {
+    name: string;
+}
+
+const CUSTOM_HR = "__custom__";
+
+interface HrProfileOption {
+    id: string;
+    role_title: string;
+    area?: string | null;
+}
 
 interface EditUserDialogProps {
     memberId: string | null;
@@ -45,23 +48,46 @@ interface EditUserDialogProps {
 export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: EditUserDialogProps) {
     const { data, isLoading } = useSWR(memberId ? `/api/v1/users/${memberId}` : null, fetcher);
     const { data: modulesData, isLoading: loadingModules } = useSWR("/api/v1/modules", fetcher);
+    const { data: locData, isLoading: loadingLocations } = useSWR(
+        open ? "/api/v1/org-locations" : null,
+        fetcher
+    );
+    const { data: hrProfilesData, isLoading: loadingHrProfiles } = useSWR(
+        open ? "/api/v1/hr/profiles" : null,
+        fetcher
+    );
+
+    const profiles: HrProfileOption[] = (hrProfilesData?.profiles ?? [])
+        .filter((p: HrProfileOption) => Boolean(p?.id && p.role_title?.trim()))
+        .sort((a: HrProfileOption, b: HrProfileOption) => a.role_title.localeCompare(b.role_title, "es"));
 
     const [role, setRole] = useState<string>("operador");
     const [location, setLocation] = useState<string>("none"); // 'none' translates to null
     const [jobTitle, setJobTitle] = useState<string>("");
+    const [hrProfileId, setHrProfileId] = useState<string>(CUSTOM_HR);
     const [permissions, setPermissions] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     const availableModules = modulesData?.modules || [];
 
+    const catalogNames: string[] = (locData?.locations ?? []).map((l: OrgLoc) => l.name);
+    const memberLocation = data?.member?.location as string | null | undefined;
+    const locationOptions = [
+        ...catalogNames,
+        ...(memberLocation && !catalogNames.includes(memberLocation) ? [memberLocation] : []),
+    ];
+
     useEffect(() => {
         if (data?.member) {
             setRole(data.member.role);
             setLocation(data.member.location || "none");
-            setJobTitle(data.member.job_title || "");
+            const m = data.member as typeof data.member & { hr_profile_id?: string | null };
+            const pid = m.hr_profile_id;
+            setHrProfileId(pid && profiles.some((p) => p.id === pid) ? pid : CUSTOM_HR);
+            setJobTitle(m.job_title || "");
             setPermissions(data.access || []);
         }
-    }, [data]);
+    }, [data, profiles]);
 
     const togglePermission = (moduleId: string, type: 'can_view' | 'can_edit' | 'can_delete') => {
         setPermissions(prev => {
@@ -92,24 +118,36 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const permPayload = permissions.filter(p => p.can_view || p.can_edit || p.can_delete);
+            const body: Record<string, unknown> = {
+                role,
+                location: location === "none" ? null : location,
+                permissions: permPayload,
+            };
+
+            if (hrProfileId !== CUSTOM_HR) {
+                body.hr_profile_id = hrProfileId;
+            } else {
+                body.hr_profile_id = null;
+                body.job_title = jobTitle;
+            }
+
             const res = await fetch(`/api/v1/users/${memberId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    role,
-                    location: location === "none" ? null : location,
-                    job_title: jobTitle,
-                    permissions: permissions.filter(p => p.can_view || p.can_edit || p.can_delete)
-                }),
+                body: JSON.stringify(body),
             });
 
-            if (!res.ok) throw new Error();
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || "Error");
+            }
 
             toast.success("Usuario actualizado correctamente");
             onSuccess();
             onOpenChange(false);
-        } catch {
-            toast.error("Error al guardar cambios");
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Error al guardar cambios");
         } finally {
             setIsSaving(false);
         }
@@ -140,7 +178,7 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                     </DialogDescription>
                 </DialogHeader>
 
-                {isLoading || loadingModules ? (
+                {isLoading || loadingModules || loadingLocations || loadingHrProfiles ? (
                     <div className="flex h-32 items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
@@ -165,13 +203,44 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
 
                             <div className="space-y-2">
                                 <Label className="font-bold flex items-center gap-1">
+                                    Perfil HR (organigrama)
+                                </Label>
+                                <Select
+                                    value={hrProfileId}
+                                    onValueChange={(v) => {
+                                        setHrProfileId(v);
+                                        if (v !== CUSTOM_HR) {
+                                            const p = profiles.find((x) => x.id === v);
+                                            if (p) setJobTitle(p.role_title);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Vincula a un perfil oficial" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={CUSTOM_HR}>Texto libre (sin vincular perfil)</SelectItem>
+                                        {profiles.map((p) => (
+                                            <SelectItem key={p.id} value={p.id}>
+                                                {p.role_title}{p.area ? ` (${p.area})` : ""}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Label className="font-bold flex items-center gap-1 pt-2">
                                     Rol (Empresa)
                                 </Label>
                                 <Input
                                     placeholder="Ej. Coordinador Académico"
                                     value={jobTitle}
+                                    disabled={hrProfileId !== CUSTOM_HR}
                                     onChange={(e) => setJobTitle(e.target.value)}
                                 />
+                                {hrProfileId !== CUSTOM_HR && (
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Titulo sincronizado con el perfil RRHH seleccionado.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -184,7 +253,7 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none" className="text-muted-foreground italic">Ninguna Sede Asignada</SelectItem>
-                                        {LOCATIONS.map((loc) => (
+                                        {locationOptions.map((loc) => (
                                             <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                                         ))}
                                     </SelectContent>

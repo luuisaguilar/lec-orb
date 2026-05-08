@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
+import type { Database } from "@/types/database.types";
+
+type EventStaffUpdate = Database["public"]["Tables"]["event_staff"]["Update"];
 
 const updateStaffSchema = z.object({
     role: z.enum(["SE", "ADMIN", "INVIGILATOR", "SUPER"]).optional(),
@@ -34,12 +37,26 @@ export const PATCH = withAuth(async (req, { supabase, member, user }, { params }
         return NextResponse.json({ error: "Staff assignment not found" }, { status: 404 });
     }
 
+    const mergedUpdate: EventStaffUpdate = {
+        ...parsed.data,
+        updated_at: new Date().toISOString(),
+    };
+
+    const materialChanged =
+        (parsed.data.role !== undefined && parsed.data.role !== currentStaff.role) ||
+        (parsed.data.hourly_rate !== undefined && parsed.data.hourly_rate !== currentStaff.hourly_rate) ||
+        (parsed.data.fixed_payment !== undefined &&
+            parsed.data.fixed_payment !== currentStaff.fixed_payment) ||
+        (parsed.data.notes !== undefined && parsed.data.notes !== currentStaff.notes);
+
+    if (materialChanged) {
+        mergedUpdate.acknowledgment_status = "pending";
+        mergedUpdate.acknowledged_at = null;
+    }
+
     const { data, error } = await supabase
         .from("event_staff")
-        .update({
-            ...parsed.data,
-            updated_at: new Date().toISOString(),
-        })
+        .update(mergedUpdate)
         .eq("id", staffId)
         .select(`
             *,

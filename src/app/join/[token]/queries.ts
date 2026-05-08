@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export interface InvitationPreview {
     organizationName: string;
     role: string;
+    jobTitle: string | null;
+    location: string | null;
     invitedEmailMasked: string;
     expiresAt: string | null;
 }
@@ -27,7 +29,7 @@ export async function getInvitationResult(token: string): Promise<InvitationResu
 
     const { data: invitation, error } = await adminClient
         .from("org_invitations")
-        .select("*, organizations(name)")
+        .select("role, email, status, job_title, location, organizations(name)")
         .eq("token", token)
         .single();
 
@@ -71,6 +73,8 @@ export async function getInvitationResult(token: string): Promise<InvitationResu
         preview: {
             organizationName: (invitation.organizations as any)?.name || "la organización",
             role: invitation.role,
+            jobTitle: invitation.job_title ?? null,
+            location: invitation.location ?? null,
             invitedEmailMasked,
             expiresAt: null,
         },

@@ -40,6 +40,16 @@ Referencia operativa del frente:
 
 ---
 
+## Project Management (PM)
+
+Referencia operativa del modulo PM:
+
+- `docs/adr/ADR-007-project-management-module-foundation.md`
+- `docs/PM_RUNBOOK.md`
+- `docs/PM_PATHS_AND_ROUTES.md`
+
+---
+
 ## Variables de Entorno
 
 Todas las variables se configuran en: **Vercel Dashboard → lec-orb → Settings → Environment Variables**

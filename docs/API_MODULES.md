@@ -19,6 +19,7 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 | [Exam Codes](#exam-codes) | `/exam-codes` | GET POST | — | `exam_codes` |
 | [Finance — Caja Chica](#finance--caja-chica) | `/finance/petty-cash` | GET POST | — | `petty_cash_movements` |
 | [Finance — Presupuesto](#finance--presupuesto) | `/finance/budget` | GET POST | — | `budgets` |
+| [Org Locations](#org-locations-catalogo-de-sedes) | `/org-locations` | GET POST PATCH DELETE | — | `org_locations` |
 | [Invitations](#invitations) | `/invitations` | GET POST DELETE | — | `org_invitations` |
 | [Modules](#modules) | `/modules` | GET POST | — | `module_registry`, `module_permissions` |
 | [Notifications](#notifications) | `/notifications` | GET PATCH | — | `notifications` |
@@ -459,6 +460,45 @@ Análisis presupuesto-vs-real para el mes/año especificado.
 
 ---
 
+## Org locations (catálogo de sedes)
+
+**Ruta:** `/api/v1/org-locations`  
+**RBAC module:** `users`  
+**Tabla:** `org_locations`
+
+Catálogo por `org_id`: nombres únicos (case-insensitive) por organización. Se usa para validar `location` en invitaciones y en `PATCH /users/[id]`.
+
+### GET `/org-locations`
+
+Lista sedes del tenant.
+
+| Query param | Descripción |
+|-------------|-------------|
+| `includeInactive=1` | Incluye sedes con `is_active = false` (útil para administración). Sin el parámetro solo devuelve activas. |
+
+**Response 200:** `{ "locations": [{ id, org_id, name, sort_order, is_active, ... }] }`
+
+### POST `/org-locations`
+
+Crea una sede. **Solo `admin`.**
+
+**Body:** `{ "name": string, "sort_order"?: number }`
+
+**Response 201:** `{ "location": {...} }`  
+**Response 409:** nombre duplicado para la organización.
+
+### PATCH `/org-locations/[id]`
+
+Actualiza nombre, orden o estado activo. **Solo `admin`.**
+
+**Body:** `{ "name"?: string, "sort_order"?: number, "is_active"?: boolean }`
+
+### DELETE `/org-locations/[id]`
+
+Elimina el registro del catálogo. **Solo `admin`.** (Los `org_members` que ya tengan ese texto en `location` no se modifican automáticamente.)
+
+---
+
 ## Invitations
 
 **Ruta:** `/api/v1/invitations`  
@@ -478,6 +518,9 @@ Crea invitación. **Solo rol `admin`** puede crear invitaciones.
 {
   email: string         // email válido
   role: "admin" | "supervisor" | "operador" | "applicator"
+  hr_profile_id?: string (uuid)  // perfil RRHH de la misma org; el servidor guarda job_title = role_title
+  job_title?: string    // obligatorio si no envías hr_profile_id (rol empresa manual)
+  location: string        // nombre exacto de una sede **activa** en `org_locations` de la org
   sendEmail?: boolean   // default true
 }
 ```
@@ -495,6 +538,8 @@ Crea invitación. **Solo rol `admin`** puede crear invitaciones.
 **Notas importantes:**
 - `joinUrl` siempre se devuelve, incluso si el email falla.
 - La aceptación de invitaciones se procesa vía RPC `fn_accept_invitation` (atómica).
+- Al aceptar, `hr_profile_id`, `job_title` y `location` de la invitación se aplican a `org_members` (el RPC valida el perfil HR; si ya no existe, solo aplica texto y anula el vínculo).
+- `location` debe coincidir con un registro activo en `org_locations` (catálogo por organización).
 - **Response 403:** si el rol del member no es `admin`
 
 ---
@@ -1092,7 +1137,18 @@ Obtiene la información de perfil actual y sus accesos a módulos.
 Obtiene información del usuario específico y sus accesos de módulos.
 
 ### PATCH `/users/[id]`
-Actualiza permisos de módulos específicos para el usuario. Solo admins.
+Actualiza rol, sede (`location` vs catálogo `org_locations`), vínculo a RRHH y permisos por módulo. Solo admins.
+
+**Body (parcial):**
+```ts
+{
+  role?: "admin" | "supervisor" | "operador" | "applicator"
+  location?: string | null   // null o nombre de sede activa en org_locations
+  hr_profile_id?: string (uuid) | null  // perfil hr_profiles de la org; al asignar, job_title = role_title del perfil
+  job_title?: string | null  // si hr_profile_id es null, texto libre; si se envía perfil, job_title lo fuerza el servidor
+  permissions?: Array<{ module: string; can_view?: boolean; can_edit?: boolean; can_delete?: boolean }>
+}
+```
 
 
 ## SGC
@@ -1163,6 +1219,10 @@ en la tabla `module_permissions` de Supabase.
 | `/finance/petty-cash` | POST | finanzas | edit | — |
 | `/finance/budget` | GET | finanzas | view | — |
 | `/finance/budget` | POST | finanzas | edit | — |
+| `/org-locations` | GET | users | view | — |
+| `/org-locations` | POST | users | edit | Solo role=admin |
+| `/org-locations/[id]` | PATCH | users | edit | Solo role=admin |
+| `/org-locations/[id]` | DELETE | users | delete | Solo role=admin |
 | `/invitations` | GET | users | view | — |
 | `/invitations` | POST | users | edit | Solo role=admin |
 | `/modules` | GET | studio | view | — |

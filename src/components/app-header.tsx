@@ -50,7 +50,7 @@ export function AppHeader({ variant }: AppHeaderProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-1">
+            <div data-tour="dashboard-header-actions" className="flex items-center gap-1">
                 <NotificationBell />
                 <SettingsDropdown />
                 <Button

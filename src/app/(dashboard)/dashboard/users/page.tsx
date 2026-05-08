@@ -4,7 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Users, Mail, ShieldAlert, Trash2, CheckCircle2, Loader2, RefreshCw, Settings2, Eye, EyeOff } from "lucide-react";
+import { Mail, ShieldAlert, Trash2, CheckCircle2, Loader2, RefreshCw, Settings2, Eye, EyeOff, MapPin } from "lucide-react";
 
 import {
     Table,
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 
 import { InviteUserDialog } from "./invite-user-dialog";
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
+import { ManageOrgLocationsDialog } from "@/components/users/manage-org-locations-dialog";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -47,6 +48,8 @@ interface OrgInvitation {
     id: string;
     email: string;
     role: string;
+    job_title?: string | null;
+    location?: string | null;
     status: "pending" | "accepted" | "expired" | "revoked";
     created_at: string;
 }
@@ -54,12 +57,16 @@ interface OrgInvitation {
 export default function UsersPage() {
     const { data: membersData, mutate: mutateMembers, isLoading: loadingMembers } = useSWR("/api/v1/users", fetcher);
     const { data: invitationsData, mutate: mutateInvites, isLoading: loadingInvites } = useSWR("/api/v1/invitations", fetcher);
+    const { data: meData } = useSWR("/api/v1/users/me", fetcher);
 
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
     const [showAllInvites, setShowAllInvites] = useState(false);
     const [cleaningUp, setCleaningUp] = useState(false);
+    const [manageLocationsOpen, setManageLocationsOpen] = useState(false);
+
+    const isAdmin = meData?.role === "admin";
 
     const members: OrgMember[] = membersData?.members || [];
     const invitations: OrgInvitation[] = invitationsData?.invitations || [];
@@ -163,6 +170,8 @@ export default function UsersPage() {
                 onSuccess={() => mutateMembers()}
             />
 
+            <ManageOrgLocationsDialog open={manageLocationsOpen} onOpenChange={setManageLocationsOpen} />
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 border-b">
                 <div className="space-y-1">
                     <h2 className="text-3xl font-black tracking-tight text-primary font-outfit">
@@ -176,7 +185,17 @@ export default function UsersPage() {
                     <Button variant="outline" size="icon" onClick={() => { mutateMembers(); mutateInvites(); }}>
                         <RefreshCw className={`h-4 w-4 ${(loadingMembers || loadingInvites) ? 'animate-spin' : ''}`} />
                     </Button>
-                    <InviteUserDialog onInviteSuccess={() => mutateInvites()} />
+                    {isAdmin && (
+                        <Button variant="outline" className="gap-2" onClick={() => setManageLocationsOpen(true)}>
+                            <MapPin className="h-4 w-4" />
+                            Sedes
+                        </Button>
+                    )}
+                    <InviteUserDialog
+                        onInviteSuccess={() => mutateInvites()}
+                        canManageLocations={isAdmin}
+                        onOpenManageLocations={() => setManageLocationsOpen(true)}
+                    />
                 </div>
             </div>
 
@@ -340,6 +359,8 @@ export default function UsersPage() {
                                         <TableRow className="bg-muted/50">
                                             <TableHead className="w-[280px]">Correo Electrónico</TableHead>
                                             <TableHead>Rol Propuesto</TableHead>
+                                            <TableHead>Rol Empresa</TableHead>
+                                            <TableHead>Sede</TableHead>
                                             <TableHead>Estado</TableHead>
                                             <TableHead>Enviado el</TableHead>
                                             <TableHead className="text-right">Acciones</TableHead>
@@ -358,6 +379,12 @@ export default function UsersPage() {
                                                     <Badge variant="outline" className="uppercase text-[10px]">
                                                         {inv.role}
                                                     </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {inv.job_title || "No definido"}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-blue-400">
+                                                    {inv.location || "N/A"}
                                                 </TableCell>
                                                 <TableCell>
                                                     {inv.status === "pending" && (

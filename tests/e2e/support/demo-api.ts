@@ -52,6 +52,34 @@ type DemoPoaLine = {
     sort_order: number;
 };
 
+type DemoHrProfile = {
+    id: string;
+    node_id: string;
+    org_id: string;
+    role_title: string;
+    holder_name: string | null;
+    area: string | null;
+    role_type: string | null;
+    mission: string | null;
+    responsibilities: string[];
+    requirements: Record<string, string | null>;
+    parent_node_id: string | null;
+    process_id: string | null;
+    last_pdf_path: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+type DemoOrgLocation = {
+    id: string;
+    org_id: string;
+    name: string;
+    sort_order: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
 type DemoInvitation = {
     id: string;
     org_id: string;
@@ -60,6 +88,11 @@ type DemoInvitation = {
     status: "pending" | "accepted" | "expired" | "revoked";
     created_at: string;
     token: string;
+    job_title: string | null;
+    location: string | null;
+    hr_profile_id: string | null;
+    invited_by?: string;
+    expires_at?: string;
 };
 
 type DemoMember = {
@@ -122,11 +155,58 @@ type DemoRoleRate = {
     notes: string | null;
 };
 
+type DemoPmProject = {
+    id: string;
+    org_id: string;
+    key: string | null;
+    name: string;
+    description: string | null;
+    status: "active" | "archived";
+    created_at: string;
+    updated_at: string;
+};
+
+type DemoPmBoard = {
+    id: string;
+    org_id: string;
+    project_id: string;
+    name: string;
+    default_view: "kanban" | "table";
+};
+
+type DemoPmColumn = {
+    id: string;
+    org_id: string;
+    board_id: string;
+    name: string;
+    slug: string;
+    sort_order: number;
+    is_done: boolean;
+};
+
+type DemoPmTask = {
+    id: string;
+    org_id: string;
+    project_id: string;
+    board_id: string;
+    column_id: string;
+    ref: string | null;
+    title: string;
+    description: string | null;
+    priority: "low" | "normal" | "high" | "urgent";
+    sort_order: number;
+    created_at: string;
+    updated_at: string;
+    completed_at: string | null;
+};
+
 const ORG = {
     id: "demo-org-001",
     name: "LEC Demo",
     slug: "lec-demo",
 };
+
+const DEMO_HR_PROFILE_ID = "hp-demo-001";
 
 function isoDate(offsetDays = 0) {
     const date = new Date();
@@ -240,6 +320,38 @@ function createDemoState() {
         },
     ];
 
+    const hrProfiles: DemoHrProfile[] = [
+        {
+            id: DEMO_HR_PROFILE_ID,
+            node_id: "node-demo-1",
+            org_id: ORG.id,
+            role_title: "Coordinador Demo",
+            holder_name: null,
+            area: "Operaciones",
+            role_type: "coordination",
+            mission: null,
+            responsibilities: [],
+            requirements: {},
+            parent_node_id: null,
+            process_id: null,
+            last_pdf_path: null,
+            created_at: isoDate(-10),
+            updated_at: isoDate(-10),
+        },
+    ];
+
+    const orgLocations: DemoOrgLocation[] = [
+        {
+            id: "loc-demo-001",
+            org_id: ORG.id,
+            name: "Hermosillo",
+            sort_order: 0,
+            is_active: true,
+            created_at: isoDate(-10),
+            updated_at: isoDate(-10),
+        },
+    ];
+
     const invitations: DemoInvitation[] = [
         {
             id: "invite-001",
@@ -249,6 +361,11 @@ function createDemoState() {
             status: "pending",
             created_at: isoDate(-1),
             token: "token-pending-001",
+            job_title: "Coordinador Demo",
+            location: "Hermosillo",
+            hr_profile_id: DEMO_HR_PROFILE_ID,
+            invited_by: "demo-user-001",
+            expires_at: isoDate(7),
         },
         {
             id: "invite-002",
@@ -258,6 +375,10 @@ function createDemoState() {
             status: "expired",
             created_at: isoDate(-5),
             token: "token-expired-002",
+            job_title: "Operador",
+            location: "Hermosillo",
+            hr_profile_id: null,
+            expires_at: isoDate(-1),
         },
     ];
 
@@ -389,6 +510,37 @@ function createDemoState() {
 
     const travelReceipts: DemoTravelReceipt[] = [];
 
+    const pmProjects: DemoPmProject[] = [
+        {
+            id: "pm-project-001",
+            org_id: ORG.id,
+            key: "OPS",
+            name: "Operación PM Demo",
+            description: "Proyecto demo para smoke testing",
+            status: "active",
+            created_at: isoDate(-2),
+            updated_at: isoDate(-2),
+        },
+    ];
+
+    const pmBoards: DemoPmBoard[] = [
+        {
+            id: "pm-board-001",
+            org_id: ORG.id,
+            project_id: "pm-project-001",
+            name: "Operación PM Demo Board",
+            default_view: "kanban",
+        },
+    ];
+
+    const pmColumns: DemoPmColumn[] = [
+        { id: "pm-col-todo", org_id: ORG.id, board_id: "pm-board-001", name: "To Do", slug: "todo", sort_order: 10, is_done: false },
+        { id: "pm-col-doing", org_id: ORG.id, board_id: "pm-board-001", name: "Doing", slug: "doing", sort_order: 20, is_done: false },
+        { id: "pm-col-done", org_id: ORG.id, board_id: "pm-board-001", name: "Done", slug: "done", sort_order: 30, is_done: true },
+    ];
+
+    const pmTasks: DemoPmTask[] = [];
+
     return {
         categories,
         categoryMap,
@@ -403,6 +555,12 @@ function createDemoState() {
         travelReports,
         travelReceipts,
         roleRates,
+        pmProjects,
+        pmBoards,
+        pmColumns,
+        pmTasks,
+        hrProfiles,
+        orgLocations,
     };
 }
 
@@ -529,6 +687,14 @@ export async function installDemoApiMocks(page: Page) {
             }
         }
 
+        if (matchesPath(pathname, "/api/v1/org-locations") && method === "GET") {
+            return json(route, { locations: state.orgLocations });
+        }
+
+        if (matchesPath(pathname, "/api/v1/hr/profiles") && method === "GET") {
+            return json(route, { profiles: state.hrProfiles });
+        }
+
         if (matchesPath(pathname, "/api/v1/invitations")) {
             if (method === "GET") {
                 return json(route, { invitations: state.invitations });
@@ -536,11 +702,57 @@ export async function installDemoApiMocks(page: Page) {
 
             if (method === "POST") {
                 const body = parseBody(route) as
-                    | { email?: string; role?: DemoInvitation["role"]; sendEmail?: boolean }
+                    | {
+                          email?: string;
+                          role?: DemoInvitation["role"];
+                          sendEmail?: boolean;
+                          location?: string;
+                          job_title?: string;
+                          hr_profile_id?: string;
+                      }
                     | null;
 
                 if (!body?.email || !body?.role) {
                     return json(route, { error: "Datos invalidos" }, 400);
+                }
+
+                const location = body.location?.trim();
+                if (!location) {
+                    return json(route, { error: "Datos invalidos" }, 400);
+                }
+
+                const locOk = state.orgLocations.some((l) => l.is_active && l.name === location);
+                if (!locOk) {
+                    return json(
+                        route,
+                        {
+                            error: "Sede invalida o inactiva. Debe existir en el catalogo de sedes de tu organizacion.",
+                        },
+                        400
+                    );
+                }
+
+                const hasProfile = Boolean(body.hr_profile_id?.trim());
+                const hasManual = Boolean(body.job_title?.trim());
+                if (!hasProfile && !hasManual) {
+                    return json(route, { error: "Datos invalidos" }, 400);
+                }
+
+                let jobTitle: string | null = body.job_title?.trim() ? body.job_title.trim() : null;
+                let hrPid: string | null = hasProfile ? body.hr_profile_id!.trim() : null;
+
+                if (hrPid) {
+                    const profile = state.hrProfiles.find((p) => p.id === hrPid);
+                    if (!profile) {
+                        return json(
+                            route,
+                            { error: "Perfil de puesto (RRHH) invalido o no pertenece a tu organizacion." },
+                            400
+                        );
+                    }
+                    jobTitle = profile.role_title;
+                } else if (!jobTitle) {
+                    return json(route, { error: "Rol empresa requerido." }, 400);
                 }
 
                 const id = `invite-${Date.now()}`;
@@ -553,6 +765,11 @@ export async function installDemoApiMocks(page: Page) {
                     status: "pending",
                     created_at: isoDate(),
                     token,
+                    job_title: jobTitle,
+                    location,
+                    hr_profile_id: hrPid,
+                    invited_by: "demo-user-001",
+                    expires_at: isoDate(7),
                 };
 
                 state.invitations.unshift(invitation);
@@ -567,14 +784,80 @@ export async function installDemoApiMocks(page: Page) {
 
         if (/\/api\/v1\/invitations\/[^/]+$/.test(pathname) && method === "PATCH") {
             const id = pathname.split("/").pop();
-            const body = parseBody(route) as { status?: DemoInvitation["status"] } | null;
+            const body = parseBody(route) as {
+                status?: DemoInvitation["status"];
+                job_title?: string;
+                hr_profile_id?: string;
+                location?: string;
+            } | null;
             const invitation = state.invitations.find((item) => item.id === id);
 
-            if (!invitation || !body?.status) {
+            if (!invitation) {
                 return json(route, { error: "Invitacion no encontrada" }, 404);
             }
 
-            invitation.status = body.status;
+            if (body == null) {
+                return json(route, { error: "Datos invalidos" }, 400);
+            }
+
+            const wantsStatus = body.status !== undefined;
+            const wantsJob = body.hr_profile_id !== undefined || body.job_title !== undefined;
+            const wantsLocation = body.location !== undefined;
+
+            if (!wantsStatus && !wantsJob && !wantsLocation) {
+                return json(route, { error: "Nada que actualizar." }, 400);
+            }
+
+            if ((wantsJob || wantsLocation) && invitation.status !== "pending") {
+                return json(route, { error: "Solo se pueden editar sede o puesto en invitaciones pendientes." }, 400);
+            }
+
+            if (wantsLocation) {
+                const location = body.location?.trim();
+                if (!location) {
+                    return json(route, { error: "Datos invalidos" }, 400);
+                }
+                const locOk = state.orgLocations.some((l) => l.is_active && l.name === location);
+                if (!locOk) {
+                    return json(
+                        route,
+                        {
+                            error: "Sede invalida o inactiva. Debe existir en el catalogo de sedes de tu organizacion.",
+                        },
+                        400
+                    );
+                }
+                invitation.location = location;
+            }
+
+            if (wantsJob) {
+                const hrKey = body.hr_profile_id;
+                const hasProfile = Boolean(hrKey && hrKey !== "__custom__");
+                if (hasProfile) {
+                    const profile = state.hrProfiles.find((p) => p.id === hrKey);
+                    if (!profile) {
+                        return json(
+                            route,
+                            { error: "Perfil de puesto (RRHH) invalido o no pertenece a tu organizacion." },
+                            400
+                        );
+                    }
+                    invitation.hr_profile_id = profile.id;
+                    invitation.job_title = profile.role_title;
+                } else {
+                    const title = body.job_title?.trim();
+                    if (!title) {
+                        return json(route, { error: "Rol empresa requerido." }, 400);
+                    }
+                    invitation.hr_profile_id = null;
+                    invitation.job_title = title;
+                }
+            }
+
+            if (wantsStatus) {
+                invitation.status = body.status!;
+            }
+
             return json(route, { invitation });
         }
 
@@ -1000,6 +1283,130 @@ export async function installDemoApiMocks(page: Page) {
                 ok: true,
                 message: "Revisa tu correo para el enlace de acceso.",
             });
+        }
+
+        if (matchesPath(pathname, "/api/v1/pm/projects")) {
+            if (method === "GET") {
+                const q = (url.searchParams.get("q") ?? "").toLowerCase();
+                const projects = state.pmProjects.filter((project) =>
+                    !q ||
+                    project.name.toLowerCase().includes(q) ||
+                    (project.key ?? "").toLowerCase().includes(q) ||
+                    (project.description ?? "").toLowerCase().includes(q)
+                );
+                return json(route, { projects, total: projects.length });
+            }
+
+            if (method === "POST") {
+                const body = parseBody(route) as { key?: string | null; name?: string; description?: string | null } | null;
+                if (!body?.name?.trim()) {
+                    return json(route, { error: "Validation failed" }, 400);
+                }
+
+                const projectId = `pm-project-${Date.now()}`;
+                const boardId = `pm-board-${Date.now()}`;
+                const key = body.key?.trim() ? body.key.trim().toUpperCase().replace(/\s+/g, "-") : null;
+                const now = isoDate();
+
+                const project: DemoPmProject = {
+                    id: projectId,
+                    org_id: ORG.id,
+                    key,
+                    name: body.name.trim(),
+                    description: body.description?.trim() || null,
+                    status: "active",
+                    created_at: now,
+                    updated_at: now,
+                };
+                state.pmProjects.unshift(project);
+
+                const board: DemoPmBoard = {
+                    id: boardId,
+                    org_id: ORG.id,
+                    project_id: projectId,
+                    name: `${project.name} Board`,
+                    default_view: "kanban",
+                };
+                state.pmBoards.push(board);
+
+                state.pmColumns.push(
+                    { id: `${boardId}-todo`, org_id: ORG.id, board_id: boardId, name: "To Do", slug: "todo", sort_order: 10, is_done: false },
+                    { id: `${boardId}-doing`, org_id: ORG.id, board_id: boardId, name: "Doing", slug: "doing", sort_order: 20, is_done: false },
+                    { id: `${boardId}-done`, org_id: ORG.id, board_id: boardId, name: "Done", slug: "done", sort_order: 30, is_done: true }
+                );
+
+                return json(route, { project, board }, 201);
+            }
+        }
+
+        if (matchesPath(pathname, "/api/v1/pm/tasks")) {
+            if (method === "GET") {
+                const projectId = url.searchParams.get("project_id");
+                const boardId = url.searchParams.get("board_id");
+                const tasks = state.pmTasks.filter((task) => {
+                    if (projectId && task.project_id !== projectId) return false;
+                    if (boardId && task.board_id !== boardId) return false;
+                    return true;
+                });
+                return json(route, { tasks, total: tasks.length });
+            }
+
+            if (method === "POST") {
+                const body = parseBody(route) as {
+                    project_id?: string;
+                    board_id?: string;
+                    column_id?: string;
+                    title?: string;
+                    description?: string | null;
+                    priority?: "low" | "normal" | "high" | "urgent";
+                } | null;
+
+                if (!body?.project_id || !body?.board_id || !body?.column_id || !body?.title?.trim()) {
+                    return json(route, { error: "Validation failed" }, 400);
+                }
+
+                const column = state.pmColumns.find((item) => item.id === body.column_id && item.board_id === body.board_id);
+                if (!column) {
+                    return json(route, { error: "Invalid column_id for this organization." }, 400);
+                }
+
+                const task: DemoPmTask = {
+                    id: `pm-task-${Date.now()}`,
+                    org_id: ORG.id,
+                    project_id: body.project_id,
+                    board_id: body.board_id,
+                    column_id: body.column_id,
+                    ref: null,
+                    title: body.title.trim(),
+                    description: body.description?.trim() || null,
+                    priority: body.priority || "normal",
+                    sort_order: 1000,
+                    created_at: isoDate(),
+                    updated_at: isoDate(),
+                    completed_at: column.is_done ? isoDate() : null,
+                };
+                state.pmTasks.push(task);
+                return json(route, { task }, 201);
+            }
+        }
+
+        if (/\/api\/v1\/pm\/tasks\/[^/]+\/move$/.test(pathname) && method === "POST") {
+            const id = pathname.split("/").slice(-2)[0];
+            const body = parseBody(route) as { column_id?: string; sort_order?: number } | null;
+            const task = state.pmTasks.find((item) => item.id === id);
+            if (!task || !body?.column_id) {
+                return json(route, { error: "Task not found" }, 404);
+            }
+            const target = state.pmColumns.find((item) => item.id === body.column_id);
+            if (!target) {
+                return json(route, { error: "Invalid column_id for this organization." }, 400);
+            }
+            task.column_id = target.id;
+            task.board_id = target.board_id;
+            task.sort_order = body.sort_order ?? task.sort_order;
+            task.completed_at = target.is_done ? isoDate() : null;
+            task.updated_at = isoDate();
+            return json(route, { task });
         }
 
         return route.continue();

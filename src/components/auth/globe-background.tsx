@@ -187,7 +187,9 @@ export function GlobeBackground() {
     // ─── ANIMATION ───
     let frameId: number;
     const timer = new THREE.Timer();
-    timer.connect();
+    if (typeof document !== "undefined") {
+        timer.connect(document);
+    }
 
     const animate = () => {
       timer.update();

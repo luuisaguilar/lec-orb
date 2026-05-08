@@ -31,7 +31,24 @@ function getCredentials(): Credentials[] {
 }
 
 async function attemptLogin(page: Page, credentials: Credentials) {
-    await page.goto("/login");
+    let navigated = false;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+            await page.goto("/login", { waitUntil: "domcontentloaded", timeout: 30_000 });
+            navigated = true;
+            break;
+        } catch (error) {
+            lastError = error;
+            await page.waitForTimeout(1_000);
+        }
+    }
+
+    if (!navigated) {
+        throw lastError instanceof Error ? lastError : new Error("Unable to open /login after retries");
+    }
+
     await page.locator("#email").fill(credentials.email);
     await page.locator("#password").fill(credentials.password);
     await page.locator("form button[type='submit']").click();
@@ -56,7 +73,8 @@ async function attemptLogin(page: Page, credentials: Credentials) {
     }
 }
 
-setup("authenticate e2e user", async ({ page }) => {
+setup("authenticate e2e user", async ({ page }, testInfo) => {
+    testInfo.setTimeout(90_000);
     const credentials = getCredentials();
 
     if (credentials.length === 0) {

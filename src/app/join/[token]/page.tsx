@@ -85,6 +85,16 @@ export default async function JoinPage({
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {(preview.jobTitle || preview.location) && (
+                            <div className="rounded-md border bg-slate-100 p-3 text-left text-sm">
+                                <p>
+                                    <strong>Rol empresa:</strong> {preview.jobTitle || "Pendiente por definir"}
+                                </p>
+                                <p>
+                                    <strong>Sede:</strong> {preview.location || "Pendiente por definir"}
+                                </p>
+                            </div>
+                        )}
                         <p className="text-sm text-muted-foreground">
                             Para aceptar esta invitación, primero debes iniciar sesión o crear una cuenta con el correo invitado.
                         </p>
@@ -118,6 +128,15 @@ export default async function JoinPage({
                         <p className="font-bold text-green-800">Tu cuenta actual:</p>
                         <p className="text-green-700">{user.email}</p>
                     </div>
+                    {(preview.jobTitle || preview.location) && (
+                        <div className="text-sm space-y-1">
+                            <p className="font-bold text-green-800">Asignación al aceptar:</p>
+                            <p className="text-green-700">
+                                Rol empresa: {preview.jobTitle || "Pendiente por definir"}
+                            </p>
+                            <p className="text-green-700">Sede: {preview.location || "Pendiente por definir"}</p>
+                        </div>
+                    )}
                 </CardContent>
 
                 {acceptError && (

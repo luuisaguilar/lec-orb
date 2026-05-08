@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +12,9 @@ import {
     Link2,
     Loader2,
     Mail,
+    MapPin,
     Shield,
+    Briefcase,
     UserPlus,
 } from "lucide-react";
 
@@ -46,15 +49,50 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-const formSchema = z.object({
-    email: z.string().email("Correo electronico invalido"),
-    role: z.enum(["admin", "supervisor", "operador", "applicator"], {
-        message: "Debes seleccionar un rol para el usuario",
-    }),
-});
+const CUSTOM_HR = "__custom__";
+
+type HrProfileOption = {
+    id: string;
+    role_title: string;
+    area?: string | null;
+};
+
+const formSchema = z
+    .object({
+        email: z.string().email("Correo electronico invalido"),
+        role: z.enum(["admin", "supervisor", "operador", "applicator"], {
+            message: "Debes seleccionar un rol para el usuario",
+        }),
+        job_title: z.string().max(200, "El puesto no puede exceder 200 caracteres").optional(),
+        hr_profile_id: z.string(),
+        location: z.string().min(1, "Selecciona una sede"),
+    })
+    .superRefine((data, ctx) => {
+        if (data.hr_profile_id === CUSTOM_HR) {
+            if (!data.job_title?.trim()) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Escribe el rol empresa.",
+                    path: ["job_title"],
+                });
+            }
+            return;
+        }
+        if (!z.string().uuid().safeParse(data.hr_profile_id).success) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Selecciona un perfil HR valido.",
+                path: ["hr_profile_id"],
+            });
+        }
+    });
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface InviteUserDialogProps {
     onInviteSuccess: () => void;
+    canManageLocations?: boolean;
+    onOpenManageLocations?: () => void;
 }
 
 interface InviteResult {
@@ -64,26 +102,74 @@ interface InviteResult {
     sendEmailRequested: boolean;
 }
 
-export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
+export function InviteUserDialog({
+    onInviteSuccess,
+    canManageLocations,
+    onOpenManageLocations,
+}: InviteUserDialogProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sendEmail, setSendEmail] = useState(true);
     const [copied, setCopied] = useState(false);
     const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
 
+    const { data: hrProfilesData } = useSWR("/api/v1/hr/profiles", fetcher);
+    const { data: orgLocationsData } = useSWR("/api/v1/org-locations", fetcher);
+    const profiles = useMemo(() => {
+        const raw = ((hrProfilesData?.profiles ?? []) as HrProfileOption[]).filter((p) => p?.id && p.role_title?.trim());
+        return [...raw].sort((a, b) => a.role_title.localeCompare(b.role_title, "es"));
+    }, [hrProfilesData]);
+
+    const locationNames = ((orgLocationsData?.locations ?? []) as { name: string }[]).map((l) => l.name);
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             email: "",
             role: "operador",
+            hr_profile_id: "",
+            job_title: "",
+            location: "",
         },
     });
+
+    useEffect(() => {
+        if (!open || inviteResult) return;
+        const names = (orgLocationsData?.locations ?? []).map((l: { name: string }) => l.name);
+        const first = names[0] ?? "";
+        const currentLoc = form.getValues("location");
+        if (first && (!currentLoc || !names.includes(currentLoc))) {
+            form.setValue("location", first);
+        }
+    }, [open, inviteResult, orgLocationsData, form]);
+
+    useEffect(() => {
+        if (!open || inviteResult) return;
+        if (profiles.length > 0) {
+            const cur = form.getValues("hr_profile_id");
+            const isValidProfile = profiles.some((p) => p.id === cur);
+            if (cur === "" || (!isValidProfile && cur !== CUSTOM_HR)) {
+                form.setValue("hr_profile_id", profiles[0].id);
+                form.setValue("job_title", profiles[0].role_title);
+            }
+        } else {
+            form.setValue("hr_profile_id", CUSTOM_HR);
+        }
+    }, [open, inviteResult, profiles, form]);
 
     function resetDialogState() {
         setSendEmail(true);
         setCopied(false);
         setInviteResult(null);
-        form.reset();
+        const first = locationNames[0] ?? "";
+        const defaultHr = profiles[0]?.id ?? CUSTOM_HR;
+        form.reset({
+            email: "",
+            role: "operador",
+            hr_profile_id: defaultHr,
+            job_title: defaultHr === CUSTOM_HR ? "" : (profiles[0]?.role_title ?? ""),
+            location: first,
+        });
     }
 
     function handleOpenChange(nextOpen: boolean) {
@@ -112,10 +198,23 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
         setInviteResult(null);
 
         try {
+            const payload: Record<string, unknown> = {
+                email: values.email,
+                role: values.role,
+                location: values.location,
+                sendEmail,
+            };
+
+            if (values.hr_profile_id === CUSTOM_HR) {
+                payload.job_title = values.job_title?.trim() ?? "";
+            } else {
+                payload.hr_profile_id = values.hr_profile_id;
+            }
+
             const response = await fetch("/api/v1/invitations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...values, sendEmail }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json().catch(() => ({}));
@@ -131,7 +230,15 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                 sendEmailRequested: sendEmail,
             });
 
-            form.reset();
+            const defaultSede = (orgLocationsData?.locations ?? [])[0]?.name ?? "";
+            const defaultHr = profiles[0]?.id ?? CUSTOM_HR;
+            form.reset({
+                email: "",
+                role: "operador",
+                hr_profile_id: defaultHr,
+                job_title: defaultHr === CUSTOM_HR ? "" : (profiles[0]?.role_title ?? ""),
+                location: defaultSede,
+            });
             onInviteSuccess();
 
             if (!sendEmail) {
@@ -152,6 +259,8 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
             setIsSubmitting(false);
         }
     }
+
+    const hrPick = form.watch("hr_profile_id");
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -236,6 +345,27 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                 ) : (
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                            {locationNames.length === 0 && (
+                                <Alert className="border-amber-500/50 bg-amber-950/20">
+                                    <AlertTitle>No hay sedes en el catalogo</AlertTitle>
+                                    <AlertDescription className="space-y-2">
+                                        <span className="block">
+                                            Agrega al menos una sede antes de invitar usuarios.
+                                        </span>
+                                        {canManageLocations && onOpenManageLocations && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="mt-1"
+                                                onClick={() => onOpenManageLocations()}
+                                            >
+                                                Gestionar sedes
+                                            </Button>
+                                        )}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
                             <FormField
                                 control={form.control}
                                 name="email"
@@ -283,6 +413,100 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                                 )}
                             />
 
+                            <FormField
+                                control={form.control}
+                                name="hr_profile_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Puesto en organigrama (RRHH)</FormLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={(value) => {
+                                                field.onChange(value);
+                                                if (value !== CUSTOM_HR) {
+                                                    const p = profiles.find((x) => x.id === value);
+                                                    if (p) form.setValue("job_title", p.role_title);
+                                                }
+                                            }}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <div className="flex items-center gap-2">
+                                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                                        <SelectValue placeholder="Selecciona un perfil" />
+                                                    </div>
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value={CUSTOM_HR}>Otro (texto libre)</SelectItem>
+                                                {profiles.map((p) => (
+                                                    <SelectItem key={p.id} value={p.id}>
+                                                        {p.role_title}
+                                                        {p.area ? ` (${p.area})` : ""}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                            Si eliges un perfil del organigrama, el rol empresa quedará vinculado a ese puesto oficial.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {hrPick === CUSTOM_HR && (
+                                <FormField
+                                    control={form.control}
+                                    name="job_title"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Rol empresa (manual)</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Ej. Coordinador Academico"
+                                                    value={field.value || ""}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            <FormField
+                                control={form.control}
+                                name="location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Sede asignada</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value}
+                                            disabled={locationNames.length === 0}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                        <SelectValue placeholder="Selecciona una sede" />
+                                                    </div>
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {locationNames.map((location) => (
+                                                    <SelectItem key={location} value={location}>
+                                                        {location}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             <div className="rounded-lg border p-4 space-y-3">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1">
@@ -301,7 +525,11 @@ export function InviteUserDialog({ onInviteSuccess }: InviteUserDialogProps) {
                                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting || locationNames.length === 0}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {sendEmail ? "Crear y enviar" : "Crear y copiar enlace"}
                                 </Button>

@@ -1,7 +1,8 @@
 # ADR-007 - Fundacion del modulo Project Management (Asana/Trello/Monday style)
 
-**Estado:** Propuesto  
-**Fecha:** 2026-05-05
+**Estado:** En implementacion  
+**Fecha:** 2026-05-05  
+**Actualizado:** 2026-05-07
 
 ---
 
@@ -62,6 +63,21 @@ Implementacion recomendada:
 
 ## Estado de implementacion
 
-Este ADR documenta la direccion tecnica y de producto.  
-No implica que el modulo PM ya este implementado en produccion.
+Avance actual en `lec-orb`:
+
+- Fase 1 base ya implementada en DB/API/UI:
+  - migraciones `pm_*` iniciales
+  - endpoints `/api/v1/pm/projects`, `/api/v1/pm/tasks`, `/api/v1/pm/tasks/[id]`, `/api/v1/pm/tasks/[id]/move`
+  - pantalla inicial `/dashboard/proyectos`
+- Fase 1.1 agregada:
+  - segmentacion de tareas por `scope` (`team|role|personal`)
+  - campo `role_target` para trabajo por puesto
+  - campo `is_private` para registro personal privado
+  - vista inicial en tabs `Equipo / Por puesto / Mi registro`
+
+### Migraciones relacionadas
+
+- `supabase/migrations/20260515_project_management_module_phase1.sql`
+- `supabase/migrations/20260515_register_project_management_module.sql`
+- `supabase/migrations/20260516_pm_tasks_scope_role_personal.sql`
 

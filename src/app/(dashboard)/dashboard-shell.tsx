@@ -8,6 +8,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DashboardTour } from "@/components/dashboard-tour";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -16,6 +17,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen">
             {/* Desktop sidebar */}
             <aside
+                data-tour="dashboard-sidebar"
                 className={cn(
                     "relative hidden lg:flex lg:flex-col lg:min-h-0 lg:border-r bg-card transition-all duration-300",
                     isCollapsed ? "lg:w-[72px]" : "lg:w-64"
@@ -47,10 +49,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {/* Main content area */}
             <div className="flex flex-1 flex-col overflow-hidden">
                 <AppHeader variant="dashboard" />
-                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                <main data-tour="dashboard-main" className="flex-1 overflow-y-auto p-4 lg:p-6">
                     {children}
                 </main>
             </div>
+            <DashboardTour />
         </div>
     );
 }

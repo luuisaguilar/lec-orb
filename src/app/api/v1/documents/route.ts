@@ -15,6 +15,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
     const { searchParams } = new URL(req.url);
     const moduleSlug = searchParams.get("module");
     const recordId = searchParams.get("record_id");
+    const tag = searchParams.get("tag");
 
     let query = supabase
         .from("documents")
@@ -24,6 +25,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 
     if (moduleSlug) query = query.eq("module_slug", moduleSlug);
     if (recordId) query = query.eq("record_id", recordId);
+    if (tag) query = query.contains("tags", [tag]);
 
     const { data: documents, error } = await query;
     if (error) throw error;

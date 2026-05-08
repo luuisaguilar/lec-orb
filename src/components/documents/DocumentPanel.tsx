@@ -25,13 +25,17 @@ interface Document {
 export function DocumentList({
     moduleSlug,
     recordId,
+    tag,
+    title = "Documentos adjuntos",
     canDelete = false,
 }: {
     moduleSlug: string;
     recordId?: string;
+    tag?: string;
+    title?: string;
     canDelete?: boolean;
 }) {
-    const url = `/api/v1/documents?module=${moduleSlug}${recordId ? `&record_id=${recordId}` : ""}`;
+    const url = `/api/v1/documents?module=${moduleSlug}${recordId ? `&record_id=${recordId}` : ""}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`;
     const { data, mutate } = useSWR(url, fetcher);
     const documents: Document[] = data?.documents ?? [];
 
@@ -57,7 +61,7 @@ export function DocumentList({
 
     return (
         <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Documentos adjuntos</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
             <div className="flex flex-col gap-1.5">
                 {documents.map((doc) => {
                     const Icon = getFileIcon(doc.mime_type);
@@ -108,10 +112,12 @@ export function DocumentList({
 export function DocumentUpload({
     moduleSlug,
     recordId,
+    defaultTags = [],
     onUpload,
 }: {
     moduleSlug: string;
     recordId?: string;
+    defaultTags?: string[];
     onUpload?: () => void;
 }) {
     const [uploading, setUploading] = useState(false);
@@ -129,6 +135,7 @@ export function DocumentUpload({
                 formData.append("file", file);
                 formData.append("module_slug", moduleSlug);
                 if (recordId) formData.append("record_id", recordId);
+                if (defaultTags.length > 0) formData.append("tags", defaultTags.join(","));
 
                 const res = await fetch("/api/v1/documents", { method: "POST", body: formData });
                 if (!res.ok) {
