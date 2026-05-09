@@ -134,7 +134,7 @@ export default function EventDocumentsDetailPage() {
     const [activeTab, setActiveTab] = useState<"logistics" | "certificates" | "results">("logistics");
     const [activeExamType, setActiveExamType] = useState<string>("all");
 
-    const docs: Doc[] = docsData?.documents ?? [];
+    const docs = useMemo<Doc[]>(() => docsData?.documents ?? [], [docsData]);
     const examTypeOptions = useMemo((): string[] => {
         const sessions = (eventData?.event?.sessions ?? []) as Array<{ exam_type?: string | null }>;
         const lowered = sessions.map((s) => String(s.exam_type ?? "").toLowerCase());

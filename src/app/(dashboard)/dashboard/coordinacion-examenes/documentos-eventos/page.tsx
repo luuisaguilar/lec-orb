@@ -59,8 +59,8 @@ export default function EventDocumentsModulePage() {
     const router = useRouter();
     const { data: eventsData, isLoading: eventsLoading } = useSWR("/api/v1/events?limit=300", fetcher);
     const { data: docsData, isLoading: docsLoading } = useSWR("/api/v1/documents?module=events", fetcher);
-    const events: EventItem[] = eventsData?.events ?? [];
-    const documents: DocumentItem[] = docsData?.documents ?? [];
+    const events = useMemo<EventItem[]>(() => eventsData?.events ?? [], [eventsData]);
+    const documents = useMemo<DocumentItem[]>(() => docsData?.documents ?? [], [docsData]);
     const [search, setSearch] = useState("");
     const [view, setView] = useState<"list" | "grid">("list");
     const [mainView, setMainView] = useState<"events" | "schools" | "gantt">("events");
