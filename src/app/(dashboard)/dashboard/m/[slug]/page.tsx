@@ -68,7 +68,7 @@ export default async function DynamicModulePage({ params }: PageProps) {
         "users": "/dashboard/users",
         "audit-log": "/dashboard/actividad",
         "unoi-planning": "/dashboard/logistica/unoi-planeacion",
-        "event-documents": "/dashboard/institucional/documentos-eventos",
+        "event-documents": "/dashboard/coordinacion-examenes/documentos-eventos",
     };
 
     if (module.is_native && NATIVE_ROUTES[slug]) {

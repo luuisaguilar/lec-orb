@@ -82,13 +82,14 @@ const NATIVE_ROUTES: Record<string, string> = {
     "inventory": "/dashboard/logistica/inventario",
     "speaking-packs": "/dashboard/toefl/speaking-packs",
     "unoi-planning": "/dashboard/logistica/unoi-planeacion",
-    "event-documents": "/dashboard/institucional/documentos-eventos",
+    "event-documents": "/dashboard/coordinacion-examenes/documentos-eventos",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Category group icon — shown on the collapsible parent
 // ─────────────────────────────────────────────────────────────────────────────
 const CATEGORY_ICONS: Record<string, string> = {
+    "Coordinación de Exámenes": "Building2",
     "Institucional": "Building2",
     "Inventario": "Package",
     "Exámenes": "GraduationCap",
@@ -224,6 +225,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
         // Category groups
         const orderedCategories = [
+            "Coordinación de Exámenes",
             "Institucional", 
             "Inventario", 
             "Exámenes", 
@@ -243,10 +245,10 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             if (!mods || mods.length === 0) continue;
 
             const items: NavItem[] = mods.map((mod) => {
-                if (category === "Institucional" && mod.slug === "project-management") {
+                if ((category === "Coordinación de Exámenes" || category === "Institucional") && mod.slug === "project-management") {
                     return {
                         label: "Proyectos (Coordinación)",
-                        href: "/dashboard/institucional/proyectos",
+                        href: "/dashboard/coordinacion-examenes/proyectos",
                         icon: mod.icon,
                         module: mod.slug,
                     };
@@ -268,9 +270,11 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                 icon: GLOBAL_PROJECTS_ITEM.icon,
                 items: [GLOBAL_PROJECTS_ITEM],
             };
-            const institucionalIndex = result.findIndex((group) => group.label === "Institucional");
-            if (institucionalIndex >= 0) {
-                result.splice(institucionalIndex + 1, 0, globalGroup);
+            const coordinationIndex = result.findIndex(
+                (group) => group.label === "Coordinación de Exámenes" || group.label === "Institucional"
+            );
+            if (coordinationIndex >= 0) {
+                result.splice(coordinationIndex + 1, 0, globalGroup);
             } else {
                 result.push(globalGroup);
             }

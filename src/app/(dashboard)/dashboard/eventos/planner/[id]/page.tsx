@@ -517,7 +517,7 @@ export default function EventShellPlannerPage() {
                     </Button>
                     <Button
                         variant="outline"
-                        onClick={() => router.push(`/dashboard/institucional/documentos-eventos/${eventId}`)}
+                        onClick={() => router.push(`/dashboard/coordinacion-examenes/documentos-eventos/${eventId}`)}
                         className="gap-2 border-primary/20 text-primary hover:bg-primary/5"
                     >
                         <FileText className="h-4 w-4" /> Abrir Docs & Resultados

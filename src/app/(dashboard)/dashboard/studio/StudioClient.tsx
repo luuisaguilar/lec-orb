@@ -41,6 +41,7 @@ interface ModuleEntry {
 
 // Categorías predefinidas + opción de escribir una nueva
 const PRESET_CATEGORIES = [
+    "Coordinación de Exámenes",
     "Institucional",
     "Inventario",
     "Exámenes",
