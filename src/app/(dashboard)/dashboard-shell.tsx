@@ -17,7 +17,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen">
             {/* Desktop sidebar */}
             <aside
-                data-tour="dashboard-sidebar"
+                data-tour="dashboard-sidebar-desktop"
                 className={cn(
                     "relative hidden lg:flex lg:flex-col lg:min-h-0 lg:border-r bg-card transition-all duration-300",
                     isCollapsed ? "lg:w-[72px]" : "lg:w-64"

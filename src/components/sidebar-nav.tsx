@@ -40,12 +40,50 @@ interface NavGroup {
     items: NavItem[];
 }
 
-const GLOBAL_PROJECTS_ITEM: NavItem = {
-    label: "Proyectos (Empresa)",
-    href: "/dashboard/proyectos-global",
-    icon: "Kanban",
-    module: "project-management",
+const CALENDARIO_SESIONES_NAV: NavGroup = {
+    label: null,
+    icon: "Calendar",
+    items: [
+        {
+            label: "Calendario de sesiones",
+            href: "/dashboard/calendario-sesiones",
+            icon: "Calendar",
+            module: "calendario-sesiones",
+        },
+    ],
 };
+
+/** Proyectos (Empresa): collapsible; first child matches in-app tabs label "Overview". */
+const GLOBAL_PROJECTS_GROUP: NavGroup = {
+    label: "Proyectos (Empresa)",
+    icon: "Kanban",
+    items: [
+        {
+            label: "Mi trabajo",
+            href: "/dashboard/mi-trabajo",
+            icon: "ListTodo",
+            module: "mi-trabajo",
+        },
+        {
+            label: "Overview",
+            href: "/dashboard/proyectos-global",
+            icon: "Kanban",
+            module: "project-management",
+        },
+    ],
+};
+
+function prependDashboardEntrypoints(groups: NavGroup[]): NavGroup[] {
+    const dashIdx = groups.findIndex(
+        (g) => g.label === null && g.items.length === 1 && g.items[0].href === "/dashboard"
+    );
+    const dashboardGroup = dashIdx >= 0 ? groups[dashIdx]! : null;
+    const rest = dashIdx >= 0 ? groups.filter((_, i) => i !== dashIdx) : groups;
+    const head: NavGroup[] = [];
+    if (dashboardGroup) head.push(dashboardGroup);
+    head.push(CALENDARIO_SESIONES_NAV);
+    return [...head, ...rest];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Native module → route mapping
@@ -265,22 +303,17 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
         }
 
         if (canViewGlobalProjects) {
-            const globalGroup: NavGroup = {
-                label: null,
-                icon: GLOBAL_PROJECTS_ITEM.icon,
-                items: [GLOBAL_PROJECTS_ITEM],
-            };
             const coordinationIndex = result.findIndex(
                 (group) => group.label === "Coordinación de Exámenes" || group.label === "Institucional"
             );
             if (coordinationIndex >= 0) {
-                result.splice(coordinationIndex + 1, 0, globalGroup);
+                result.splice(coordinationIndex + 1, 0, GLOBAL_PROJECTS_GROUP);
             } else {
-                result.push(globalGroup);
+                result.push(GLOBAL_PROJECTS_GROUP);
             }
         }
 
-        return result;
+        return prependDashboardEntrypoints(result);
     }, [userData, modulesData, variant]);
 
     // ── Loading state ──────────────────────────────────────────────────────────

@@ -36,7 +36,11 @@ export function SettingsDropdown() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg transition-all duration-200 hover:bg-primary/12 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary [&_svg]:transition-transform hover:[&_svg]:scale-110"
+                >
                     <Settings className="h-4 w-4" />
                     <span className="sr-only">{t("nav.settings")}</span>
                 </Button>
