@@ -739,7 +739,7 @@ export async function installDemoApiMocks(page: Page) {
                 }
 
                 let jobTitle: string | null = body.job_title?.trim() ? body.job_title.trim() : null;
-                let hrPid: string | null = hasProfile ? body.hr_profile_id!.trim() : null;
+                const hrPid: string | null = hasProfile ? body.hr_profile_id!.trim() : null;
 
                 if (hrPid) {
                     const profile = state.hrProfiles.find((p) => p.id === hrPid);
