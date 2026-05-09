@@ -21,6 +21,18 @@ vi.mock("@/lib/email/resend", () => ({
     sendInvitationEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
+vi.mock("@/lib/org/validate-location", () => ({
+    isAssignableOrgLocation: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@/lib/invitations/resolve-invite-job", () => ({
+    resolveInviteJobFields: vi.fn().mockResolvedValue({
+        ok: true,
+        job_title: "Rol empresa prueba",
+        hr_profile_id: null,
+    }),
+}));
+
 // Helper: crea una cadena de supabase encadenable para una tabla
 const createChain = (data: unknown, error: unknown = null) => ({
     select: vi.fn().mockReturnThis(),
@@ -113,7 +125,13 @@ describe("Invitations API Route", () => {
                 }),
             } as unknown as AuthContext["supabase"];
 
-            const payload = { email: "nuevo@test.com", role: "operador", sendEmail: true };
+            const payload = {
+                email: "nuevo@test.com",
+                role: "operador",
+                sendEmail: true,
+                location: "Sede Central",
+                job_title: "Operador",
+            };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -138,7 +156,13 @@ describe("Invitations API Route", () => {
             const invitationsChain = createChain({ id: "inv-new", token: "tok" });
             const mockSupabase = { from: vi.fn(() => invitationsChain) } as unknown as AuthContext["supabase"];
 
-            const payload = { email: "nuevo@test.com", role: "operador", sendEmail: false };
+            const payload = {
+                email: "nuevo@test.com",
+                role: "operador",
+                sendEmail: false,
+                location: "Sede Central",
+                job_title: "Operador",
+            };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -158,7 +182,12 @@ describe("Invitations API Route", () => {
 
         it("should return 400 when email is invalid", async () => {
             const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
-            const payload = { email: "not-an-email", role: "operador" };
+            const payload = {
+                email: "not-an-email",
+                role: "operador",
+                location: "Sede Central",
+                job_title: "Operador",
+            };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -178,7 +207,12 @@ describe("Invitations API Route", () => {
 
         it("should return 400 when role is invalid", async () => {
             const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
-            const payload = { email: "valid@test.com", role: "superuser" }; // rol inválido
+            const payload = {
+                email: "valid@test.com",
+                role: "superuser",
+                location: "Sede Central",
+                job_title: "Operador",
+            };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
@@ -212,7 +246,13 @@ describe("Invitations API Route", () => {
                 }),
             } as unknown as AuthContext["supabase"];
 
-            const payload = { email: "x@test.com", role: "admin", sendEmail: true };
+            const payload = {
+                email: "x@test.com",
+                role: "admin",
+                sendEmail: true,
+                location: "Sede Central",
+                job_title: "Administrador",
+            };
             const req = new NextRequest("http://localhost/api/v1/invitations", {
                 method: "POST",
                 body: JSON.stringify(payload),
