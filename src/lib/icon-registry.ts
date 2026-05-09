@@ -33,6 +33,7 @@ import {
     Layers,
     Link,
     List,
+    ListTodo,
     Mail,
     Map,
     MessageSquare,
@@ -61,6 +62,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
     FolderOpen,
     Layers,
     List,
+    ListTodo,
 
     // People / org
     User,

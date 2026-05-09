@@ -28,10 +28,15 @@ export function AppHeader({ variant }: AppHeaderProps) {
 
     return (
         <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
-            {/* Mobile menu */}
+            {/* Mobile menu — tour anchor when desktop sidebar is hidden */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden"
+                        data-tour="dashboard-sidebar-mobile"
+                    >
                         <Menu className="h-5 w-5" />
                         <span className="sr-only">Menu</span>
                     </Button>
@@ -56,7 +61,7 @@ export function AppHeader({ variant }: AppHeaderProps) {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9"
+                    className="h-9 w-9 rounded-lg transition-all duration-200 hover:bg-primary/12 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary [&_svg]:transition-transform hover:[&_svg]:scale-110"
                     onClick={handleLogout}
                 >
                     <LogOut className="h-4 w-4" />
