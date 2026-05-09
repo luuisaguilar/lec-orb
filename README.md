@@ -73,6 +73,8 @@ npm run dev
 
 ## Documentation Index
 
+- **[Documentation map (MOC) — all docs](./docs/index.md)** — single entry point linking every guide, ADR, and wiki area
+- **[Wiki — thematic knowledge map](./docs/wiki/README.md)** — domains, dependencies, and cross-links
 - [Handoff Guide](./HANDOFF.md) - current status, risks, next steps
 - [Infrastructure Status](./INFRASTRUCTURE_STATUS.md) - launch readiness and live execution status
 - [Project Roadmap](./docs/ROADMAP.md) - backlog and prioritization
