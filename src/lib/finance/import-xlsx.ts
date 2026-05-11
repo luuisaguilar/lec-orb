@@ -33,9 +33,10 @@ export async function parseLegacyExcel(file: File, orgs: Record<string, string>,
                             return {
                                 org_id: orgs[normalizedSheet],
                                 concept: row.Concepto,
+                                categoryName: row.Categoría != null ? String(row.Categoría).trim() : "",
                                 category_id: categories[row.Categoría],
                                 amount: Number(amount),
-                                date: row.Fecha, // Needs normalization depending on XLSX date format
+                                date: row.Fecha,
                                 type
                             };
                         }).filter(m => m.concept && m.amount > 0);
