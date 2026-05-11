@@ -47,6 +47,7 @@ export async function parseLegacyExcel(
                 return {
                     org_id: orgs[normalizedSheet],
                     concept: sanitizeImportString(row.Concepto, 2000),
+                    categoryName: catKey,
                     category_id: categories[catKey],
                     amount: Number(amount),
                     date: row.Fecha,
