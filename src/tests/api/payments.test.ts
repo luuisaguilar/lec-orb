@@ -43,7 +43,8 @@ describe("Payments API Route", () => {
             const paymentsData = [
                 { id: "pay1", folio: "F-001", amount: 500, status: "PAID", payment_concepts: { concept_key: "toefl", description: "TOEFL ITP" } },
             ];
-            const mockSupabase = { from: vi.fn(() => makeChain(paymentsData)) } as unknown as AuthContext["supabase"];
+            const paymentsChain = makeChain(paymentsData);
+            const mockSupabase = { from: vi.fn(() => paymentsChain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/payments");
             const response = await (GET as unknown as Handler)(req, { 
@@ -57,6 +58,7 @@ describe("Payments API Route", () => {
             expect(response.status).toBe(200);
             expect(body.payments).toHaveLength(1);
             expect(body.payments[0].folio).toBe("F-001");
+            expect(paymentsChain.eq).toHaveBeenCalledWith("org_id", mockMember.org_id);
         });
     });
 
