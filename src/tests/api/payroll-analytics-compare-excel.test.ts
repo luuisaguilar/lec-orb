@@ -11,6 +11,20 @@ vi.mock("@/lib/auth/with-handler", () => ({
 
 type HandlerCtx = Pick<AuthContext, "supabase" | "user" | "member">;
 
+const testMember: AuthContext["member"] = {
+    id: "m1",
+    org_id: "org-1",
+    role: "admin",
+    location: null,
+    organizations: { name: "Test Org", slug: "test-org" },
+};
+
+const testUser: AuthContext["user"] = { id: "u1" };
+
+function makeHandlerCtx(supabase: HandlerCtx["supabase"]): HandlerCtx {
+    return { supabase, user: testUser, member: testMember };
+}
+
 /** Chain ending with await … .single() → Promise<{ data, error }> */
 function chainSingle<T>(data: T, error: unknown = null) {
     const self: Record<string, unknown> = {};
@@ -37,7 +51,11 @@ function makeXlsxFile(rows: (string | number)[][]) {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "H1");
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
-    return new File([buf], "test.xlsx", {
+    /** Copia a un ArrayBuffer propio: `Buffer` como `BlobPart` falla con lib DOM estricta. */
+    const bytes = new Uint8Array(buf.length);
+    bytes.set(buf);
+    const part: BlobPart = bytes;
+    return new File([part], "test.xlsx", {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 }
@@ -54,9 +72,6 @@ function makeMultipartCompareRequest(fd: FormData): NextRequest {
 }
 
 describe("GET /api/v1/payroll/analytics", () => {
-    const member = { id: "m1", org_id: "org-1", role: "admin" as const };
-    const user = { id: "u1" };
-
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -66,7 +81,7 @@ describe("GET /api/v1/payroll/analytics", () => {
         const req = new NextRequest("http://localhost/api/v1/payroll/analytics");
         const res = await (analyticsGET as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(400);
         const body = await res.json();
@@ -81,7 +96,7 @@ describe("GET /api/v1/payroll/analytics", () => {
         const req = new NextRequest("http://localhost/api/v1/payroll/analytics?periodId=per-missing");
         const res = await (analyticsGET as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(404);
     });
@@ -98,7 +113,7 @@ describe("GET /api/v1/payroll/analytics", () => {
         const req = new NextRequest("http://localhost/api/v1/payroll/analytics?periodId=per1");
         const res = await (analyticsGET as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -168,7 +183,7 @@ describe("GET /api/v1/payroll/analytics", () => {
         const req = new NextRequest("http://localhost/api/v1/payroll/analytics?periodId=per1");
         const res = await (analyticsGET as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -191,9 +206,6 @@ describe("GET /api/v1/payroll/analytics", () => {
 });
 
 describe("POST /api/v1/payroll/compare-excel", () => {
-    const member = { id: "m1", org_id: "org-1", role: "admin" as const };
-    const user = { id: "u1" };
-
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -207,7 +219,7 @@ describe("POST /api/v1/payroll/compare-excel", () => {
         });
         const res = await (compareExcelPOST as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(400);
         expect(supabase.from).not.toHaveBeenCalled();
@@ -220,7 +232,7 @@ describe("POST /api/v1/payroll/compare-excel", () => {
         const req = makeMultipartCompareRequest(fd);
         const res = await (compareExcelPOST as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(400);
     });
@@ -246,7 +258,7 @@ describe("POST /api/v1/payroll/compare-excel", () => {
         const req = makeMultipartCompareRequest(fd);
         const res = await (compareExcelPOST as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -277,7 +289,7 @@ describe("POST /api/v1/payroll/compare-excel", () => {
         const req = makeMultipartCompareRequest(fd);
         const res = await (compareExcelPOST as (req: NextRequest, ctx: HandlerCtx) => Promise<Response>)(
             req,
-            { supabase: supabase as never, user, member }
+            makeHandlerCtx(supabase as never)
         );
         expect(res.status).toBe(200);
         expect(res.headers.get("Content-Type")).toContain("spreadsheetml");
