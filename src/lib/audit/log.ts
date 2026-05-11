@@ -30,6 +30,8 @@ export interface AuditEntry {
     new_data?: Record<string, unknown> | null;
     /** user.id of the person performing the action */
     performed_by: string;
+    /** Finanzas subdomain for downstream filtering (e.g. caja-chica, presupuesto) */
+    subdomain?: string;
 }
 
 /**
@@ -46,6 +48,11 @@ export async function logAudit(supabase: any, entry: AuditEntry): Promise<void> 
         // but keep 'EXPORT' in the 'action' column for traceability.
         const operation = (entry.action === "EXPORT") ? "INSERT" : entry.action;
 
+        const newData =
+            entry.subdomain != null && entry.subdomain !== ""
+                ? { ...(entry.new_data ?? {}), _audit_subdomain: entry.subdomain }
+                : entry.new_data ?? null;
+
         await supabase.from("audit_log").insert({
             org_id: entry.org_id,
             table_name: entry.table_name,
@@ -53,7 +60,7 @@ export async function logAudit(supabase: any, entry: AuditEntry): Promise<void> 
             operation: operation,
             action: entry.action,
             old_data: entry.old_data ?? null,
-            new_data: entry.new_data ?? null,
+            new_data: newData,
             performed_by: entry.performed_by,
             changed_by: entry.performed_by, // Legacy column
             changed_at: new Date().toISOString(), // Legacy column

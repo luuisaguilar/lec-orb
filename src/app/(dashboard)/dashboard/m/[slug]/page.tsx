@@ -64,10 +64,10 @@ export default async function DynamicModulePage({ params }: PageProps) {
         "quotes": "/dashboard/cotizaciones",
         "purchase-orders": "/dashboard/ordenes",
         "payments": "/dashboard/pagos",
-        "payroll": "/dashboard/nomina",
+        "payroll": "/dashboard/coordinacion-examenes/nominas",
         "users": "/dashboard/users",
         "audit-log": "/dashboard/actividad",
-        "unoi-planning": "/dashboard/logistica/unoi-planeacion",
+        "unoi-planning": "/dashboard/coordinacion-examenes/unoi-planeacion",
         "event-documents": "/dashboard/coordinacion-examenes/documentos-eventos",
     };
 

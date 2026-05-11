@@ -9,6 +9,14 @@ Sentry.init({
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
   enableLogs: true,
   debug: false,
+  beforeSend(event) {
+    if (typeof window === "undefined") return event;
+    const path = window.location?.pathname ?? "";
+    if (path.includes("/dashboard/finanzas") || path.includes("/api/v1/finance")) {
+      event.tags = { ...event.tags, module: "finanzas" };
+    }
+    return event;
+  },
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

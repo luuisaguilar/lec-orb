@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useSWR from "swr";
 import * as z from "zod";
@@ -31,14 +31,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+const lineSchema = z.object({
+    description: z.string().min(1, "Descripción requerida"),
+    quantity: z.coerce.number().positive("Cantidad > 0"),
+    unit_price: z.coerce.number().nonnegative("Precio válido"),
+});
+
 const orderSchema = z.object({
-    quote_id: z.string().uuid().nullable(),
+    quote_id: z.string().uuid().nullable().optional(),
     provider: z.string().min(1, "El proveedor es requerido"),
     description: z.string().default(""),
     status: z.enum(["PENDING", "COMPLETED", "CANCELLED"]),
+    lines: z.array(lineSchema).min(1, "Agrega al menos una partida"),
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
@@ -53,7 +60,6 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Fetch quotes to link them
     const { data: quotesData } = useSWR("/api/v1/quotes", fetcher);
     const quotes = quotesData?.quotes || [];
 
@@ -64,23 +70,43 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
             provider: "",
             description: "",
             status: "PENDING",
+            lines: [{ description: "", quantity: 1, unit_price: 0 }],
         },
     });
+
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
 
     async function onSubmit(values: OrderFormValues) {
         setIsSubmitting(true);
         try {
+            const items = values.lines.map((l) => ({
+                description: l.description,
+                quantity: l.quantity,
+                unit_price: l.unit_price,
+            }));
             const response = await fetch("/api/v1/purchase-orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                body: JSON.stringify({
+                    quote_id: values.quote_id,
+                    provider: values.provider,
+                    description: values.description,
+                    status: values.status,
+                    items,
+                }),
             });
 
             if (!response.ok) throw new Error("Error al crear la orden de compra");
 
             toast.success("Orden de compra creada exitosamente");
             setOpen(false);
-            form.reset();
+            form.reset({
+                quote_id: null,
+                provider: "",
+                description: "",
+                status: "PENDING",
+                lines: [{ description: "", quantity: 1, unit_price: 0 }],
+            });
             onSuccess?.();
         } catch {
             toast.error("Hubo un problema al crear la orden de compra");
@@ -96,7 +122,7 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
                     <Plus className="mr-2 h-4 w-4" /> Nueva Orden
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Agregar Nueva Orden de Compra</DialogTitle>
                 </DialogHeader>
@@ -113,7 +139,7 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
                                     <FormLabel>Vincular a Cotización (Opcional)</FormLabel>
                                     <Select
                                         onValueChange={(val) => field.onChange(val === "none" ? null : val)}
-                                        defaultValue={field.value || "none"}
+                                        value={field.value ?? "none"}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
@@ -122,7 +148,7 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="none">Ninguna</SelectItem>
-                                            {quotes.map((q: any) => (
+                                            {quotes.map((q: { id: string; folio: string; provider: string }) => (
                                                 <SelectItem key={q.id} value={q.id}>
                                                     {q.folio} - {q.provider}
                                                 </SelectItem>
@@ -159,6 +185,103 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
                                             {...field}
                                         />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <FormLabel>Partidas</FormLabel>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => append({ description: "", quantity: 1, unit_price: 0 })}
+                                >
+                                    <Plus className="mr-1 h-3 w-3" /> Línea
+                                </Button>
+                            </div>
+                            <div className="rounded-md border divide-y">
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="p-3 space-y-2 bg-muted/20">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-medium text-muted-foreground">
+                                                Partida {index + 1}
+                                            </span>
+                                            {fields.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => remove(index)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <FormField
+                                            control={form.control}
+                                            name={`lines.${index}.description`}
+                                            render={({ field: f }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input placeholder="Concepto / descripción" {...f} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`lines.${index}.quantity`}
+                                                render={({ field: f }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs">Cantidad</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" step="0.01" min={0} {...f} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`lines.${index}.unit_price`}
+                                                render={({ field: f }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs">Precio unit.</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" step="0.01" min={0} {...f} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Estatus Inicial</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecciona un estatus" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="PENDING">Pendiente</SelectItem>
+                                            <SelectItem value="COMPLETED">Completada</SelectItem>
+                                            <SelectItem value="CANCELLED">Cancelada</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}

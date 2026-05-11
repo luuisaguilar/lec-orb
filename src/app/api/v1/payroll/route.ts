@@ -28,12 +28,12 @@ export const GET = withAuth(async (req, { supabase, member }) => {
         const entryIds = entries.map((e: any) => e.id);
         const { data: lineItems, error: liError } = await supabase
             .from("payroll_line_items")
-            .select("entry_id, role, source")
+            .select("*")
             .in("entry_id", entryIds)
             .eq("org_id", member.org_id);
         if (liError) throw liError;
 
-        // Group roles by entry
+        // Group roles + full line items by entry
         const entriesWithRoles = entries.map((entry: any) => {
             const items = (lineItems ?? []).filter((li: any) => li.entry_id === entry.id);
             const roles = Array.from(
@@ -50,6 +50,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
                 sources,
                 manual_lines_count,
                 auto_lines_count,
+                line_items: items,
             };
         });
 

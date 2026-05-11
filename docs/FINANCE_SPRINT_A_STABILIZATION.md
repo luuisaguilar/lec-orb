@@ -231,7 +231,7 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A4.1 [DB]** Migración `20260528_quotes_orders_amounts.sql`:
+- [x] **A4.1 [DB]** Migración `20260531_quotes_orders_amounts.sql`:
   ```sql
   ALTER TABLE public.quotes
       ADD COLUMN IF NOT EXISTS subtotal NUMERIC(15,2) DEFAULT 0,
@@ -275,11 +275,11 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
       USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
   -- Idem purchase_order_items
   ```
-- [ ] **A4.2 [API]** Actualizar `POST /api/v1/quotes` para aceptar `items[]` y calcular totales.
-- [ ] **A4.3 [API]** Actualizar `POST /api/v1/purchase-orders` idem + endpoint nuevo `POST /api/v1/quotes/[id]/convert-to-po` (genera OC desde cotización aprobada).
-- [ ] **A4.4 [UI]** Refactorizar `AddQuoteDialog` y `AddOrderDialog` con tabla de partidas (agregar/eliminar líneas).
-- [ ] **A4.5 [UI]** Página de detalle `/dashboard/cotizaciones/[id]` con vista PDF-like.
-- [ ] **A4.6 [TEST]** Conversión quote→PO preserva items y totales.
+- [x] **A4.2 [API]** Actualizar `POST /api/v1/quotes` para aceptar `items[]` y calcular totales.
+- [x] **A4.3 [API]** Actualizar `POST /api/v1/purchase-orders` idem + endpoint nuevo `POST /api/v1/quotes/[id]/convert-to-po` (genera OC desde cotización aprobada).
+- [x] **A4.4 [UI]** Refactorizar `AddQuoteDialog` y `AddOrderDialog` con tabla de partidas (agregar/eliminar líneas).
+- [x] **A4.5 [UI]** Página de detalle `/dashboard/cotizaciones/[id]` con vista PDF-like.
+- [x] **A4.6 [TEST]** Conversión quote→PO preserva items y totales.
 
 ---
 
@@ -304,10 +304,10 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Story points:** 2
 
-- [ ] **A6.1** Agregar dashboard Sentry para errores del módulo finanzas (tag `module=finanzas`).
-- [ ] **A6.2** Agregar event tags en `logAudit` para filtrar por subdomain (`caja-chica`, `presupuesto`, `pagos`, `ih-billing`).
-- [ ] **A6.3** Smoke test E2E Playwright: crear movimiento caja chica V2, ver en lista, eliminar.
-- [ ] **A6.4** Actualizar `INFRASTRUCTURE_STATUS.md` con el progreso del Sprint A.
+- [x] **A6.1** Agregar dashboard Sentry para errores del módulo finanzas (tag `module=finanzas`).
+- [x] **A6.2** Agregar event tags en `logAudit` (`subdomain` opcional → `_audit_subdomain` en `new_data`) para filtrar por área (`caja-chica`, `cotizaciones`, `ordenes-compra`, etc.).
+- [x] **A6.3** Smoke test E2E Playwright: flujo caja chica alineado a API V2 (fondos, balance, movimientos, búsqueda).
+- [x] **A6.4** Actualizar `INFRASTRUCTURE_STATUS.md` con el progreso del Sprint A.
 
 ---
 

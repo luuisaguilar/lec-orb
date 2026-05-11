@@ -106,12 +106,12 @@ const NATIVE_ROUTES: Record<string, string> = {
     "quotes": "/dashboard/cotizaciones",
     "purchase-orders": "/dashboard/ordenes",
     "payments": "/dashboard/pagos",
-    "payroll": "/dashboard/nomina",
+    "payroll": "/dashboard/coordinacion-examenes/nominas",
     "rrhh": "/dashboard/rrhh",
     "sgc": "/dashboard/sgc",
     "petty-cash": "/dashboard/finanzas/caja-chica",
     "budget": "/dashboard/finanzas/presupuesto",
-    "ih-billing": "/dashboard/finanzas/ih-billing",
+    "ih-billing": "/dashboard/coordinacion-examenes/cxc",
     "travel-expenses": "/dashboard/finanzas/viaticos",
     "users": "/dashboard/users",
     "audit-log": "/dashboard/actividad",
@@ -119,7 +119,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "courses": "/dashboard/academico/cursos",
     "inventory": "/dashboard/logistica/inventario",
     "speaking-packs": "/dashboard/toefl/speaking-packs",
-    "unoi-planning": "/dashboard/logistica/unoi-planeacion",
+    "unoi-planning": "/dashboard/coordinacion-examenes/unoi-planeacion",
     "event-documents": "/dashboard/coordinacion-examenes/documentos-eventos",
 };
 
