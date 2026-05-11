@@ -12,7 +12,7 @@ vi.mock("@/lib/audit/log", () => ({
     logAudit: vi.fn(),
 }));
 
-type Handler = (req: NextRequest, ctx: AuthContext, routeCtx: { params: Promise<{ id: string }> }) => Promise<NextResponse>;
+type RouteHandler = (req: NextRequest, ctx: AuthContext, nextCtx?: unknown) => Promise<NextResponse>;
 
 function makeQueryChain(result: { data: unknown; error: unknown; count?: number | null }) {
     const chain: any = {
@@ -65,12 +65,12 @@ describe("Petty cash V2 API", () => {
             const req = new NextRequest(
             `http://localhost/api/v1/finance/petty-cash?org_id=${mockMember.org_id}&fund_id=81fbc964-8d7e-4bea-8879-66b516a66a50`
         );
-        const res = await (GET as unknown as Handler)(req, {
+        const res = await (GET as unknown as RouteHandler)(req, {
             supabase: mockSupabase,
             user: mockUser,
             member: mockMember,
             enrichAudit: vi.fn(),
-        });
+        }, {});
         const body = await res.json();
         expect(res.status).toBe(200);
         expect(body.movements).toHaveLength(1);
@@ -106,12 +106,12 @@ describe("Petty cash V2 API", () => {
             }),
         });
 
-        const res = await (POST as unknown as Handler)(req, {
+        const res = await (POST as unknown as RouteHandler)(req, {
             supabase: mockSupabase,
             user: mockUser,
             member: mockMember,
             enrichAudit: vi.fn(),
-        });
+        }, {});
         expect(res.status).toBe(400);
     });
 
@@ -146,7 +146,7 @@ describe("Petty cash V2 API", () => {
             body: JSON.stringify({ action: "approve" }),
         });
 
-        const res = await (PATCH as unknown as Handler)(req, {
+        const res = await (PATCH as unknown as RouteHandler)(req, {
             supabase: mockSupabase,
             user: mockUser,
             member: mockMember,
