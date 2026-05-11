@@ -138,7 +138,12 @@ describe("Quotes API Route", () => {
             await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
 
             expect(mockSupabase.insert).toHaveBeenCalledWith(
-                expect.objectContaining({ status: "PENDING" })
+                expect.objectContaining({
+                    status: "PENDING",
+                    subtotal: 0,
+                    taxes: 0,
+                    currency: "MXN",
+                })
             );
         });
 

@@ -188,6 +188,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         action: "INSERT",
         new_data: movement,
         performed_by: user.id,
+        subdomain: "caja-chica",
     });
 
     return NextResponse.json({ movement }, { status: 201 });
