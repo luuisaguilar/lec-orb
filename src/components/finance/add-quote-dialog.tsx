@@ -34,7 +34,6 @@ import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const quoteSchema = z.object({
-    folio: z.string().min(1, "El folio es requerido"),
     provider: z.string().min(1, "El proveedor es requerido"),
     description: z.string().default(""),
     status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
@@ -53,7 +52,6 @@ export function AddQuoteDialog({ onSuccess }: AddQuoteDialogProps) {
     const form = useForm<QuoteFormValues>({
         resolver: zodResolver(quoteSchema) as any,
         defaultValues: {
-            folio: `COT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-`,
             provider: "",
             description: "",
             status: "PENDING",
@@ -95,19 +93,9 @@ export function AddQuoteDialog({ onSuccess }: AddQuoteDialogProps) {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="folio"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Folio</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="COT-20260305-01" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <p className="text-sm text-muted-foreground">
+                            El folio se asigna automáticamente al crear la cotización (formato COT-AAAA-NNNNN).
+                        </p>
                         <FormField
                             control={form.control}
                             name="provider"

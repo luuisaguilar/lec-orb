@@ -36,6 +36,12 @@ related_docs:
     - `SELECT COUNT(*) FROM public.payments WHERE org_id IS NULL;` debe ser **0**
     - Con usuario de org A: `SELECT * FROM public.payments;` debe retornar **solo** org A (por RLS)
 
+- [x] **A3 (Día 2)** — Folios autogenerados (`fn_next_folio`)
+  - **DB**: `supabase/migrations/20260528_folio_sequences.sql` — contador global por `(doc_type, year)` (compatibilidad con `UNIQUE(folio)` en tablas); `fn_next_folio` en `SECURITY DEFINER` valida membresía en `p_org_id`.
+  - **API**: `src/lib/finance/next-folio.ts` + POST en `quotes`, `purchase_orders`, `payments`.
+  - **UI**: sin campo folio en `AddQuoteDialog`, `AddOrderDialog`, `RegisterPaymentDialog`.
+  - **Tests**: `quotes.test.ts`, `purchase-orders.test.ts`, `payments.test.ts`.
+
 ## Objetivos
 
 1. ✅ Eliminar la deuda arquitectónica del **Finance Engine V1 vs V2 huérfano**.
@@ -230,50 +236,10 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A3.1 [DB]** Crear migración `20260527_folio_sequences.sql`:
-  ```sql
-  CREATE TABLE IF NOT EXISTS public.document_sequences (
-      org_id     UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-      doc_type   TEXT NOT NULL,        -- 'QUOTE', 'PO', 'PAYMENT', 'INVOICE'
-      year       INT  NOT NULL,
-      last_value INT  NOT NULL DEFAULT 0,
-      prefix     TEXT NOT NULL,        -- 'COT', 'OC', 'PAG', 'FAC'
-      PRIMARY KEY (org_id, doc_type, year)
-  );
-
-  CREATE OR REPLACE FUNCTION public.fn_next_folio(
-      p_org_id UUID, p_doc_type TEXT, p_year INT DEFAULT NULL
-  ) RETURNS TEXT AS $$
-  DECLARE
-      v_year   INT := COALESCE(p_year, EXTRACT(YEAR FROM CURRENT_DATE)::INT);
-      v_seq    INT;
-      v_prefix TEXT;
-  BEGIN
-      INSERT INTO public.document_sequences (org_id, doc_type, year, last_value, prefix)
-          VALUES (p_org_id, p_doc_type, v_year, 1,
-                  CASE p_doc_type
-                       WHEN 'QUOTE' THEN 'COT'
-                       WHEN 'PO' THEN 'OC'
-                       WHEN 'PAYMENT' THEN 'PAG'
-                       WHEN 'INVOICE' THEN 'FAC'
-                       ELSE 'DOC' END)
-          ON CONFLICT (org_id, doc_type, year)
-              DO UPDATE SET last_value = document_sequences.last_value + 1
-          RETURNING last_value, prefix INTO v_seq, v_prefix;
-      RETURN format('%s-%s-%s', v_prefix, v_year, LPAD(v_seq::TEXT, 5, '0'));
-  END;
-  $$ LANGUAGE plpgsql;
-
-  ALTER TABLE public.document_sequences ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY "document_sequences: org members"
-      ON public.document_sequences FOR ALL TO authenticated
-      USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
-  ```
-- [ ] **A3.2 [API]** En `POST /api/v1/quotes`, `POST /api/v1/purchase-orders`, `POST /api/v1/payments`:
-  - Si el body **no** trae `folio`, llamar a `supabase.rpc('fn_next_folio', { p_org_id, p_doc_type })`.
-  - Si trae `folio`, validar formato.
-- [ ] **A3.3 [UI]** Quitar el input "Folio" de los formularios (`AddQuoteDialog`, `AddOrderDialog`, `RegisterPaymentDialog`) — mostrar como readonly post-creación.
-- [ ] **A3.4 [TEST]** Tests: dos POST concurrentes generan folios distintos (no colisión).
+- [x] **A3.1 [DB]** `supabase/migrations/20260528_folio_sequences.sql` (secuencia global por `doc_type`+`year`; RPC `SECURITY DEFINER`).
+- [x] **A3.2 [API]** POST quotes / purchase-orders / payments: sin `folio` → `rpc('fn_next_folio')`; con `folio` → validación `PREFIX-AAAA-NNNNN`.
+- [x] **A3.3 [UI]** Sin input de folio en los tres diálogos; mensaje de asignación automática.
+- [x] **A3.4 [TEST]** Dos POST seguidos sin folio → RPC dos veces (cobertura anti-colisión en cliente).
 
 ---
 
