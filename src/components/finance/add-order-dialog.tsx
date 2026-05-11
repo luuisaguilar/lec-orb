@@ -35,7 +35,6 @@ import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const orderSchema = z.object({
-    folio: z.string().min(1, "El folio es requerido"),
     quote_id: z.string().uuid().nullable(),
     provider: z.string().min(1, "El proveedor es requerido"),
     description: z.string().default(""),
@@ -61,7 +60,6 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
     const form = useForm<OrderFormValues>({
         resolver: zodResolver(orderSchema) as any,
         defaultValues: {
-            folio: `OC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-`,
             quote_id: null,
             provider: "",
             description: "",
@@ -104,19 +102,9 @@ export function AddOrderDialog({ onSuccess }: AddOrderDialogProps) {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="folio"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Folio</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="OC-20260305-01" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <p className="text-sm text-muted-foreground">
+                            El folio se asigna automáticamente al crear la orden (formato OC-AAAA-NNNNN).
+                        </p>
                         <FormField
                             control={form.control}
                             name="quote_id"

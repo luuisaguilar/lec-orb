@@ -18,6 +18,7 @@ const createMockSupabase = () => {
         eq: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         single: vi.fn().mockReturnThis(),
+        rpc: vi.fn().mockResolvedValue({ data: "OC-2026-00001", error: null }),
         then: vi.fn((resolve: any) => resolve({ data: mock._data, error: mock._error })),
         _data: null,
         _error: null,
@@ -67,7 +68,7 @@ describe("Purchase Orders API Route", () => {
     describe("POST /api/v1/purchase-orders", () => {
         it("should create purchase order and return 201", async () => {
             const payload = {
-                folio: "OC-2024-001",
+                folio: "OC-2024-00001",
                 provider: "Proveedor Cambridge",
                 description: "Compra de materiales Cambridge",
                 status: "PENDING",
@@ -83,13 +84,28 @@ describe("Purchase Orders API Route", () => {
             const body = await response.json();
 
             expect(response.status).toBe(201);
-            expect(body.order.folio).toBe("OC-2024-001");
+            expect(body.order.folio).toBe("OC-2024-00001");
         });
 
-        it("should return 400 when folio is empty", async () => {
+        it("should generate folio via rpc when folio omitted", async () => {
+            const payload = { provider: "P", description: "", status: "PENDING" };
+            mockSupabase._data = { id: "po-a", folio: "OC-2026-00001", ...payload, org_id: "org-uuid-001" };
             const req = new NextRequest("http://localhost/api/v1/purchase-orders", {
                 method: "POST",
-                body: JSON.stringify({ folio: "" }),
+                body: JSON.stringify(payload),
+            });
+            const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
+            expect(response.status).toBe(201);
+            expect(mockSupabase.rpc).toHaveBeenCalledWith("fn_next_folio", {
+                p_org_id: mockMember.org_id,
+                p_doc_type: "PO",
+            });
+        });
+
+        it("should return 400 when folio format is invalid", async () => {
+            const req = new NextRequest("http://localhost/api/v1/purchase-orders", {
+                method: "POST",
+                body: JSON.stringify({ folio: "OC-bad", provider: "X" }),
             });
 
             const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
@@ -99,7 +115,7 @@ describe("Purchase Orders API Route", () => {
         it("should return 400 when status is invalid", async () => {
             const req = new NextRequest("http://localhost/api/v1/purchase-orders", {
                 method: "POST",
-                body: JSON.stringify({ folio: "OC-001", status: "INVALID" }),
+                body: JSON.stringify({ folio: "OC-2024-00003", status: "INVALID" }),
             });
 
             const response = await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });
@@ -107,11 +123,11 @@ describe("Purchase Orders API Route", () => {
         });
 
         it("should include created_by and updated_by from user", async () => {
-            mockSupabase._data = { id: "po-by", folio: "OC-002", org_id: "org-uuid-001" };
+            mockSupabase._data = { id: "po-by", folio: "OC-2026-00005", org_id: "org-uuid-001" };
 
             const req = new NextRequest("http://localhost/api/v1/purchase-orders", {
                 method: "POST",
-                body: JSON.stringify({ folio: "OC-002" }),
+                body: JSON.stringify({ folio: "OC-2026-00005", provider: "P" }),
             });
 
             await (POST as any)(req, { supabase: mockSupabase, user: mockUser, member: mockMember });

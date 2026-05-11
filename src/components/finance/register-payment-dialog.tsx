@@ -38,7 +38,6 @@ const paymentSchema = z.object({
     mode: z.enum(["exam", "other"]),
     concept_id: z.string().optional().nullable().or(z.literal("")),
     custom_concept: z.string().optional().nullable().or(z.literal("")),
-    folio: z.string().min(1, "El folio es requerido"),
     amount: z.number().min(0, "El total no puede ser negativo"),
     base_amount: z.number().min(0),
     first_name: z.string().min(2, "Requerido"),
@@ -80,7 +79,6 @@ export function RegisterPaymentDialog({ mode, onSuccess, children }: RegisterPay
         resolver: zodResolver(paymentSchema) as any,
         defaultValues: {
             mode: mode,
-            folio: `PAG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000)}`,
             concept_id: "",
             custom_concept: "",
             amount: 0,
@@ -144,7 +142,7 @@ export function RegisterPaymentDialog({ mode, onSuccess, children }: RegisterPay
             setOpen(false);
             form.reset({
                 ...form.formState.defaultValues,
-                folio: `PAG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000)}`
+                mode,
             });
             onSuccess?.();
         } catch (error: any) {
@@ -176,28 +174,17 @@ export function RegisterPaymentDialog({ mode, onSuccess, children }: RegisterPay
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
 
-                        {/* Section 1: Concept & Folio */}
+                        {/* Section 1: Concept */}
                         <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-lg border">
-                            <FormField
-                                control={form.control}
-                                name="folio"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Folio de Referencia</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
+                            <div className="col-span-2 text-sm text-muted-foreground">
+                                El folio se asigna al guardar (PAG-AAAA-NNNNN).
+                            </div>
                             {mode === "exam" ? (
                                 <FormField
                                     control={form.control}
                                     name="concept_id"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="col-span-2">
                                             <FormLabel>Examen del Catálogo</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value || ""}>
                                                 <FormControl>
@@ -222,7 +209,7 @@ export function RegisterPaymentDialog({ mode, onSuccess, children }: RegisterPay
                                     control={form.control}
                                     name="custom_concept"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="col-span-2">
                                             <FormLabel>Concepto Libre</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Ej. Curso de verano..." {...field} value={field.value || ""} />

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
+import { resolveFolioForInsert } from "@/lib/finance/next-folio";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
     const { data: payments, error } = await supabase
@@ -20,7 +21,7 @@ const createPaymentSchema = z.object({
     mode: z.enum(["exam", "other"]).default("exam"),
     concept_id: z.string().uuid().or(z.literal("")).optional().nullable(),
     custom_concept: z.string().or(z.literal("")).optional().nullable(),
-    folio: z.string().min(1),
+    folio: z.string().optional().nullable(),
     amount: z.number().min(0),
     first_name: z.string().min(1),
     last_name: z.string().min(1),
@@ -63,13 +64,18 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
 
     const person_name = `${d.first_name} ${d.last_name}`;
 
+    const folioResult = await resolveFolioForInsert(supabase, member.org_id, "PAYMENT", d.folio);
+    if ("error" in folioResult) {
+        return NextResponse.json({ error: folioResult.error }, { status: folioResult.status });
+    }
+
     const { data: newPayment, error } = await supabase
         .from("payments")
         .insert({
             org_id: member.org_id,
             concept_id: d.mode === "exam" ? d.concept_id : null,
             custom_concept: d.mode === "other" ? d.custom_concept : null,
-            folio: d.folio,
+            folio: folioResult.folio,
             amount: finalAmount,
             person_name,
             first_name: d.first_name,

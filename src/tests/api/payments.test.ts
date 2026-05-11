@@ -28,12 +28,12 @@ describe("Payments API Route", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mockMember = { 
-            id: "m1", 
-            org_id: "org-uuid-001", 
-            role: "admin", 
+        mockMember = {
+            id: "m1",
+            org_id: "org-uuid-001",
+            role: "admin",
             location: "CDMX",
-            organizations: { name: "Test Org", slug: "test-org" }
+            organizations: { name: "Test Org", slug: "test-org" },
         };
         mockUser = { id: "u1" };
     });
@@ -47,11 +47,11 @@ describe("Payments API Route", () => {
             const mockSupabase = { from: vi.fn(() => paymentsChain) } as unknown as AuthContext["supabase"];
 
             const req = new NextRequest("http://localhost/api/v1/payments");
-            const response = await (GET as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (GET as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             const body = await response.json();
 
@@ -64,7 +64,7 @@ describe("Payments API Route", () => {
 
     describe("POST /api/v1/payments", () => {
         const basePayload = {
-            folio: "F-2024-001",
+            folio: "PAG-2024-00001",
             first_name: "Juan",
             last_name: "Pérez",
             amount: 1500,
@@ -73,7 +73,7 @@ describe("Payments API Route", () => {
 
         it("should create exam payment recalculating amount from concept", async () => {
             const conceptData = { cost: 800 };
-            const paymentData = { id: "pay-new", folio: "F-2024-001", amount: 800 };
+            const paymentData = { id: "pay-new", folio: "PAG-2024-00001", amount: 800 };
 
             const conceptChain = makeChain(conceptData);
             const paymentChain = makeChain(paymentData);
@@ -81,6 +81,7 @@ describe("Payments API Route", () => {
             let callCount = 0;
             const mockSupabase = {
                 from: vi.fn(() => callCount++ === 0 ? conceptChain : paymentChain),
+                rpc: vi.fn().mockResolvedValue({ data: "PAG-2026-00001", error: null }),
             } as unknown as AuthContext["supabase"];
 
             const payload = {
@@ -96,23 +97,89 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             const body = await response.json();
 
             expect(response.status).toBe(201);
             expect(body.payment).toBeDefined();
-            // amount recalculado desde el concept
             expect(mockSupabase.from).toHaveBeenCalledWith("payment_concepts");
+            expect(mockSupabase.rpc).not.toHaveBeenCalled();
+        });
+
+        it("should generate folio via rpc when folio omitted", async () => {
+            const conceptData = { cost: 800 };
+            const paymentData = { id: "pay-auto", folio: "PAG-2026-00002", amount: 800 };
+            const conceptChain = makeChain(conceptData);
+            const paymentChain = makeChain(paymentData);
+            let callCount = 0;
+            const mockSupabase = {
+                from: vi.fn(() => callCount++ === 0 ? conceptChain : paymentChain),
+                rpc: vi.fn().mockResolvedValue({ data: "PAG-2026-00002", error: null }),
+            } as unknown as AuthContext["supabase"];
+
+            const payload = {
+                mode: "exam" as const,
+                concept_id: "81fbc964-8d7e-4bea-8879-66b516a66a30",
+                first_name: "Juan",
+                last_name: "Pérez",
+                amount: 800,
+                payment_method: "efectivo",
+                quantity: 1,
+                discount: 0,
+            };
+
+            const req = new NextRequest("http://localhost/api/v1/payments", {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
+                member: mockMember,
+                enrichAudit: vi.fn(),
+            });
+            expect(response.status).toBe(201);
+            expect(mockSupabase.rpc).toHaveBeenCalledWith("fn_next_folio", {
+                p_org_id: mockMember.org_id,
+                p_doc_type: "PAYMENT",
+            });
+        });
+
+        it("should return 400 when folio format is invalid", async () => {
+            const mockSupabase = { from: vi.fn(), rpc: vi.fn() } as unknown as AuthContext["supabase"];
+            const payload = {
+                ...basePayload,
+                folio: "INV-2024-00001",
+                mode: "other" as const,
+                custom_concept: "X",
+                quantity: 1,
+                discount: 0,
+            };
+            const req = new NextRequest("http://localhost/api/v1/payments", {
+                method: "POST",
+                body: JSON.stringify(payload),
+            });
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
+                member: mockMember,
+                enrichAudit: vi.fn(),
+            });
+            expect(response.status).toBe(400);
         });
 
         it("should create other-mode payment with custom concept", async () => {
-            const paymentData = { id: "pay-other", folio: "F-2024-002", amount: 300 };
-            const mockSupabase = { from: vi.fn(() => makeChain(paymentData)) } as unknown as AuthContext["supabase"];
+            const paymentData = { id: "pay-other", folio: "PAG-2024-00002", amount: 300 };
+            const mockSupabase = {
+                from: vi.fn(() => makeChain(paymentData)),
+                rpc: vi.fn().mockResolvedValue({ data: "PAG-2026-00003", error: null }),
+            } as unknown as AuthContext["supabase"];
 
             const payload = {
                 ...basePayload,
@@ -127,11 +194,11 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             expect(response.status).toBe(201);
         });
@@ -141,7 +208,6 @@ describe("Payments API Route", () => {
             const payload = {
                 ...basePayload,
                 mode: "exam",
-                // sin concept_id — falla el .refine
                 quantity: 1,
                 discount: 0,
             };
@@ -151,11 +217,11 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             expect(response.status).toBe(400);
         });
@@ -165,7 +231,6 @@ describe("Payments API Route", () => {
             const payload = {
                 ...basePayload,
                 mode: "other",
-                // sin custom_concept — falla el .refine
                 quantity: 1,
                 discount: 0,
             };
@@ -175,11 +240,11 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             expect(response.status).toBe(400);
         });
@@ -190,7 +255,7 @@ describe("Payments API Route", () => {
                 ...basePayload,
                 mode: "other",
                 custom_concept: "Pago",
-                email: "not-valid-email", // no es email ni literal("")
+                email: "not-valid-email",
                 quantity: 1,
                 discount: 0,
             };
@@ -200,11 +265,11 @@ describe("Payments API Route", () => {
                 body: JSON.stringify(payload),
             });
 
-            const response = await (POST as unknown as Handler)(req, { 
-                supabase: mockSupabase, 
-                user: mockUser, 
+            const response = await (POST as unknown as Handler)(req, {
+                supabase: mockSupabase,
+                user: mockUser,
                 member: mockMember,
-                enrichAudit: vi.fn()
+                enrichAudit: vi.fn(),
             });
             expect(response.status).toBe(400);
         });

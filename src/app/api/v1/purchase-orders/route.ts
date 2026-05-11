@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
+import { resolveFolioForInsert } from "@/lib/finance/next-folio";
 
 export const GET = withAuth(async (req, { supabase, member }) => {
     const { data: orders, error } = await supabase
@@ -16,7 +17,7 @@ export const GET = withAuth(async (req, { supabase, member }) => {
 }, { module: "purchase-orders", action: "view" });
 
 const createOrderSchema = z.object({
-    folio: z.string().min(1),
+    folio: z.string().optional().nullable(),
     quote_id: z.string().uuid().optional().nullable(),
     provider: z.string().optional().nullable(),
     description: z.string().optional().nullable(),
@@ -31,11 +32,21 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
     }
 
+    const folioResult = await resolveFolioForInsert(supabase, member.org_id, "PO", parsed.data.folio);
+    if ("error" in folioResult) {
+        return NextResponse.json({ error: folioResult.error }, { status: folioResult.status });
+    }
+
     const { data: newOrder, error } = await supabase
         .from("purchase_orders")
         .insert({
             org_id: member.org_id,
-            ...parsed.data,
+            folio: folioResult.folio,
+            quote_id: parsed.data.quote_id ?? null,
+            provider: parsed.data.provider ?? null,
+            description: parsed.data.description ?? null,
+            file_path: parsed.data.file_path ?? null,
+            status: parsed.data.status ?? "PENDING",
             created_by: user.id,
             updated_by: user.id,
         })
