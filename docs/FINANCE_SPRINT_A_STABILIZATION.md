@@ -42,6 +42,12 @@ related_docs:
   - **UI**: sin campo folio en `AddQuoteDialog`, `AddOrderDialog`, `RegisterPaymentDialog`.
   - **Tests**: `quotes.test.ts`, `purchase-orders.test.ts`, `payments.test.ts`.
 
+- [x] **A5 (Día 3)** — `exceljs` en imports de finanzas (pagos + caja legacy)
+  - **Dependencia**: `exceljs` añadido; **`xlsx` se mantiene** para exports y demás imports no migrados (A5.6).
+  - **Código**: `src/lib/import/exceljs-sheet-json.ts`, `exceljs-guard.ts`; `import-xlsx.ts` (caja legacy); `payments/import/route.ts`.
+  - **Límites**: `EXCEL_IMPORT_MAX_BYTES` (5 MB) + `guardExcelImportSize` / `guardExcelImportBuffer` en `xlsx-guard.ts`; validación de forma del libro vía `guardExceljsWorkbook`.
+  - **Sanitización**: `sanitizeImportString` en celdas de texto hacia inserts.
+
 ## Objetivos
 
 1. ✅ Eliminar la deuda arquitectónica del **Finance Engine V1 vs V2 huérfano**.
@@ -308,13 +314,13 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A5.1** `npm install exceljs && npm uninstall xlsx` (en imports; mantener `xlsx` sólo para exports server-side autenticados como fase intermedia).
-- [ ] **A5.2** Refactorizar `src/lib/finance/import-xlsx.ts` con ExcelJS.
-- [ ] **A5.3** Refactorizar `src/app/api/v1/payments/import/route.ts` con ExcelJS.
-- [ ] **A5.4** Validar tamaño máximo de upload (5 MB).
-- [ ] **A5.5** Sanitizar todos los strings antes de pasar a metadata de celdas.
-- [ ] **A5.6** Plan: migrar también export en un sprint futuro (no urgente porque solo lo usan admins).
-- [ ] **A5.7** Re-correr `npm audit` — debe bajar de 6 → 4 vulnerabilidades.
+- [x] **A5.1** `npm install exceljs` — `xlsx` **no** desinstalado aún (exports y otros módulos siguen con SheetJS).
+- [x] **A5.2** `src/lib/finance/import-xlsx.ts` migrado a ExcelJS.
+- [x] **A5.3** `src/app/api/v1/payments/import/route.ts` migrado a ExcelJS.
+- [x] **A5.4** Tamaño máximo de import **5 MB** (`EXCEL_IMPORT_MAX_BYTES`, `guardExcelImportSize` / `guardExcelImportBuffer`).
+- [x] **A5.5** Sanitización de strings con `sanitizeImportString` al mapear filas a inserts.
+- [ ] **A5.6** Plan: migrar también export y resto de imports cliente/servidor en sprints futuros.
+- [ ] **A5.7** Re-correr `npm audit` tras retirar `xlsx` del árbol (pendiente de migración global).
 
 ---
 

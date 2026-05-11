@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import ExcelJS from "exceljs";
 import { withAuth } from "@/lib/auth/with-handler";
-import * as xlsx from "xlsx";
+import { guardExcelImportBuffer, guardExcelImportSize } from "@/lib/import/xlsx-guard";
+import { guardExceljsWorkbook } from "@/lib/import/exceljs-guard";
+import { sanitizeImportString, worksheetToJsonRecords } from "@/lib/import/exceljs-sheet-json";
 import { z } from "zod";
 
 function mapExcelStatusToDB(excelStatus?: string) {
@@ -14,8 +17,8 @@ function mapExcelStatusToDB(excelStatus?: string) {
 }
 
 function parseExcelAmount(val: any): number {
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string') {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
         const cleaned = val.replace(/[^0-9.-]+/g, "");
         return parseFloat(cleaned) || 0;
     }
@@ -39,10 +42,31 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
     const file = formData.get("file") as File;
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
+    const sizeFromFile = guardExcelImportSize(file.size);
+    if (!sizeFromFile.ok) {
+        return NextResponse.json({ error: sizeFromFile.message }, { status: sizeFromFile.status });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const workbook = xlsx.read(buffer, { type: "buffer" });
-    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
+
+    const sizeGuard = guardExcelImportBuffer(buffer);
+    if (!sizeGuard.ok) {
+        return NextResponse.json({ error: sizeGuard.message }, { status: sizeGuard.status });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(bytes);
+
+    const shapeGuard = guardExceljsWorkbook(workbook);
+    if (!shapeGuard.ok) {
+        return NextResponse.json({ error: shapeGuard.message }, { status: shapeGuard.status });
+    }
+
+    const first = workbook.worksheets[0];
+    if (!first) return NextResponse.json({ error: "The Excel file has no sheets" }, { status: 400 });
+
+    const rawData = worksheetToJsonRecords(first);
 
     if (rawData.length === 0) return NextResponse.json({ error: "The Excel file is empty" }, { status: 400 });
 
@@ -63,12 +87,13 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
 
             const d = parsed.data;
             const status = mapExcelStatusToDB(d["ST."]);
-            const folio = d["ID"] || d["REFERENCIA"] || `HIST-${Date.now()}-${index}`;
+            const folioRaw = d["ID"] || d["REFERENCIA"] || `HIST-${Date.now()}-${index}`;
+            const folio = sanitizeImportString(folioRaw, 120);
 
             let createdAt = new Date();
             if (d["FECHA GEN."]) {
                 const dateStr = String(d["FECHA GEN."]);
-                const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+                const parts = dateStr.includes("/") ? dateStr.split("/") : dateStr.split("-");
                 if (parts.length === 3) createdAt = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
                 else {
                     const fallbackDate = new Date(dateStr);
@@ -76,16 +101,27 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
                 }
             }
 
-            const nameParts = (d["NOMBRE COMPLETO"] || "").split(" ");
+            const fullName = sanitizeImportString(d["NOMBRE COMPLETO"] || "", 300);
+            const nameParts = fullName.split(/\s+/).filter(Boolean);
             const firstName = nameParts.slice(0, Math.max(1, Math.ceil(nameParts.length / 2))).join(" ") || "Desconocido";
             const lastName = nameParts.slice(Math.max(1, Math.ceil(nameParts.length / 2))).join(" ") || "";
 
             validRowsToInsert.push({
-                folio, amount: d["TOTAL"], person_name: d["NOMBRE COMPLETO"],
-                first_name: firstName, last_name: lastName,
-                custom_concept: d["CONCEPTO"], status, payment_method: d["PAGO EN"] || null,
-                location: d["SEDE"] || null, created_by: user.id, org_id: member.org_id,
-                created_at: createdAt.toISOString(), currency: 'MXN', quantity: 1, discount: 0
+                folio,
+                amount: d["TOTAL"],
+                person_name: fullName,
+                first_name: sanitizeImportString(firstName, 120),
+                last_name: sanitizeImportString(lastName, 120),
+                custom_concept: sanitizeImportString(d["CONCEPTO"], 500),
+                status,
+                payment_method: d["PAGO EN"] ? sanitizeImportString(d["PAGO EN"], 200) : null,
+                location: d["SEDE"] ? sanitizeImportString(d["SEDE"], 200) : null,
+                created_by: user.id,
+                org_id: member.org_id,
+                created_at: createdAt.toISOString(),
+                currency: "MXN",
+                quantity: 1,
+                discount: 0,
             });
         } catch (err: any) {
             errorCount++;
