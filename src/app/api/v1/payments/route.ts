@@ -3,10 +3,11 @@ import { z } from "zod";
 import { withAuth } from "@/lib/auth/with-handler";
 import { logAudit } from "@/lib/audit/log";
 
-export const GET = withAuth(async (req, { supabase }) => {
+export const GET = withAuth(async (req, { supabase, member }) => {
     const { data: payments, error } = await supabase
         .from("payments")
         .select("*, payment_concepts(concept_key, description)")
+        .eq("org_id", member.org_id)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
