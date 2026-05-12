@@ -267,7 +267,7 @@ const defaultTableFilters: TableColumnFilters = {
     vinculo: "all",
 };
 
-/** Radix Select no admite value vac├¡o; se usa como opci├│n ΓÇ£sin filtroΓÇ¥. */
+/** Radix Select no admite value vacío; se usa como opción "sin filtro". */
 const TABLE_PLAN_QUICK_PICK_CLEAR = "__unoi_table_plan_clear__";
 
 type TablePlanQuickPickLists = {
@@ -327,9 +327,9 @@ function TablePlanQuickPickBar({
         <div className="space-y-2 rounded-lg border border-border/70 bg-muted/20 p-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
-                    <Label className="text-xs text-muted-foreground">Selecci├│n r├ípida</Label>
+                    <Label className="text-xs text-muted-foreground">Selección rápida</Label>
                     <p className="text-[10px] text-muted-foreground">
-                        Elige valores que ya existen en los datos cargados (mismos filtros que por columna). La b├║squeda libre de
+                        Elige valores que ya existen en los datos cargados (mismos filtros que por columna). La búsqueda libre de
                         arriba sigue funcionando en paralelo.
                     </p>
                 </div>
@@ -389,7 +389,7 @@ function EventPlannerLink({ eventId, className }: { eventId: string; className?:
 
 export type TableColumnFilterKey = keyof TableColumnFilters;
 
-/** Bot├│n en encabezado: abre un di├ílogo global (evita Radix dentro de <th>). */
+/** Botón en encabezado: abre un diálogo global (evita Radix dentro de <th>). */
 function ColumnFilterHeaderButton({ active, onClick }: { active: boolean; onClick: () => void }) {
     return (
         <button
@@ -436,10 +436,10 @@ function PlanningColumnFilterDialog({
                     <>
                         <DialogHeader>
                             <DialogTitle>Filtro: Evento</DialogTitle>
-                            <DialogDescription>Filtra filas seg├║n si ya tienen evento vinculado en Orb.</DialogDescription>
+                            <DialogDescription>Filtra filas según si ya tienen evento vinculado en Orb.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-2 py-2">
-                            <Label>Vinculaci├│n</Label>
+                            <Label>Vinculación</Label>
                             <Select
                                 value={filters.vinculo}
                                 onValueChange={(v) => setPatch({ vinculo: v as TableColumnFilters["vinculo"] })}
@@ -490,7 +490,7 @@ function PlanningColumnFilterDialog({
                                                 : "Estado"}
                             </DialogTitle>
                             <DialogDescription>
-                                Coincidencia parcial en el texto, sin distinguir may├║sculas. La tabla se actualiza al
+                                Coincidencia parcial en el texto, sin distinguir mayúsculas. La tabla se actualiza al
                                 escribir.
                             </DialogDescription>
                         </DialogHeader>
@@ -501,14 +501,14 @@ function PlanningColumnFilterDialog({
                                 onChange={(e) => setPatch({ [columnKey]: e.target.value } as Partial<TableColumnFilters>)}
                                 placeholder={
                                     columnKey === "fecha"
-                                        ? "2026-05-23ΓÇª"
+                                        ? "2026-05-23…"
                                         : columnKey === "examen"
-                                          ? "ket, fceΓÇª"
+                                          ? "ket, fce…"
                                           : columnKey === "alumnos"
-                                            ? "20ΓÇª"
+                                            ? "20…"
                                             : columnKey === "estado"
-                                              ? "linked, proposedΓÇª"
-                                              : "ΓÇª"
+                                              ? "linked, proposed…"
+                                              : "…"
                                 }
                                 autoComplete="off"
                             />
@@ -535,7 +535,7 @@ function PlanningColumnFilterDialog({
 
 /**
  * Scroll horizontal: el contenido usa w-max para que la tabla no se comprima;
- * barra superior sincronizada (misma anchura ├║til que el ├írea inferior).
+ * barra superior sincronizada (misma anchura útil que el área inferior).
  */
 function SyncedHorizontalScroll({
     children,
@@ -544,7 +544,7 @@ function SyncedHorizontalScroll({
 }: {
     children: ReactNode;
     depsKey: string | number;
-    /** Si se define, el ├írea con scroll horizontal queda dentro de un contenedor con scroll vertical (p. ej. max-h + overflow-y-auto). */
+    /** Si se define, el área con scroll horizontal queda dentro de un contenedor con scroll vertical (p. ej. max-h + overflow-y-auto). */
     verticalScrollClassName?: string;
 }) {
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -843,7 +843,7 @@ function UNOiPlanningPageContent() {
             return;
         }
         if (targets.length > 12) {
-            const ok = window.confirm(`┬┐Vincular ${targets.length} filas sin evento en la vista actual?`);
+            const ok = window.confirm(`¿Vincular ${targets.length} filas sin evento en la vista actual?`);
             if (!ok) return;
         }
         setBulkLinking(true);
@@ -877,7 +877,7 @@ function UNOiPlanningPageContent() {
             if (!res.ok) {
                 throw new Error(payload.error || "No se pudo importar el archivo");
             }
-            alert(`Importaci├│n completada. Insertadas: ${payload.inserted ?? 0}`);
+            alert(`Importación completada. Insertadas: ${payload.inserted ?? 0}`);
             setUploadFile(null);
             setImportDialogOpen(false);
             await mutate();
@@ -892,8 +892,8 @@ function UNOiPlanningPageContent() {
         rows.length !== rowsForViews.length ? (
             <span className="text-muted-foreground">
                 {" "}
-                ┬╖ Mostrando {rowsForViews.length} de {rows.length}
-                {quickTableSearch.trim() ? " (b├║squeda + filtros)" : " (filtros de tabla)"}
+                · Mostrando {rowsForViews.length} de {rows.length}
+                {quickTableSearch.trim() ? " (búsqueda + filtros)" : " (filtros de tabla)"}
             </span>
         ) : null;
 
@@ -901,10 +901,10 @@ function UNOiPlanningPageContent() {
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Planeaci├│n UNOi</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Planeación UNOi</h1>
                     <p className="text-sm text-muted-foreground">
-                        Planeaci├│n recibida de Sistema Uno (UNOi), separada de Eventos. Puedes vincular cada fila a un
-                        evento/sesi├│n.
+                        Planeación recibida de Sistema Uno (UNOi), separada de Eventos. Puedes vincular cada fila a un
+                        evento/sesión.
                     </p>
                 </div>
                 <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
@@ -918,7 +918,7 @@ function UNOiPlanningPageContent() {
                         <DialogHeader>
                             <DialogTitle>Importar Excel UNOi</DialogTitle>
                             <DialogDescription>
-                                Archivo IH (hoja <strong>Colegios_Propuestas_Fechas</strong>). Se guarda en este m├│dulo.
+                                Archivo IH (hoja <strong>Colegios_Propuestas_Fechas</strong>). Se guarda en este módulo.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-3 py-1">
@@ -932,7 +932,7 @@ function UNOiPlanningPageContent() {
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                    <Label>A├▒o</Label>
+                                    <Label>Año</Label>
                                     <Select value={String(planningYear)} onValueChange={(v) => setPlanningYear(Number(v))}>
                                         <SelectTrigger>
                                             <SelectValue />
@@ -956,7 +956,7 @@ function UNOiPlanningPageContent() {
                                             <SelectItem value="annual">Anual</SelectItem>
                                             <SelectItem value="spring">Primavera</SelectItem>
                                             <SelectItem value="summer">Verano</SelectItem>
-                                            <SelectItem value="fall">Oto├▒o</SelectItem>
+                                            <SelectItem value="fall">Otoño</SelectItem>
                                             <SelectItem value="winter">Invierno</SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -984,7 +984,7 @@ function UNOiPlanningPageContent() {
                                 Cancelar
                             </Button>
                             <Button type="button" onClick={uploadPlanningFile} disabled={!uploadFile || uploading}>
-                                {uploading ? "ImportandoΓÇª" : "Importar"}
+                                {uploading ? "Importando…" : "Importar"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -998,7 +998,7 @@ function UNOiPlanningPageContent() {
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-6">
                     <div className="space-y-1">
-                        <Label>A├▒o</Label>
+                        <Label>Año</Label>
                         <Select
                             value={String(planningYear)}
                             onValueChange={(value) => {
@@ -1032,7 +1032,7 @@ function UNOiPlanningPageContent() {
                                 <SelectItem value="annual">Anual</SelectItem>
                                 <SelectItem value="spring">Primavera</SelectItem>
                                 <SelectItem value="summer">Verano</SelectItem>
-                                <SelectItem value="fall">Oto├▒o</SelectItem>
+                                <SelectItem value="fall">Otoño</SelectItem>
                                 <SelectItem value="winter">Invierno</SelectItem>
                             </SelectContent>
                         </Select>
@@ -1050,7 +1050,7 @@ function UNOiPlanningPageContent() {
                         <Input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="proposed / linked..." />
                     </div>
                     <div className="space-y-1">
-                        <Label>B├║squeda</Label>
+                        <Label>Búsqueda</Label>
                         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="exam, propuesta..." />
                     </div>
                 </CardContent>
@@ -1062,7 +1062,7 @@ function UNOiPlanningPageContent() {
                     <CardDescription>
                         {isLoading ? "Cargando..." : `${rows.length} filas cargadas`}
                         {groupedByDate.length > 0 && !isLoading && (
-                            <span className="text-muted-foreground"> ┬╖ {groupedByDate.length} fechas en vista</span>
+                            <span className="text-muted-foreground"> · {groupedByDate.length} fechas en vista</span>
                         )}
                         {filterHint}
                     </CardDescription>
@@ -1086,7 +1086,7 @@ function UNOiPlanningPageContent() {
 
                         <TabsContent value="grid" className="mt-0">
                             <p className="mb-3 text-xs text-muted-foreground">
-                                Los filtros de la pesta├▒a <strong>Tabla estilo plan</strong> (icono junto a cada columna, b├║squeda r├ípida y chips) aplican tambi├⌐n aqu├¡.
+                                Los filtros de la pestaña <strong>Tabla estilo plan</strong> (icono junto a cada columna, búsqueda rápida y chips) aplican también aquí.
                             </p>
                             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {groupedByDate.map(([date, dateRows]) => (
@@ -1120,9 +1120,9 @@ function UNOiPlanningPageContent() {
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
                                                         <span className="font-medium text-foreground/80">
-                                                            {row.city?.trim() || "ΓÇö"}
+                                                            {row.city?.trim() || "—"}
                                                         </span>
-                                                        <span className="mx-1.5 text-muted-foreground/70">┬╖</span>
+                                                        <span className="mx-1.5 text-muted-foreground/70">·</span>
                                                         <span
                                                             className={cn(
                                                                 "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
@@ -1131,11 +1131,11 @@ function UNOiPlanningPageContent() {
                                                         >
                                                             {row.exam_type}
                                                         </span>
-                                                        <span className="mx-1.5 text-muted-foreground/70">┬╖</span>
+                                                        <span className="mx-1.5 text-muted-foreground/70">·</span>
                                                         <span>{row.students_planned ?? 0} alumnos</span>
                                                         {row.nivel ? (
                                                             <>
-                                                                <span className="mx-1.5 text-muted-foreground/70">┬╖</span>
+                                                                <span className="mx-1.5 text-muted-foreground/70">·</span>
                                                                 <span>{row.nivel}</span>
                                                             </>
                                                         ) : null}
@@ -1159,15 +1159,15 @@ function UNOiPlanningPageContent() {
                         <TabsContent value="table" className="mt-0 space-y-3">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                                 <div className="max-w-md flex-1 space-y-1">
-                                    <Label className="text-xs text-muted-foreground">B├║squeda r├ípida en toda la tabla</Label>
+                                    <Label className="text-xs text-muted-foreground">Búsqueda rápida en toda la tabla</Label>
                                     <Input
                                         className="h-9 text-sm"
-                                        placeholder="Ej. OBRE, ket, 2026-05, vinculadoΓÇª"
+                                        placeholder="Ej. OBRE, ket, 2026-05, vinculado…"
                                         value={quickTableSearch}
                                         onChange={(e) => setQuickTableSearch(e.target.value)}
                                     />
                                     <p className="text-[10px] text-muted-foreground">
-                                        Filtra al escribir (fecha, ciudad, colegio, examen, alumnos, estadoΓÇª). Combina con los filtros por columna.
+                                        Filtra al escribir (fecha, ciudad, colegio, examen, alumnos, estado…). Combina con los filtros por columna.
                                     </p>
                                 </div>
                                 <Button
@@ -1200,7 +1200,7 @@ function UNOiPlanningPageContent() {
                                             <button
                                                 type="button"
                                                 className="rounded p-0.5 hover:bg-background/80"
-                                                aria-label="Quitar b├║squeda r├ípida"
+                                                aria-label="Quitar búsqueda rápida"
                                                 onClick={() => setQuickTableSearch("")}
                                             >
                                                 <X className="h-3 w-3" />
@@ -1234,8 +1234,8 @@ function UNOiPlanningPageContent() {
 
                             <div className="flex flex-col gap-2 rounded-lg border border-border/80 bg-muted/25 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                                 <p className="text-xs text-muted-foreground">
-                                    <span className="font-medium text-foreground">{unlinkedInViewCount}</span> sin evento ┬╖{" "}
-                                    <span className="font-medium text-foreground">{tableRowsSorted.length}</span> en esta vista ┬╖{" "}
+                                    <span className="font-medium text-foreground">{unlinkedInViewCount}</span> sin evento ·{" "}
+                                    <span className="font-medium text-foreground">{tableRowsSorted.length}</span> en esta vista ·{" "}
                                     <span className="font-medium text-foreground">{selectedIds.size}</span> seleccionados
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -1267,7 +1267,7 @@ function UNOiPlanningPageContent() {
                                         disabled={selectedIds.size === 0 || bulkLinking}
                                         onClick={clearRowSelection}
                                     >
-                                        Quitar selecci├│n
+                                        Quitar selección
                                     </Button>
                                     <Button
                                         type="button"
@@ -1409,7 +1409,7 @@ function UNOiPlanningPageContent() {
                                                     </div>
                                                 </TableHead>
                                                 <TableHead className="min-w-[5.5rem] text-right text-white font-semibold">
-                                                    Acci├│n
+                                                    Acción
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1431,7 +1431,7 @@ function UNOiPlanningPageContent() {
                                                         {row.proposed_date}
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5 text-xs font-medium">
-                                                        {row.city ?? "ΓÇö"}
+                                                        {row.city ?? "—"}
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5 text-xs">{row.project}</TableCell>
                                                     <TableCell className="align-top py-1.5 text-xs font-semibold uppercase">
@@ -1443,7 +1443,7 @@ function UNOiPlanningPageContent() {
                                                                 {row.nivel}
                                                             </span>
                                                         ) : (
-                                                            "ΓÇö"
+                                                            "—"
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5">
@@ -1457,7 +1457,7 @@ function UNOiPlanningPageContent() {
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5 text-right text-xs tabular-nums">
-                                                        {row.students_planned ?? "ΓÇö"}
+                                                        {row.students_planned ?? "—"}
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5">
                                                         <PlanningStatusBadge status={row.planning_status} />
@@ -1466,7 +1466,7 @@ function UNOiPlanningPageContent() {
                                                         {row.event_id ? (
                                                             <EventPlannerLink eventId={row.event_id} />
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground">ΓÇö</span>
+                                                            <span className="text-xs text-muted-foreground">—</span>
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="align-top py-1.5 text-right">
@@ -1477,7 +1477,7 @@ function UNOiPlanningPageContent() {
                                                             onClick={() => linkRow(row)}
                                                             disabled={busyId === row.id || bulkLinking}
                                                         >
-                                                            {busyId === row.id ? "ΓÇª" : "Vincular"}
+                                                            {busyId === row.id ? "…" : "Vincular"}
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -1496,8 +1496,7 @@ function UNOiPlanningPageContent() {
                         <TabsContent value="matrix" className="mt-0">
                             <p className="mb-3 text-xs text-muted-foreground">
                                 Una fila por colegio (misma ciudad, proyecto, colegio y nivel). Columnas de examen como en el Excel:{" "}
-                                <strong>Alumnos</strong> y <strong>Fecha</strong>. Los filtros de la tabla aplican tambi├⌐n aqu├¡.
-                                <strong>Alumnos</strong> and <strong>Fecha</strong>. Los filtros de la tabla aplican tambi├⌐n aqu├¡.
+                                <strong>Alumnos</strong> y <strong>Fecha</strong>. Los filtros de la tabla aplican también aquí.
                             </p>
                             {examCols.length === 0 && !isLoading ? (
                                 <p className="py-8 text-center text-sm text-muted-foreground">
@@ -1575,7 +1574,7 @@ function UNOiPlanningPageContent() {
                                                 {pivotRows.map((pr) => (
                                                     <tr key={pr.key} className="border-b border-border/50 bg-background">
                                                         <td className="sticky left-0 z-10 border border-border/50 bg-emerald-50/90 px-2 py-1.5 text-xs font-medium dark:bg-emerald-950/40">
-                                                            {pr.city ?? "ΓÇö"}
+                                                            {pr.city ?? "—"}
                                                         </td>
                                                         <td className="sticky left-[4.5rem] z-10 border border-border/50 bg-emerald-50/90 px-2 py-1.5 text-xs dark:bg-emerald-950/40">
                                                             {pr.project}
@@ -1584,7 +1583,7 @@ function UNOiPlanningPageContent() {
                                                             {pr.school_name}
                                                         </td>
                                                         <td className="sticky left-[22rem] z-10 border border-border/50 bg-emerald-50/90 px-2 py-1.5 text-xs dark:bg-emerald-950/40">
-                                                            {pr.nivel ?? "ΓÇö"}
+                                                            {pr.nivel ?? "—"}
                                                         </td>
                                                         {examCols.flatMap((ex) => {
                                                             const list = pr.byExam.get(ex) ?? [];
@@ -1597,7 +1596,7 @@ function UNOiPlanningPageContent() {
                                                                     )}
                                                                 >
                                                                     {list.length === 0 ? (
-                                                                        <span className="text-muted-foreground/50">ΓÇö</span>
+                                                                        <span className="text-muted-foreground/50">—</span>
                                                                     ) : (
                                                                         <div className="flex flex-col gap-1">
                                                                             {list.map((r) => (
@@ -1605,7 +1604,7 @@ function UNOiPlanningPageContent() {
                                                                                     key={r.id}
                                                                                     className="tabular-nums font-medium"
                                                                                 >
-                                                                                    {r.students_planned ?? "ΓÇö"}
+                                                                                    {r.students_planned ?? "—"}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
@@ -1619,7 +1618,7 @@ function UNOiPlanningPageContent() {
                                                                     )}
                                                                 >
                                                                     {list.length === 0 ? (
-                                                                        <span className="text-muted-foreground/50">ΓÇö</span>
+                                                                        <span className="text-muted-foreground/50">—</span>
                                                                     ) : (
                                                                         <div className="flex flex-col gap-1.5">
                                                                             {list.map((r) => (
@@ -1658,18 +1657,18 @@ function UNOiPlanningPageContent() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Detalle y vinculaci├│n</CardTitle>
+                    <CardTitle>Detalle y vinculación</CardTitle>
                     <CardDescription>
-                        Vincula filas a eventos/sesiones existentes o crea autom├íticamente si falta. Misma selecci├│n y
-                        vinculaci├│n masiva que en la pesta├▒a <strong>Tabla estilo plan</strong> (misma vista filtrada,
+                        Vincula filas a eventos/sesiones existentes o crea automáticamente si falta. Misma selección y
+                        vinculación masiva que en la pestaña <strong>Tabla estilo plan</strong> (misma vista filtrada,
                         orden por fecha y colegio).
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <div className="flex flex-col gap-2 rounded-lg border border-border/80 bg-muted/25 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <p className="text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">{unlinkedInViewCount}</span> sin evento ┬╖{" "}
-                            <span className="font-medium text-foreground">{tableRowsSorted.length}</span> en vista ┬╖{" "}
+                            <span className="font-medium text-foreground">{unlinkedInViewCount}</span> sin evento ·{" "}
+                            <span className="font-medium text-foreground">{tableRowsSorted.length}</span> en vista ·{" "}
                             <span className="font-medium text-foreground">{selectedIds.size}</span> seleccionados
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1701,7 +1700,7 @@ function UNOiPlanningPageContent() {
                                 disabled={selectedIds.size === 0 || bulkLinking}
                                 onClick={clearRowSelection}
                             >
-                                Quitar selecci├│n
+                                Quitar selección
                             </Button>
                             <Button
                                 type="button"
@@ -1752,8 +1751,8 @@ function UNOiPlanningPageContent() {
                                     <div className="min-w-0 space-y-1">
                                         <p className="font-medium">{row.school_name}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {row.proposed_date} ┬╖ {row.exam_type.toUpperCase()} ┬╖{" "}
-                                            {row.students_planned ?? 0} alumnos ┬╖ {row.city ?? "N/A"} ┬╖ Proyecto:{" "}
+                                            {row.proposed_date} · {row.exam_type.toUpperCase()} ·{" "}
+                                            {row.students_planned ?? 0} alumnos · {row.city ?? "N/A"} · Proyecto:{" "}
                                             {row.project}
                                         </p>
                                         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1764,9 +1763,9 @@ function UNOiPlanningPageContent() {
                                                 <Badge variant="outline">Sin evento</Badge>
                                             )}
                                             {row.event_session_id ? (
-                                                <Badge variant="secondary">Sesi├│n vinculada</Badge>
+                                                <Badge variant="secondary">Sesión vinculada</Badge>
                                             ) : (
-                                                <Badge variant="outline">Sin sesi├│n</Badge>
+                                                <Badge variant="outline">Sin sesión</Badge>
                                             )}
                                             {row.event_id ? <EventPlannerLink eventId={row.event_id} /> : null}
                                         </div>
