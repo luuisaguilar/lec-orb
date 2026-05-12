@@ -36,6 +36,12 @@ function LoginForm() {
     const searchParams = useSearchParams();
     const next = searchParams.get("next");
     const isPortalJoinFlow = (next ?? "").startsWith("/join-portal/");
+    const registerHref = next
+        ? `/register?next=${encodeURIComponent(next)}`
+        : "/register";
+    const forgotHref = next
+        ? `/forgot-password?next=${encodeURIComponent(next)}`
+        : "/forgot-password";
     const { t } = useI18n();
     const [error, setError] = useState<string | null>(null);
 
@@ -184,8 +190,17 @@ function LoginForm() {
                             </Button>
                         </form>
 
+                        <div className="text-center">
+                            <Link
+                                href={forgotHref}
+                                className="text-xs text-slate-400 hover:text-primary font-semibold transition-colors"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
+
                         <div className="text-center pt-4">
-                            <Link href="/register" className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
+                            <Link href={registerHref} className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
                                 {t("auth.noAccount" as any) || "¿No tienes cuenta? Regístrate"}
                             </Link>
                         </div>

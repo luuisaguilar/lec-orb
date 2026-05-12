@@ -100,6 +100,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "toefl-codes": "/dashboard/toefl/codigos",
     "cenni": "/dashboard/cenni",
     "exam-codes": "/dashboard/codigos",
+    "oopt-pdf": "/dashboard/oopt-pdf",
     "calculator": "/dashboard/calculadora-tiempos",
     "catalog": "/dashboard/catalogo",
     "suppliers": "/dashboard/proveedores",
