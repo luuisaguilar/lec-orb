@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import JSZip from "jszip";
 import { FileText, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { normalizePdfInputBytes } from "@/lib/oopt-pdf-validate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -51,6 +52,11 @@ export default function OoptPdfPage() {
         setLoading(true);
         setData(null);
         try {
+            const headBytes = new Uint8Array(
+                await pdfFile.slice(0, Math.min(pdfFile.size, 256 * 1024)).arrayBuffer()
+            );
+            normalizePdfInputBytes(headBytes, pdfFile.name);
+
             const fd = new FormData();
             fd.append("pdf", pdfFile);
             if (xlsFile) fd.append("xls", xlsFile);
