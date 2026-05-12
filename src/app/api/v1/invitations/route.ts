@@ -98,7 +98,15 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        if (error.code === "23505") {
+            return NextResponse.json(
+                { error: "Ya existe una invitación pendiente para este correo en tu organización." },
+                { status: 409 }
+            );
+        }
+        throw error;
+    }
 
     const joinUrl = `${resolveAppOrigin(req)}/join/${invitation.token}`;
 
