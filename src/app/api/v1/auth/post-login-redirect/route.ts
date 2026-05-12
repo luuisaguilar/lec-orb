@@ -32,19 +32,39 @@ export async function GET() {
         try {
             const admin = createAdminClient();
             const normalizedEmail = user.email.trim().toLowerCase();
-            const { data: pendingInvite } = await admin
+            const nowIso = new Date().toISOString();
+            const { data: pendingPortalInvite } = await admin
                 .from("applicator_portal_invitations")
                 .select("token")
                 .eq("status", "pending")
-                .eq("email", normalizedEmail)
-                .gt("expires_at", new Date().toISOString())
+                .ilike("email", normalizedEmail)
+                .gt("expires_at", nowIso)
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .maybeSingle();
 
-            if (pendingInvite?.token) {
+            if (pendingPortalInvite?.token) {
                 return NextResponse.json({
-                    redirectTo: `/join-portal/${pendingInvite.token}`,
+                    redirectTo: `/join-portal/${pendingPortalInvite.token}`,
+                });
+            }
+
+            const { data: pendingOrgInvites } = await admin
+                .from("org_invitations")
+                .select("token, expires_at")
+                .eq("status", "pending")
+                .ilike("email", normalizedEmail)
+                .order("created_at", { ascending: false })
+                .limit(10);
+
+            const validOrgInvite = (pendingOrgInvites ?? []).find((invite) => {
+                if (!invite.expires_at) return true;
+                return new Date(invite.expires_at).getTime() > Date.now();
+            });
+
+            if (validOrgInvite?.token) {
+                return NextResponse.json({
+                    redirectTo: `/join/${validOrgInvite.token}`,
                 });
             }
         } catch {

@@ -8,7 +8,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +63,9 @@ export default function PresupuestoPage() {
 
     // Local edits: key = `${section}||${concept}||${month}` → { budgeted, real }
     const [edits, setEdits] = useState<Record<string, { budgeted: string; real: string }>>({});
+
+    /** POA libre vs catálogo presupuestal V2 (caja chica). */
+    const [workspace, setWorkspace] = useState<"poa" | "partidas">("poa");
 
     // New concept / section form
     const [newConcept, setNewConcept] = useState("");
@@ -309,13 +312,26 @@ export default function PresupuestoPage() {
                         </Select>
                     )}
 
-                    <Button onClick={handleSave} disabled={saving} size="sm" className="h-9">
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
-                        Guardar
-                    </Button>
+                    {workspace === "poa" && (
+                        <Button onClick={handleSave} disabled={saving} size="sm" className="h-9">
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Save className="h-4 w-4 mr-1.5" />}
+                            Guardar
+                        </Button>
+                    )}
                 </div>
             </div>
 
+            <Tabs value={workspace} onValueChange={(v) => setWorkspace(v as "poa" | "partidas")}>
+                <TabsList className="mb-2">
+                    <TabsTrigger value="poa">POA operativo</TabsTrigger>
+                    <TabsTrigger value="partidas">Partidas presupuestales</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="partidas" className="mt-0">
+                    <BudgetPartidasPanel year={year} />
+                </TabsContent>
+
+                <TabsContent value="poa" className="mt-0 space-y-6">
             {/* ── Source tabs ── */}
             <Tabs value={source} onValueChange={v => setSource(v as Source)}>
                 <div className="flex items-center justify-between">
@@ -382,6 +398,125 @@ export default function PresupuestoPage() {
                     </TabsContent>
                 ))}
             </Tabs>
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
+}
+
+function BudgetPartidasPanel({ year }: { year: number }) {
+    const [loading, setLoading] = useState(true);
+    const [categories, setCategories] = useState<
+        Array<{
+            id: string;
+            name: string;
+            items: Array<{
+                id: string;
+                code: string;
+                name: string;
+                lines: Array<{
+                    id: string;
+                    month: number;
+                    channel: string;
+                    budgeted_amount: number;
+                    actual_amount: number;
+                }>;
+            }>;
+        }>
+    >([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`/api/v1/finance/budget-catalog?fiscal_year=${year}`);
+                if (!res.ok) throw new Error("budget-catalog");
+                const body = await res.json();
+                if (!cancelled) setCategories(body.categories ?? []);
+            } catch {
+                if (!cancelled) setCategories([]);
+                toast.error("No se pudo cargar el catálogo presupuestal");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [year]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Cargando catálogo…
+            </div>
+        );
+    }
+
+    if (categories.length === 0) {
+        return (
+            <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                    <p className="font-medium">Sin partidas presupuestales</p>
+                    <p className="text-sm mt-1">Aplica la migración de seed V2 o revisa permisos de finanzas.</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Catálogo {year}</CardTitle>
+                    <CardDescription>
+                        Categorías, partidas y ejecución mensual (canal no fiscal) usadas por Caja Chica V2.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+            {categories.map((cat) => (
+                <Card key={cat.id}>
+                    <CardHeader className="py-3">
+                        <CardTitle className="text-base">{cat.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {cat.items.map((item) => (
+                            <div key={item.id} className="border rounded-md overflow-hidden">
+                                <div className="bg-muted/40 px-3 py-2 text-sm font-medium">
+                                    <span className="font-mono text-xs mr-2">{item.code}</span>
+                                    {item.name}
+                                </div>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="text-xs">
+                                            <TableHead className="w-20">Mes</TableHead>
+                                            <TableHead className="text-right">Pto.</TableHead>
+                                            <TableHead className="text-right">Real</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {item.lines
+                                            .filter((l) => l.channel === "non_fiscal")
+                                            .sort((a, b) => a.month - b.month)
+                                            .map((line) => (
+                                                <TableRow key={line.id}>
+                                                    <TableCell className="text-sm">{MONTHS[line.month - 1]}</TableCell>
+                                                    <TableCell className="text-right font-mono text-sm">
+                                                        {fmt(line.budgeted_amount)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono text-sm">
+                                                        {fmt(line.actual_amount)}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     );
 }

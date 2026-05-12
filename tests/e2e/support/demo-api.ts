@@ -25,6 +25,45 @@ type DemoMovement = {
     };
 };
 
+/** Budget line row shape for `/api/v1/finance/budget-lines` (petty cash). */
+type DemoBudgetLine = {
+    id: string;
+    fiscal_year: number;
+    month: number;
+    channel: string;
+    budgeted_amount: number;
+    actual_amount: number;
+    notes: string | null;
+    item_id: string;
+    budget_items: {
+        code: string;
+        name: string;
+        budget_categories: { id: string; name: string; sort_order: number };
+    };
+};
+
+/** Petty cash V2 movement (matches `petty_cash_movements` API select). */
+type DemoPettyCashMovementV2 = {
+    id: string;
+    org_id: string;
+    fund_id: string;
+    budget_line_id: string | null;
+    movement_date: string;
+    concept: string;
+    amount_in: number;
+    amount_out: number;
+    balance_after: number;
+    status: string;
+    receipt_url: string | null;
+    petty_cash_funds: {
+        name: string;
+        current_balance: number;
+        fiscal_year: number;
+        status: string;
+    };
+    budget_lines: DemoBudgetLine | null;
+};
+
 type DemoBudget = {
     id: string;
     org_id: string;
@@ -207,6 +246,7 @@ const ORG = {
 };
 
 const DEMO_HR_PROFILE_ID = "hp-demo-001";
+const DEMO_PETTY_FUND_ID = "fund-demo-001";
 
 function isoDate(offsetDays = 0) {
     const date = new Date();
@@ -288,6 +328,117 @@ function createDemoState() {
             notes: "Fondo base",
             petty_cash_categories: { name: "Operaciones", slug: "operaciones" },
             organizations: { name: ORG.name, slug: ORG.slug },
+        },
+    ];
+
+    const budgetLines: DemoBudgetLine[] = [
+        {
+            id: "bl-demo-pap",
+            fiscal_year: year,
+            month,
+            channel: "non_fiscal",
+            budgeted_amount: 5000,
+            actual_amount: 0,
+            notes: null,
+            item_id: "item-pap",
+            budget_items: {
+                code: "PAP",
+                name: "Papelería oficina",
+                budget_categories: { id: "bc-op", name: "Operación", sort_order: 0 },
+            },
+        },
+        {
+            id: "bl-demo-trans",
+            fiscal_year: year,
+            month,
+            channel: "non_fiscal",
+            budgeted_amount: 3000,
+            actual_amount: 0,
+            notes: null,
+            item_id: "item-trans",
+            budget_items: {
+                code: "TRN",
+                name: "Transporte",
+                budget_categories: { id: "bc-op", name: "Operación", sort_order: 0 },
+            },
+        },
+    ];
+
+    const pettyCashFund = {
+        id: DEMO_PETTY_FUND_ID,
+        org_id: ORG.id,
+        fiscal_year: year,
+        name: "Fondo general demo",
+        custodian_id: "demo-user-001",
+        initial_amount: 10000,
+        current_balance: 4330,
+        status: "open" as const,
+        opened_at: isoDate(-30),
+        closed_at: null,
+        created_at: isoDate(-30),
+        updated_at: isoDate(-1),
+    };
+
+    const pettyCashMovements: DemoPettyCashMovementV2[] = [
+        {
+            id: "mov-pc-001",
+            org_id: ORG.id,
+            fund_id: DEMO_PETTY_FUND_ID,
+            budget_line_id: "bl-demo-pap",
+            movement_date: dateOnly(-1),
+            concept: "Papeleria de oficina",
+            amount_in: 0,
+            amount_out: 450,
+            balance_after: 4330,
+            status: "posted",
+            receipt_url: null,
+            petty_cash_funds: {
+                name: pettyCashFund.name,
+                current_balance: pettyCashFund.current_balance,
+                fiscal_year: year,
+                status: "open",
+            },
+            budget_lines: budgetLines[0],
+        },
+        {
+            id: "mov-pc-002",
+            org_id: ORG.id,
+            fund_id: DEMO_PETTY_FUND_ID,
+            budget_line_id: "bl-demo-trans",
+            movement_date: dateOnly(-2),
+            concept: "Taxi al evento",
+            amount_in: 0,
+            amount_out: 220,
+            balance_after: 4780,
+            status: "posted",
+            receipt_url: null,
+            petty_cash_funds: {
+                name: pettyCashFund.name,
+                current_balance: pettyCashFund.current_balance,
+                fiscal_year: year,
+                status: "open",
+            },
+            budget_lines: budgetLines[1],
+        },
+        {
+            id: "mov-pc-003",
+            org_id: ORG.id,
+            fund_id: DEMO_PETTY_FUND_ID,
+            budget_line_id: null,
+            movement_date: dateOnly(-3),
+            concept: "Deposito inicial",
+            amount_in: 5000,
+            amount_out: 0,
+            balance_after: 5000,
+            status: "posted",
+            receipt_url: null,
+            petty_cash_funds: {
+                name: pettyCashFund.name,
+                current_balance: pettyCashFund.current_balance,
+                fiscal_year: year,
+                status: "open",
+            },
+            budget_lines: null,
         },
     ];
 
@@ -547,6 +698,9 @@ function createDemoState() {
         month,
         year,
         movements,
+        budgetLines,
+        pettyCashFund,
+        pettyCashMovements,
         budgets,
         poaLines,
         invitations,
@@ -885,93 +1039,145 @@ export async function installDemoApiMocks(page: Page) {
             });
         }
 
+        if (matchesPath(pathname, "/api/v1/finance/petty-cash/funds") && method === "GET") {
+            return json(route, { funds: [state.pettyCashFund] });
+        }
+
+        if (matchesPath(pathname, "/api/v1/finance/budget-lines") && method === "GET") {
+            return json(route, { lines: state.budgetLines });
+        }
+
+        if (matchesPath(pathname, "/api/v1/finance/petty-cash/replenishments") && method === "GET") {
+            return json(route, { replenishments: [] });
+        }
+
         if (matchesPath(pathname, "/api/v1/finance/petty-cash/balance") && method === "GET") {
-            return json(route, { balance: getBalance(state.movements) });
+            const fundId = url.searchParams.get("fund_id");
+            if (fundId && fundId === state.pettyCashFund.id) {
+                const sorted = [...state.pettyCashMovements]
+                    .filter((m) => m.fund_id === fundId && m.status !== "cancelled")
+                    .sort((a, b) => {
+                        const d = a.movement_date.localeCompare(b.movement_date);
+                        return d !== 0 ? d : a.id.localeCompare(b.id);
+                    });
+                const last = sorted[sorted.length - 1];
+                const balance = last ? last.balance_after : state.pettyCashFund.initial_amount;
+                return json(route, { balance, fiscal_year: state.pettyCashFund.fiscal_year });
+            }
+            return json(route, { balance: getBalance(state.movements), year: state.year });
         }
 
         if (matchesPath(pathname, "/api/v1/finance/petty-cash")) {
             if (method === "GET") {
                 const search = (url.searchParams.get("search") ?? "").toLowerCase();
-                const categoryId = url.searchParams.get("category_id");
-                const type = url.searchParams.get("type");
-
-                const movements = state.movements.filter((movement) => {
-                    if (search && !movement.concept.toLowerCase().includes(search)) {
-                        return false;
-                    }
-
-                    if (categoryId && movement.category_id !== categoryId) {
-                        return false;
-                    }
-
-                    if (type && movement.type !== type) {
-                        return false;
-                    }
-
-                    return true;
+                const fundId = url.searchParams.get("fund_id");
+                let rows = state.pettyCashMovements;
+                if (fundId) {
+                    rows = rows.filter((m) => m.fund_id === fundId);
+                }
+                if (search) {
+                    rows = rows.filter((m) => m.concept.toLowerCase().includes(search));
+                }
+                rows = [...rows].sort((a, b) => {
+                    const d = b.movement_date.localeCompare(a.movement_date);
+                    return d !== 0 ? d : b.id.localeCompare(a.id);
                 });
-
                 return json(route, {
-                    movements,
+                    movements: rows,
                     pagination: {
-                        total: movements.length,
+                        total: rows.length,
                         page: 1,
-                        limit: 50,
+                        limit: 100,
                         pages: 1,
                     },
                 });
             }
 
             if (method === "POST") {
-                const body = parseBody(route) as
-                    | {
-                        category_id?: string;
-                        date?: string;
-                        concept?: string;
-                        type?: "INCOME" | "EXPENSE";
-                        amount?: number;
-                        notes?: string | null;
-                    }
-                    | null;
+                const body = parseBody(route) as {
+                    org_id?: string;
+                    fund_id?: string;
+                    movement_date?: string;
+                    concept?: string;
+                    amount_in?: number;
+                    amount_out?: number;
+                    budget_line_id?: string | null;
+                    receipt_url?: string | null;
+                } | null;
 
                 if (
-                    !body?.category_id ||
-                    !body.date ||
+                    !body?.fund_id ||
+                    !body.movement_date ||
                     !body.concept ||
-                    !body.type ||
-                    typeof body.amount !== "number"
+                    typeof body.amount_in !== "number" ||
+                    typeof body.amount_out !== "number"
                 ) {
                     return json(route, { error: "Validation failed" }, 400);
                 }
 
-                const category = state.categoryMap.get(body.category_id);
-                if (!category) {
-                    return json(route, { error: "Categoria invalida" }, 400);
+                const hasIn = body.amount_in > 0;
+                const hasOut = body.amount_out > 0;
+                if (hasIn === hasOut) {
+                    return json(route, { error: "Validation failed" }, 400);
+                }
+                if (hasOut && !body.budget_line_id) {
+                    return json(route, { error: "Validation failed" }, 400);
                 }
 
-                const movement: DemoMovement = {
-                    id: `mov-${Date.now()}`,
+                const bl =
+                    body.budget_line_id != null
+                        ? state.budgetLines.find((l) => l.id === body.budget_line_id) ?? null
+                        : null;
+
+                const sorted = [...state.pettyCashMovements]
+                    .filter((m) => m.fund_id === body.fund_id && m.status !== "cancelled")
+                    .sort((a, b) => {
+                        const d = a.movement_date.localeCompare(b.movement_date);
+                        return d !== 0 ? d : a.id.localeCompare(b.id);
+                    });
+                const prev =
+                    sorted[sorted.length - 1]?.balance_after ?? state.pettyCashFund.initial_amount;
+                const balance_after = Math.round((prev + body.amount_in - body.amount_out) * 100) / 100;
+
+                const movement: DemoPettyCashMovementV2 = {
+                    id: `mov-pc-${Date.now()}`,
                     org_id: ORG.id,
-                    category_id: body.category_id,
-                    date: body.date,
+                    fund_id: body.fund_id,
+                    budget_line_id: body.budget_line_id ?? null,
+                    movement_date: body.movement_date.slice(0, 10),
                     concept: body.concept,
-                    type: body.type,
-                    amount: body.amount,
-                    notes: body.notes ?? null,
-                    petty_cash_categories: {
-                        name: category.name,
-                        slug: category.slug,
+                    amount_in: body.amount_in,
+                    amount_out: body.amount_out,
+                    balance_after,
+                    status: "posted",
+                    receipt_url: body.receipt_url ?? null,
+                    petty_cash_funds: {
+                        name: state.pettyCashFund.name,
+                        current_balance: balance_after,
+                        fiscal_year: state.pettyCashFund.fiscal_year,
+                        status: "open",
                     },
-                    organizations: {
-                        name: ORG.name,
-                        slug: ORG.slug,
-                    },
+                    budget_lines: bl,
                 };
 
-                state.movements.unshift(movement);
+                state.pettyCashMovements.push(movement);
+                state.pettyCashFund = { ...state.pettyCashFund, current_balance: balance_after };
+                for (const m of state.pettyCashMovements) {
+                    m.petty_cash_funds.current_balance = balance_after;
+                }
 
                 return json(route, { movement }, 201);
             }
+        }
+
+        if (/^\/api\/v1\/finance\/petty-cash\/[^/]+$/.test(pathname) && method === "DELETE") {
+            const id = pathname.split("/").pop()!;
+            const movement = state.pettyCashMovements.find((m) => m.id === id);
+            if (!movement) {
+                return json(route, { error: "Not found" }, 404);
+            }
+            movement.status = "cancelled";
+            return json(route, { ok: true });
         }
 
         if (matchesPath(pathname, "/api/v1/finance/budget")) {

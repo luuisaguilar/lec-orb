@@ -16,7 +16,7 @@ test.describe("Finance Module Operations", () => {
 
     test("should display the Petty Cash dashboard with stats", async ({ page }) => {
         await expect(page.getByRole("heading", { name: "Caja Chica" })).toBeVisible();
-        await expect(page.getByText("Saldo Actual")).toBeVisible();
+        await expect(page.getByText("Saldo del fondo")).toBeVisible();
         await expect(page.locator("table")).toBeVisible();
     });
 
@@ -24,15 +24,16 @@ test.describe("Finance Module Operations", () => {
         await page.getByRole("button", { name: /Nuevo Movimiento/i }).click();
 
         const dialog = page.getByRole("dialog");
-        await expect(dialog.getByText("Registrar Movimiento")).toBeVisible();
+        await expect(dialog.getByText("Registrar movimiento")).toBeVisible();
 
         await page.getByRole("button", { name: "Guardar" }).click();
-        await expect(dialog.getByText("Registrar Movimiento")).toBeVisible();
+        await expect(dialog.getByText("Registrar movimiento")).toBeVisible();
     });
 
     test("should filter the movements table", async ({ page }) => {
         const searchInput = page.getByPlaceholder(/Buscar por concepto/i);
         await searchInput.fill("Papeleria");
+        await page.getByRole("button", { name: "Buscar" }).click();
 
         await expect(page.getByText("Papeleria de oficina")).toBeVisible();
         await expect(page.getByText("Taxi al evento")).not.toBeVisible();

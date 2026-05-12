@@ -84,6 +84,7 @@ export default function CoordinacionExamenesProyectosPage() {
                 <CardContent className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                     <QuickLink href="/dashboard/eventos" title="Eventos" description="Planeacion y ejecucion" />
                     <QuickLink href="/dashboard/coordinacion-examenes/documentos-eventos" title="Documentos de eventos" description="Control documental por evento" />
+                    <QuickLink href="/dashboard/coordinacion-examenes/unoi-planeacion" title="Planeación UNOi" description="Importación y vinculación a eventos" />
                     <QuickLink href="/dashboard/cenni" title="CENNI" description="Seguimiento de tramites" />
                     <QuickLink href="/dashboard/codigos" title="Codigos de examen" description="Disponibilidad de codigos" />
                     <QuickLink href="/dashboard/toefl/codigos" title="TOEFL - Codigos" description="Lotes y disponibilidad" />

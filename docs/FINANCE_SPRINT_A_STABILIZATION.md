@@ -42,6 +42,15 @@ related_docs:
   - **UI**: sin campo folio en `AddQuoteDialog`, `AddOrderDialog`, `RegisterPaymentDialog`.
   - **Tests**: `quotes.test.ts`, `purchase-orders.test.ts`, `payments.test.ts`.
 
+- [x] **A1 (Caja Chica V2)** — Fondos, movimientos enlazados a `budget_lines`, reposiciones, UI y seed
+  - **DB**: `20260529_finance_v2_petty_cash_seed.sql`, `20260529_petty_cash_movements_custodian_update.sql`
+  - **API/UI/Tests**: ver `docs/FINANCE_MODULES.md`; pendiente **A1.11** DROP legacy y tipos Supabase completos cuando prod esté verificado.
+- [x] **A5 (Día 3)** — `exceljs` en imports de finanzas (pagos + caja legacy)
+  - **Dependencia**: `exceljs` añadido; **`xlsx` se mantiene** para exports y demás imports no migrados (A5.6).
+  - **Código**: `src/lib/import/exceljs-sheet-json.ts`, `exceljs-guard.ts`; `import-xlsx.ts` (caja legacy); `payments/import/route.ts`.
+  - **Límites**: `EXCEL_IMPORT_MAX_BYTES` (5 MB) + `guardExcelImportSize` / `guardExcelImportBuffer` en `xlsx-guard.ts`; validación de forma del libro vía `guardExceljsWorkbook`.
+  - **Sanitización**: `sanitizeImportString` en celdas de texto hacia inserts.
+
 ## Objetivos
 
 1. ✅ Eliminar la deuda arquitectónica del **Finance Engine V1 vs V2 huérfano**.
@@ -126,44 +135,17 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A1.1 [DB]** Crear migración `20260527_finance_v2_seed_default_fund_and_categories.sql` que, por cada org existente:
-  - Crea un fondo default `Caja Chica General` con custodio = admin de la org y `initial_amount = (SELECT initial_balance FROM petty_cash_settings WHERE org_id=...)`.
-  - Crea categorías presupuestales mínimas a partir de las `petty_cash_categories` actuales (Papelería, Limpieza, Oficina, …) → ahora son `budget_categories`.
-  - Por cada categoría legacy, crea **1 `budget_item`** con `code = slug` + `channel_scope='non_fiscal'`.
-  - **Backfill opcional** de movimientos legacy → V2 (si la org lo solicita; por default omitido porque legacy está vacía en prod).
-- [ ] **A1.2 [API]** Reescribir `src/app/api/v1/finance/petty-cash/route.ts`:
-  - GET con paginación + filtros por `fund_id`, `budget_line_id`, fecha, concepto.
-  - POST con schema V2 (`amount_in XOR amount_out`, `budget_line_id` requerido para egresos).
-  - Quitar `category_id` del body (ahora viene implícito a través de `budget_line_id`).
-  - Mantener `logAudit` + `withAuth({ module: "finanzas", action: "view|edit" })`.
-- [ ] **A1.3 [API]** Nueva ruta `GET /api/v1/finance/petty-cash/funds` (listar fondos de la org).
-- [ ] **A1.4 [API]** Nueva ruta `POST /api/v1/finance/petty-cash/funds` (crear fondo — admin only).
-- [ ] **A1.5 [API]** Nueva ruta `/api/v1/finance/petty-cash/replenishments` con GET (listar) y POST (solicitar).
-- [ ] **A1.6 [API]** `PATCH /api/v1/finance/petty-cash/replenishments/[id]` con acción `approve` / `reject` (admin only).
-- [ ] **A1.7 [UI]** Refactorizar `src/app/(dashboard)/dashboard/finanzas/caja-chica/page.tsx`:
-  - Selector de **fondo** (dropdown con todos los fondos abiertos de la org).
-  - Selector de **partida presupuestal** (`budget_line` del mes en curso) al registrar egreso.
-  - Tab nueva **"Reposiciones"** con listado + solicitar reposición.
-  - Mostrar `balance_after` por movimiento + `current_balance` del fondo.
-- [ ] **A1.8 [UI]** Página de gestión de fondos `/dashboard/finanzas/caja-chica/fondos` (admin only).
-- [ ] **A1.9 [UI]** Refactorizar `src/app/(dashboard)/dashboard/finanzas/presupuesto/page.tsx`:
-  - Mantener `poa_lines` para POA estratégico (texto libre).
-  - Agregar segunda tab "Partidas Presupuestales" que opera sobre `budget_categories/items/lines` (catálogo formal usado por caja chica).
-- [ ] **A1.10 [TEST]** Tests en `src/tests/api/finance/petty-cash.v2.test.ts`:
-  - POST egreso sin `budget_line_id` → 400.
-  - POST egreso > balance del fondo → 400 (validar trigger).
-  - Aprobar replenishment → crea movimiento automático.
-  - Verificar `actual_amount` de budget_line se actualiza.
-- [ ] **A1.11 [DB]** Una vez verificado todo, **eliminar tablas legacy**:
-  ```sql
-  -- Migración 20260528_drop_petty_cash_legacy.sql
-  DROP TABLE IF EXISTS petty_cash_movements_legacy CASCADE;
-  DROP TABLE IF EXISTS budgets_legacy CASCADE;
-  -- Mantener _backup_* por 30 días, luego DROP
-  ```
-- [ ] **A1.12** Regenerar `src/types/database.types.ts` (UTF-8 con `Out-File -Encoding utf8`).
-- [ ] **A1.13** Actualizar `docs/FINANCE_MODULES.md` (deprecar mención a V1, agregar V2).
-- [ ] **A1.14** Actualizar `docs/DATABASE_SCHEMA.md` reflejando el nuevo modelo de Caja Chica.
+- [x] **A1.1 [DB]** `20260529_finance_v2_petty_cash_seed.sql` — fondo `Caja Chica General`, catálogo `budget_*` desde `petty_cash_categories`, líneas por mes/año; `fn_petty_cash_balance` V2; RLS de lectura de fondos por org.
+- [x] **A1.2 [API]** `petty-cash/route.ts` — GET/POST V2 (filtros, `amount_in`/`amount_out`, `budget_line_id` en egresos, `logAudit`).
+- [x] **A1.3–A1.4 [API]** `petty-cash/funds` GET/POST (admin).
+- [x] **A1.5–A1.6 [API]** `petty-cash/replenishments` + `PATCH [id]` approve/reject.
+- [x] **A1.7–A1.8 [UI]** `caja-chica/page.tsx` + `caja-chica/fondos/page.tsx`.
+- [x] **A1.9 [UI]** Tab **Partidas presupuestales** + `GET /api/v1/finance/budget-catalog`.
+- [x] **A1.10 [TEST]** `petty-cash.v2.test.ts` + actualización `petty-cash.test.ts` (casos básicos).
+- [ ] **A1.11 [DB]** DROP legacy (`petty_cash_movements_legacy`, `budgets_legacy`) — **tras** verificación en prod y backups.
+- [ ] **A1.12** Regenerar `database.types.ts` contra proyecto Supabase (UTF-8).
+- [x] **A1.13** `docs/FINANCE_MODULES.md` V2.
+- [x] **A1.14** `docs/DATABASE_SCHEMA.md` sección 9 actualizada.
 
 **Riesgos y mitigaciones:**
 
@@ -249,7 +231,7 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A4.1 [DB]** Migración `20260528_quotes_orders_amounts.sql`:
+- [x] **A4.1 [DB]** Migración `20260531_quotes_orders_amounts.sql`:
   ```sql
   ALTER TABLE public.quotes
       ADD COLUMN IF NOT EXISTS subtotal NUMERIC(15,2) DEFAULT 0,
@@ -293,11 +275,11 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
       USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
   -- Idem purchase_order_items
   ```
-- [ ] **A4.2 [API]** Actualizar `POST /api/v1/quotes` para aceptar `items[]` y calcular totales.
-- [ ] **A4.3 [API]** Actualizar `POST /api/v1/purchase-orders` idem + endpoint nuevo `POST /api/v1/quotes/[id]/convert-to-po` (genera OC desde cotización aprobada).
-- [ ] **A4.4 [UI]** Refactorizar `AddQuoteDialog` y `AddOrderDialog` con tabla de partidas (agregar/eliminar líneas).
-- [ ] **A4.5 [UI]** Página de detalle `/dashboard/cotizaciones/[id]` con vista PDF-like.
-- [ ] **A4.6 [TEST]** Conversión quote→PO preserva items y totales.
+- [x] **A4.2 [API]** Actualizar `POST /api/v1/quotes` para aceptar `items[]` y calcular totales.
+- [x] **A4.3 [API]** Actualizar `POST /api/v1/purchase-orders` idem + endpoint nuevo `POST /api/v1/quotes/[id]/convert-to-po` (genera OC desde cotización aprobada).
+- [x] **A4.4 [UI]** Refactorizar `AddQuoteDialog` y `AddOrderDialog` con tabla de partidas (agregar/eliminar líneas).
+- [x] **A4.5 [UI]** Página de detalle `/dashboard/cotizaciones/[id]` con vista PDF-like.
+- [x] **A4.6 [TEST]** Conversión quote→PO preserva items y totales.
 
 ---
 
@@ -308,13 +290,13 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Tareas:**
 
-- [ ] **A5.1** `npm install exceljs && npm uninstall xlsx` (en imports; mantener `xlsx` sólo para exports server-side autenticados como fase intermedia).
-- [ ] **A5.2** Refactorizar `src/lib/finance/import-xlsx.ts` con ExcelJS.
-- [ ] **A5.3** Refactorizar `src/app/api/v1/payments/import/route.ts` con ExcelJS.
-- [ ] **A5.4** Validar tamaño máximo de upload (5 MB).
-- [ ] **A5.5** Sanitizar todos los strings antes de pasar a metadata de celdas.
-- [ ] **A5.6** Plan: migrar también export en un sprint futuro (no urgente porque solo lo usan admins).
-- [ ] **A5.7** Re-correr `npm audit` — debe bajar de 6 → 4 vulnerabilidades.
+- [x] **A5.1** `npm install exceljs` — `xlsx` **no** desinstalado aún (exports y otros módulos siguen con SheetJS).
+- [x] **A5.2** `src/lib/finance/import-xlsx.ts` migrado a ExcelJS.
+- [x] **A5.3** `src/app/api/v1/payments/import/route.ts` migrado a ExcelJS.
+- [x] **A5.4** Tamaño máximo de import **5 MB** (`EXCEL_IMPORT_MAX_BYTES`, `guardExcelImportSize` / `guardExcelImportBuffer`).
+- [x] **A5.5** Sanitización de strings con `sanitizeImportString` al mapear filas a inserts.
+- [ ] **A5.6** Plan: migrar también export y resto de imports cliente/servidor en sprints futuros.
+- [ ] **A5.7** Re-correr `npm audit` tras retirar `xlsx` del árbol (pendiente de migración global).
 
 ---
 
@@ -322,10 +304,10 @@ petty_cash_movements (id, org_id, fund_id, budget_line_id,
 
 **Story points:** 2
 
-- [ ] **A6.1** Agregar dashboard Sentry para errores del módulo finanzas (tag `module=finanzas`).
-- [ ] **A6.2** Agregar event tags en `logAudit` para filtrar por subdomain (`caja-chica`, `presupuesto`, `pagos`, `ih-billing`).
-- [ ] **A6.3** Smoke test E2E Playwright: crear movimiento caja chica V2, ver en lista, eliminar.
-- [ ] **A6.4** Actualizar `INFRASTRUCTURE_STATUS.md` con el progreso del Sprint A.
+- [x] **A6.1** Agregar dashboard Sentry para errores del módulo finanzas (tag `module=finanzas`).
+- [x] **A6.2** Agregar event tags en `logAudit` (`subdomain` opcional → `_audit_subdomain` en `new_data`) para filtrar por área (`caja-chica`, `cotizaciones`, `ordenes-compra`, etc.).
+- [x] **A6.3** Smoke test E2E Playwright: flujo caja chica alineado a API V2 (fondos, balance, movimientos, búsqueda).
+- [x] **A6.4** Actualizar `INFRASTRUCTURE_STATUS.md` con el progreso del Sprint A.
 
 ---
 

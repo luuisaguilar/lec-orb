@@ -31,6 +31,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { AddQuoteDialog } from "@/components/finance/add-quote-dialog";
 import { toast } from "sonner";
 
@@ -44,6 +45,9 @@ interface Quote {
     status: "PENDING" | "APPROVED" | "REJECTED";
     created_at: string;
     file_path: string | null;
+    subtotal?: number | null;
+    taxes?: number | null;
+    total?: number | null;
 }
 
 const statusConfig = {
@@ -123,6 +127,7 @@ export default function CotizacionesPage() {
                                         <TableHead>Proveedor</TableHead>
                                         <TableHead className="max-w-[300px]">Descripción</TableHead>
                                         <TableHead>Estatus</TableHead>
+                                        <TableHead className="text-right">Total</TableHead>
                                         <TableHead className="text-right">Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -134,7 +139,14 @@ export default function CotizacionesPage() {
                                                 <TableCell className="text-xs font-mono">
                                                     {format(new Date(quote.created_at), "dd MMM yyyy", { locale: es })}
                                                 </TableCell>
-                                                <TableCell className="font-semibold">{quote.folio}</TableCell>
+                                                <TableCell className="font-semibold">
+                                                    <Link
+                                                        href={`/dashboard/cotizaciones/${quote.id}`}
+                                                        className="hover:underline text-primary"
+                                                    >
+                                                        {quote.folio}
+                                                    </Link>
+                                                </TableCell>
                                                 <TableCell>{quote.provider}</TableCell>
                                                 <TableCell className="max-w-[300px] truncate">
                                                     {quote.description || "Sin descripción"}
@@ -144,6 +156,13 @@ export default function CotizacionesPage() {
                                                         <StatusIcon className="mr-1 h-3 w-3" />
                                                         {statusConfig[quote.status].label}
                                                     </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right font-mono text-sm">
+                                                    $
+                                                    {(
+                                                        quote.total ??
+                                                        Number(quote.subtotal ?? 0) + Number(quote.taxes ?? 0)
+                                                    ).toLocaleString()}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>

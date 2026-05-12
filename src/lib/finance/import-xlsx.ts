@@ -1,4 +1,7 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { sanitizeImportString, worksheetToJsonRecords } from "@/lib/import/exceljs-sheet-json";
+import { guardExcelImportSize } from "@/lib/import/xlsx-guard";
+import { guardExceljsWorkbook } from "@/lib/import/exceljs-guard";
 
 /**
  * Parses a legacy Excel file with sheets LEC, DISCOVER, URUS.
@@ -6,49 +9,55 @@ import * as XLSX from "xlsx";
  * @param orgs Map of organization names to IDs
  * @param categories Map of category names to IDs
  */
-export async function parseLegacyExcel(file: File, orgs: Record<string, string>, categories: Record<string, string>): Promise<any[]> {
-    return new Promise<any[]>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: "array" });
-                
-                const allMovements: any[] = [];
-                const expectedSheets = ["LEC", "DISCOVER", "URUS"];
+export async function parseLegacyExcel(
+    file: File,
+    orgs: Record<string, string>,
+    categories: Record<string, string>
+): Promise<any[]> {
+    const sizeGuard = guardExcelImportSize(file.size);
+    if (!sizeGuard.ok) {
+        throw new Error(sizeGuard.message);
+    }
 
-                workbook.SheetNames.forEach(sheetName => {
-                    const normalizedSheet = sheetName.toUpperCase();
-                    if (expectedSheets.includes(normalizedSheet)) {
-                        const worksheet = workbook.Sheets[sheetName];
-                        const json: any[] = XLSX.utils.sheet_to_json(worksheet);
-                        
-                        // Map rows to movements
-                        const movements = json.map(row => {
-                            // Logic depends on the exact columns of legacy Excel, 
-                            // typically: Fecha, Concepto, Categoría, Entrada, Salida
-                            const type = row.Entrada > 0 ? "INCOME" : "EXPENSE";
-                            const amount = type === "INCOME" ? row.Entrada : row.Salida;
-                            
-                            return {
-                                org_id: orgs[normalizedSheet],
-                                concept: row.Concepto,
-                                category_id: categories[row.Categoría],
-                                amount: Number(amount),
-                                date: row.Fecha, // Needs normalization depending on XLSX date format
-                                type
-                            };
-                        }).filter(m => m.concept && m.amount > 0);
-                        
-                        allMovements.push(...movements);
-                    }
-                });
+    const arrayBuffer = await file.arrayBuffer();
 
-                resolve(allMovements);
-            } catch (err) {
-                reject(err);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+
+    const shapeGuard = guardExceljsWorkbook(workbook);
+    if (!shapeGuard.ok) {
+        throw new Error(shapeGuard.message);
+    }
+
+    const allMovements: any[] = [];
+    const expectedSheets = ["LEC", "DISCOVER", "URUS"];
+
+    for (const worksheet of workbook.worksheets) {
+        const normalizedSheet = worksheet.name.toUpperCase();
+        if (!expectedSheets.includes(normalizedSheet)) continue;
+
+        const json: any[] = worksheetToJsonRecords(worksheet);
+
+        const movements = json
+            .map((row) => {
+                const type = row.Entrada > 0 ? "INCOME" : "EXPENSE";
+                const amount = type === "INCOME" ? row.Entrada : row.Salida;
+
+                const catKey = String(row.Categoría ?? "").trim();
+                return {
+                    org_id: orgs[normalizedSheet],
+                    concept: sanitizeImportString(row.Concepto, 2000),
+                    categoryName: catKey,
+                    category_id: categories[catKey],
+                    amount: Number(amount),
+                    date: row.Fecha,
+                    type,
+                };
+            })
+            .filter((m) => m.concept && m.amount > 0);
+
+        allMovements.push(...movements);
+    }
+
+    return allMovements;
 }

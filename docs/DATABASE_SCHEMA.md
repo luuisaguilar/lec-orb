@@ -532,8 +532,17 @@ Inventario general de códigos de examen (no TOEFL).
 
 ## 9. Caja Chica y Presupuesto
 
+### Motor V2 (canónico)
+
+- **`budget_categories`**, **`budget_items`**, **`budget_lines`**: jerarquía presupuestal por `org_id`; las líneas llevan `fiscal_year`, `month`, `channel` (`fiscal` | `non_fiscal`), `budgeted_amount`, `actual_amount`.
+- **`petty_cash_funds`**: fondos por org y año fiscal; `custodian_id`, `initial_amount`, `current_balance`, `status` (`open` | `closed`).
+- **`petty_cash_movements`**: movimientos V2 con `fund_id`, `amount_in` XOR `amount_out`, `budget_line_id` obligatorio en egresos, `balance_after`, `replenishment_request_id` opcional.
+- **`replenishment_requests`**: solicitudes de reposición; al aprobar, un trigger crea el movimiento de ingreso correspondiente.
+
+La función **`fn_petty_cash_balance(org_id, year)`** devuelve la suma de `current_balance` de fondos abiertos del año (V2).
+
 ### `petty_cash_categories`
-Catálogo compartido para movimientos y presupuesto.
+Catálogo global (sin `org_id`) usado como semilla de nombres y para importaciones legacy; las partidas formales por org están en `budget_categories`.
 
 | Columna | Tipo | Notas |
 |---------|------|-------|
@@ -557,33 +566,32 @@ Balance inicial por org/año.
 | `updated_at` | timestamptz | |
 | `updated_by` | uuid | |
 
-### `petty_cash_movements`
-Transacciones de caja chica.
+### `petty_cash_movements` (V2)
+
+Tabla canónica tras `20260326_finance_engine_v2.sql`. La tabla histórica V1 queda como `petty_cash_movements_legacy` si se aplicó la migración.
 
 | Columna | Tipo | Notas |
 |---------|------|-------|
 | `id` | uuid PK | |
 | `org_id` | uuid | |
-| `category_id` | uuid | FK → `petty_cash_categories` |
-| `date` | date | |
-| `concept` | text | |
-| `type` | text | `INCOME` \| `EXPENSE` |
-| `amount` | numeric | |
-| `partial_amount` | numeric | nullable |
-| `receipt_url` | text | URL en bucket `petty-cash-receipts` |
-| `notes` | text | |
-| `created_at` | timestamptz | |
-| `updated_at` | timestamptz | |
-| `created_by` | uuid | |
-| `updated_by` | uuid | |
-| `deleted_at` | timestamptz | Soft delete |
+| `fund_id` | uuid | FK → `petty_cash_funds` |
+| `budget_line_id` | uuid | Nullable en ingresos; obligatoria lógica en egresos |
+| `replenishment_request_id` | uuid | Opcional |
+| `movement_date` | date | |
+| `concept` | varchar(255) | |
+| `amount_in` / `amount_out` | numeric | XOR: uno > 0 |
+| `balance_after` | numeric | Calculado en trigger |
+| `receipt_url` | text | |
+| `registered_by` | uuid | |
+| `approved_by` | uuid | nullable |
+| `status` | enum | `posted` \| `cancelled` |
+| `metadata` | jsonb | |
 
-RLS habilitado. Tenant-scoped por `org_id`. **Nunca deshabilitar RLS.**
+### `budgets` / `budgets_legacy`
 
-### `budgets`
-Presupuesto mensual por categoría.
+El modelo mensual antiguo (`budgets`) fue renombrado a **`budgets_legacy`** al aplicar el motor V2. El presupuesto formal por partidas vive en **`budget_lines`** (ver arriba).
 
-| Columna | Tipo | Notas |
+| Columna (legacy) | Tipo | Notas |
 |---------|------|-------|
 | `id` | uuid PK | |
 | `org_id` | uuid | |
@@ -594,7 +602,7 @@ Presupuesto mensual por categoría.
 | `updated_at` | timestamptz | |
 | `updated_by` | uuid | |
 
-UNIQUE: `(org_id, category_id, month, year)`. Upsert con este constraint.
+UNIQUE legacy: `(org_id, category_id, month, year)`.
 
 ---
 
