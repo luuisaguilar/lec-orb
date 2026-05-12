@@ -37,6 +37,9 @@ function RegisterForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const next = searchParams.get("next");
+    const loginHref = next
+        ? `/login?next=${encodeURIComponent(next)}`
+        : "/login";
     const { t } = useI18n();
     const [error, setError] = useState<string | null>(null);
 
@@ -212,7 +215,7 @@ function RegisterForm() {
                         </form>
 
                         <div className="text-center pt-4">
-                            <Link href="/login" className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
+                            <Link href={loginHref} className="text-sm text-slate-400 hover:text-primary font-bold transition-all hover:tracking-widest duration-300">
                                 {t("auth.haveAccount" as any) || "¿Ya tienes cuenta? Inicia sesión"}
                             </Link>
                         </div>

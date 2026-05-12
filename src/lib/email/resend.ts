@@ -93,7 +93,14 @@ export async function sendApplicatorPortalInviteEmail({
         const html = `
           <p>Hola${applicatorName ? ` <strong>${applicatorName}</strong>` : ""},</p>
           <p>Te invitaron a acceder al <strong>portal de aplicadores</strong> de <strong>${orgName}</strong> en LEC Platform.</p>
-          <p><a href="${joinUrl}">Abrir enlace de acceso</a></p>
+          <p style="margin: 20px 0;">
+            <a
+              href="${joinUrl}"
+              style="display:inline-block;background:#002e5d;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 22px;border-radius:8px;"
+            >
+              Aceptar invitación y continuar
+            </a>
+          </p>
           <p>Si el botón no funciona, copia y pega esta URL en tu navegador:<br/><code>${joinUrl}</code></p>
           <p>Este enlace expira en unos días. Debes iniciar sesión con el mismo correo al que llegó este mensaje.</p>
         `;
