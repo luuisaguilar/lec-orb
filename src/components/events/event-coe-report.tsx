@@ -24,7 +24,7 @@ export function EventCOEReport({ event }: EventCOEReportProps) {
 
   return (
     <div className="print-container flex flex-col gap-6 w-full mx-auto p-4 md:p-8 bg-background print:p-0 print:max-w-none print:mx-0">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style>{`
         @media print {
           body * {
             visibility: hidden;
@@ -41,7 +41,6 @@ export function EventCOEReport({ event }: EventCOEReportProps) {
             padding: 0 !important;
             background: white !important;
           }
-          /* Hide Radix UI overlays and radix portal wrappers if they interfere */
           [data-radix-portal] {
             position: static !important;
           }
@@ -49,7 +48,7 @@ export function EventCOEReport({ event }: EventCOEReportProps) {
             margin: 1cm;
           }
         }
-      `}} />
+      `}</style>
       {/* Action Header (Hidden on print) */}
       <div className="flex justify-between items-center print:hidden bg-muted/30 p-4 rounded-xl border">
         <div className="flex items-center gap-3">

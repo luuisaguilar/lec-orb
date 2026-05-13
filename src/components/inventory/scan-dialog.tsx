@@ -93,9 +93,9 @@ export function ScanDialog({ open, onOpenChange, onMovement, onAddPack }: ScanDi
     // Auto-focus on mount and re-focus on blur (keyboard wedge pattern)
     useEffect(() => {
         if (open) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+            const id = setTimeout(() => inputRef.current?.focus(), 100);
+            return () => clearTimeout(id);
         } else {
-            // Reset state when dialog closes
             setCodigo("");
             setPack(null);
             setMovements([]);
