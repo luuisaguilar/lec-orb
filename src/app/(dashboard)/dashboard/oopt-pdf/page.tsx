@@ -1,13 +1,32 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import JSZip from "jszip";
-import { FileText, Loader2, Upload } from "lucide-react";
+import { FileText, FolderOpen, Loader2, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { normalizePdfInputBytes } from "@/lib/oopt-pdf-validate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Table,
     TableBody,
@@ -28,6 +47,10 @@ type SplitResultRow = {
     source: string;
     status: string;
     pdfBase64: string;
+    ue_score?: string;
+    ue_cef?: string;
+    li_score?: string;
+    li_cef?: string;
 };
 
 type SplitResponse = {
@@ -38,11 +61,60 @@ type SplitResponse = {
     error_details: { page: number; name: string; error: string }[];
 };
 
+type EventOption = { id: string; title: string; date?: string | null };
+
+async function fileToBase64(file: File): Promise<string> {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+    }
+    return btoa(binary);
+}
+
 export default function OoptPdfPage() {
     const [pdfFile, setPdfFile] = useState<File | null>(null);
     const [xlsFile, setXlsFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<SplitResponse | null>(null);
+
+    const [saveOpen, setSaveOpen] = useState(false);
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [saveTitle, setSaveTitle] = useState("");
+    const [eventId, setEventId] = useState<string>("");
+    const [logisticsNotes, setLogisticsNotes] = useState("");
+    const [analysisNotes, setAnalysisNotes] = useState("");
+    const [generalNotes, setGeneralNotes] = useState("");
+    const [includeSourcePdf, setIncludeSourcePdf] = useState(true);
+    const [events, setEvents] = useState<EventOption[]>([]);
+
+    useEffect(() => {
+        if (!saveOpen) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch("/api/v1/events");
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) return;
+                const list = (json.events ?? []) as { id: string; title?: string; date?: string }[];
+                if (!cancelled) {
+                    setEvents(
+                        list.map((e) => ({
+                            id: e.id,
+                            title: e.title || "Sin título",
+                            date: e.date,
+                        }))
+                    );
+                }
+            } catch {
+                /* optional */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [saveOpen]);
 
     const onProcess = useCallback(async () => {
         if (!pdfFile) {
@@ -99,17 +171,103 @@ export default function OoptPdfPage() {
         }
     }, [data]);
 
+    const openSaveDialog = () => {
+        if (!data?.results?.length) return;
+        const base =
+            pdfFile?.name?.replace(/\.pdf$/i, "") ||
+            `OOPT ${new Date().toLocaleDateString("es-MX", { dateStyle: "medium" })}`;
+        setSaveTitle(base.slice(0, 200));
+        setEventId("");
+        setLogisticsNotes("");
+        setAnalysisNotes("");
+        setGeneralNotes("");
+        setIncludeSourcePdf(!!pdfFile);
+        setSaveOpen(true);
+    };
+
+    const onSaveProject = async () => {
+        if (!data?.results?.length) return;
+        const title = saveTitle.trim();
+        if (!title) {
+            toast.error("Escribe un título para el proyecto.");
+            return;
+        }
+        setSaveLoading(true);
+        try {
+            let source_pdf_base64: string | null = null;
+            if (includeSourcePdf && pdfFile) {
+                source_pdf_base64 = await fileToBase64(pdfFile);
+            }
+            const body = {
+                title,
+                event_id: eventId || null,
+                logistics_notes: logisticsNotes.trim() || null,
+                analysis_notes: analysisNotes.trim() || null,
+                general_notes: generalNotes.trim() || null,
+                source_pdf_filename: includeSourcePdf && pdfFile ? pdfFile.name : null,
+                source_pdf_base64,
+                split: {
+                    total_pages: data.total_pages,
+                    processed: data.processed,
+                    errors: data.errors,
+                    results: data.results.map((r) => ({
+                        page: r.page,
+                        original_name: r.original_name,
+                        final_name: r.final_name,
+                        level: r.level,
+                        score: r.score,
+                        date: r.date,
+                        filename: r.filename,
+                        source: r.source,
+                        status: r.status,
+                        ue_score: r.ue_score ?? "",
+                        ue_cef: r.ue_cef ?? "",
+                        li_score: r.li_score ?? "",
+                        li_cef: r.li_cef ?? "",
+                        pdfBase64: r.pdfBase64,
+                    })),
+                    error_details: data.error_details,
+                },
+            };
+            const res = await fetch("/api/v1/oopt/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+            toast.success("Proyecto guardado.");
+            setSaveOpen(false);
+            if (json.id) {
+                window.location.href = `/dashboard/oopt-pdf/proyectos/${json.id}`;
+            }
+        } catch (e: any) {
+            toast.error(e?.message || "No se pudo guardar.");
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6 p-6 max-w-5xl mx-auto">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-                    <FileText className="h-7 w-7" />
-                    OOPT — PDF por alumno
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                    Sube el PDF consolidado de Oxford y, opcionalmente, el <code className="text-xs bg-muted px-1 rounded">TableData.xls</code>{" "}
-                    exportado desde el portal para nombres y niveles más limpios.
-                </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+                        <FileText className="h-7 w-7" />
+                        OOPT — PDF por alumno
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Sube el PDF consolidado de Oxford y, opcionalmente, el{" "}
+                        <code className="text-xs bg-muted px-1 rounded">TableData.xls</code> exportado desde el portal
+                        para nombres y niveles más limpios.
+                    </p>
+                </div>
+                <Button variant="outline" asChild className="shrink-0">
+                    <Link href="/dashboard/oopt-pdf/proyectos">
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        Proyectos guardados
+                    </Link>
+                </Button>
             </div>
 
             <Card>
@@ -156,6 +314,10 @@ export default function OoptPdfPage() {
                         </Button>
                         <Button variant="secondary" onClick={onDownloadZip} disabled={!data?.results?.length}>
                             Descargar ZIP
+                        </Button>
+                        <Button variant="secondary" onClick={openSaveDialog} disabled={!data?.results?.length}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Guardar proyecto
                         </Button>
                     </div>
                 </CardContent>
@@ -214,6 +376,103 @@ export default function OoptPdfPage() {
                     </CardContent>
                 </Card>
             )}
+
+            <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Guardar proyecto OOPT</DialogTitle>
+                        <DialogDescription>
+                            Los PDFs por alumno y las notas quedan en tu organización. Opcionalmente vincula un
+                            evento de LEC Orb para cruzar con logística.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="save-title">Título</Label>
+                            <Input
+                                id="save-title"
+                                value={saveTitle}
+                                onChange={(e) => setSaveTitle(e.target.value)}
+                                placeholder="Ej. OOPT Colegio Larrea — abril 2026"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Evento (opcional)</Label>
+                            <Select value={eventId || "__none__"} onValueChange={(v) => setEventId(v === "__none__" ? "" : v)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sin vínculo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">Sin vínculo</SelectItem>
+                                    {events.map((e) => (
+                                        <SelectItem key={e.id} value={e.id}>
+                                            {e.title}
+                                            {e.date
+                                                ? ` · ${new Date(e.date).toLocaleDateString("es-MX")}`
+                                                : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="save-log">Logística</Label>
+                            <Textarea
+                                id="save-log"
+                                rows={3}
+                                value={logisticsNotes}
+                                onChange={(e) => setLogisticsNotes(e.target.value)}
+                                placeholder="Sede, contactos, materiales…"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="save-an">Análisis</Label>
+                            <Textarea
+                                id="save-an"
+                                rows={3}
+                                value={analysisNotes}
+                                onChange={(e) => setAnalysisNotes(e.target.value)}
+                                placeholder="Lectura de resultados, niveles, seguimiento…"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="save-gen">Información general</Label>
+                            <Textarea
+                                id="save-gen"
+                                rows={2}
+                                value={generalNotes}
+                                onChange={(e) => setGeneralNotes(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="save-src"
+                                checked={includeSourcePdf}
+                                onCheckedChange={(v) => setIncludeSourcePdf(v === true)}
+                                disabled={!pdfFile}
+                            />
+                            <Label htmlFor="save-src" className="text-sm font-normal leading-snug cursor-pointer">
+                                Incluir PDF consolidado original (aumenta el tamaño del guardado)
+                            </Label>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="secondary" type="button" onClick={() => setSaveOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button type="button" onClick={onSaveProject} disabled={saveLoading}>
+                            {saveLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Guardando…
+                                </>
+                            ) : (
+                                "Guardar"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -30,6 +30,7 @@ export type Module =
     | "courses"
     | "crm-prospects"
     | "oopt-pdf"
+    | "ielts"
     | "audit-log";
 
 export type Action =
@@ -193,6 +194,12 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
         update: ["admin", "supervisor"],
         delete: ["admin"],
     },
+    ielts: {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
 };
 
 /**
@@ -277,6 +284,7 @@ export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Acti
     cursos: { module: "courses", readAction: "read", writeAction: "create", deleteAction: "delete" },
     prospectos: { module: "crm-prospects", readAction: "read", writeAction: "create", deleteAction: "delete" },
     "oopt-pdf": { module: "oopt-pdf", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    ielts: { module: "ielts", readAction: "read", writeAction: "create", deleteAction: "delete" },
 };
 
 /**
