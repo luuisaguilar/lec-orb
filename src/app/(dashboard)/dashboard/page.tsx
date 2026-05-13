@@ -1,33 +1,126 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
     Users, School, Calendar as CalendarIcon, FileText,
-    MapPin,
-    TrendingUp, TrendingDown, AlertTriangle, DollarSign, Wallet, ListTodo
+    ChevronLeft, ChevronRight, MapPin, Zap
 } from "lucide-react";
+import {
+    format, addMonths, subMonths, startOfMonth, endOfMonth,
+    eachDayOfInterval, isSameMonth, isToday,
+    startOfWeek, endOfWeek
+} from "date-fns";
+import { es } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SessionCalendarMonthView } from "@/components/dashboard/session-calendar-month";
-import { TaskBucket } from "@/components/dashboard/my-work-buckets";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ActionCenter } from "@/components/dashboard/action-center";
 
-const EXAM_DOT_BG: Record<string, string> = {
-    starters: "bg-yellow-400/90",
-    movers: "bg-orange-400/90",
-    flyers: "bg-amber-500/90",
-    ket: "bg-blue-500/90",
-    pet: "bg-violet-500/90",
-    fce: "bg-rose-500/90",
+// ── Exam colors ─────────────────────────────────────────────────────────────
+const EXAM_COLORS: Record<string, string> = {
+    starters: "bg-yellow-400/90 text-yellow-950",
+    movers: "bg-orange-400/90 text-orange-950",
+    flyers: "bg-amber-500/90 text-amber-950",
+    ket: "bg-blue-500/90 text-white",
+    pet: "bg-violet-500/90 text-white",
+    fce: "bg-rose-500/90 text-white",
 };
-function examDotBg(t: string | undefined | null) {
-    if (!t) return "bg-primary/80";
-    return EXAM_DOT_BG[t.toLowerCase()] ?? "bg-primary/80";
+function examColor(t: string | undefined | null) {
+    if (!t) return "bg-primary/80 text-primary-foreground";
+    return EXAM_COLORS[t.toLowerCase()] ?? "bg-primary/80 text-primary-foreground";
 }
 
-// ── Currency formatter ───────────────────────────────────────────────────────
-function fmt(n: number) {
-    return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
+// ── Calendar Month View ───────────────────────────────────────────────────────
+function CalendarMonthView({ events, currentMonth, onMonthChange }: {
+    events: any[];
+    currentMonth: Date;
+    onMonthChange: (d: Date) => void;
+}) {
+    const router = useRouter();
+    const days = eachDayOfInterval({
+        start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 }),
+        end: endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 }),
+    });
+
+    const dayMap = useMemo(() => {
+        const map: Record<string, { event: any; session: any; isSpeaking: boolean }[]> = {};
+        events.forEach(ev => {
+            (ev.event_sessions || ev.sessions || []).forEach((s: any) => {
+                if (s.date) {
+                    (map[s.date] ??= []).push({ event: ev, session: s, isSpeaking: false });
+                }
+                if (s.speaking_date && s.speaking_date !== s.date) {
+                    (map[s.speaking_date] ??= []).push({ event: ev, session: s, isSpeaking: true });
+                }
+            });
+        });
+        return map;
+    }, [events]);
+
+    const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+    return (
+        <div className="rounded-xl border bg-background overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b bg-muted/30">
+                <Button variant="outline" size="icon" onClick={() => onMonthChange(subMonths(currentMonth, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-bold capitalize">
+                        {format(currentMonth, "MMMM yyyy", { locale: es })}
+                    </h3>
+                </div>
+                <Button variant="outline" size="icon" onClick={() => onMonthChange(addMonths(currentMonth, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+            <div className="grid grid-cols-7 border-b bg-muted/10">
+                {WEEKDAYS.map(d => (
+                    <div key={d} className="py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">{d}</div>
+                ))}
+            </div>
+            <div className="grid grid-cols-7">
+                {days.map(day => {
+                    const key = format(day, "yyyy-MM-dd");
+                    const entries = dayMap[key] || [];
+                    const inMonth = isSameMonth(day, currentMonth);
+                    return (
+                        <div key={key} className={cn(
+                            "min-h-[100px] p-2 border-r border-b transition-colors",
+                            !inMonth && "bg-muted/30 opacity-60",
+                            isToday(day) && "bg-primary/5 ring-1 ring-inset ring-primary/20"
+                        )}>
+                            <div className={cn(
+                                "w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold mb-2 ml-auto",
+                                isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : inMonth ? "text-foreground" : "text-muted-foreground"
+                            )}>{format(day, "d")}</div>
+                            <div className="space-y-1 overflow-hidden">
+                                {entries.slice(0, 3).map((e, i) => (
+                                    <button key={i} onClick={() => router.push(`/dashboard/eventos/planner/${e.event.id}`)}
+                                        className={cn(
+                                            "w-full text-left text-[11px] font-semibold px-2 py-1 rounded truncate transition-opacity hover:opacity-80 shadow-sm",
+                                            examColor(e.session.exam_type),
+                                            e.isSpeaking && "ring-2 ring-emerald-500 border-emerald-400 border"
+                                        )}>
+                                        {e.isSpeaking ? "🎤 " : "📝 "}
+                                        {e.session.exam_type || "Examen"} - {e.event.school?.name || "Sede"}
+                                    </button>
+                                ))}
+                                {entries.length > 3 && (
+                                    <div className="text-[10px] text-muted-foreground text-center font-medium pt-1">
+                                        + {entries.length - 3} más
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }
 
 // ── Main Dashboard Page ──────────────────────────────────────────────────────
@@ -37,26 +130,24 @@ export default function UnifiedDashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    const [year, setYear] = useState(new Date().getFullYear().toString());
-    const [ihSummary, setIhSummary] = useState<any>(null);
-    const [pettyCashBalance, setPettyCashBalance] = useState<number>(0);
-    const [payrollPeriods, setPayrollPeriods] = useState<any[]>([]);
-    const [financeLoading, setFinanceLoading] = useState(false);
-    const [myTasks, setMyTasks] = useState<any[]>([]);
-
     useEffect(() => {
         async function loadData() {
             try {
                 setIsLoading(true);
                 const [statsRes, eventsRes] = await Promise.all([
                     fetch("/api/v1/dashboard/stats"),
-                    fetch("/api/v1/events?limit=100")
+                    fetch("/api/v1/events?limit=100") // Fetch recent events for calendar
                 ]);
 
-                if (statsRes.ok) setStats(await statsRes.json());
-                if (eventsRes.ok) setEvents((await eventsRes.json()).events || []);
-                const tasksRes = await fetch("/api/v1/pm/tasks?mine=true");
-                if (tasksRes.ok) setMyTasks((await tasksRes.json()).tasks || []);
+                if (statsRes.ok) {
+                    const statsData = await statsRes.json();
+                    setStats(statsData);
+                }
+
+                if (eventsRes.ok) {
+                    const eventsData = await eventsRes.json();
+                    setEvents(eventsData.events || []);
+                }
             } catch (err) {
                 console.error("Failed to load dashboard data", err);
             } finally {
@@ -65,27 +156,6 @@ export default function UnifiedDashboardPage() {
         }
         loadData();
     }, []);
-
-    useEffect(() => {
-        async function loadFinance() {
-            setFinanceLoading(true);
-            try {
-                const [ihRes, pcRes, prRes] = await Promise.all([
-                    fetch(`/api/v1/finance/ih/summary?year=${year}`),
-                    fetch(`/api/v1/finance/petty-cash/balance?year=${year}`),
-                    fetch("/api/v1/payroll"),
-                ]);
-                if (ihRes.ok) setIhSummary(await ihRes.json());
-                if (pcRes.ok) setPettyCashBalance((await pcRes.json()).balance ?? 0);
-                if (prRes.ok) setPayrollPeriods((await prRes.json()).periods ?? []);
-            } catch (err) {
-                console.error("Failed to load finance data", err);
-            } finally {
-                setFinanceLoading(false);
-            }
-        }
-        loadFinance();
-    }, [year]);
 
     if (isLoading) {
         return (
@@ -99,24 +169,6 @@ export default function UnifiedDashboardPage() {
 
     const { general, events: eventsStats, applicators, cenni } = stats;
 
-    const payrollYearTotal = payrollPeriods
-        .filter((p: any) => p.start_date?.startsWith(year))
-        .reduce((sum: number, p: any) => sum + Number(p.total_amount ?? 0), 0);
-
-    const allAlerts = ihSummary
-        ? [
-            ...(ihSummary.byRegion?.SONORA?.alerts ?? []).map((a: any) => ({ ...a, region: "Sonora" })),
-            ...(ihSummary.byRegion?.BAJA_CALIFORNIA?.alerts ?? []).map((a: any) => ({ ...a, region: "BC" })),
-          ].sort((a, b) => b.balance - a.balance)
-        : [];
-
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const myPending = myTasks.filter((task) => !task.completed_at);
-    const myToday = myPending.filter((task) => task.due_date === todayIso);
-    const myOverdue = myPending.filter((task) => task.due_date && task.due_date < todayIso);
-    const myNext = myPending.filter((task) => task.due_date && task.due_date > todayIso).slice(0, 8);
-    const myUnscheduled = myPending.filter((task) => !task.due_date);
-
     return (
         <div className="space-y-6 pb-12">
             <div>
@@ -126,14 +178,31 @@ export default function UnifiedDashboardPage() {
                 </p>
             </div>
 
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs defaultValue="action" className="space-y-6">
                 <TabsList className="bg-muted/50 p-1 w-full justify-start overflow-x-auto">
+                    <TabsTrigger value="action" className="w-[160px] data-[state=active]:shadow-sm flex items-center gap-1.5">
+                        <Zap className="h-3.5 w-3.5" />
+                        Centro de Acción
+                    </TabsTrigger>
                     <TabsTrigger value="overview" className="w-[150px] data-[state=active]:shadow-sm">Vista General</TabsTrigger>
                     <TabsTrigger value="events" className="w-[150px] data-[state=active]:shadow-sm">Eventos</TabsTrigger>
                     <TabsTrigger value="cenni" className="w-[150px] data-[state=active]:shadow-sm">Trámites CENNI</TabsTrigger>
                     <TabsTrigger value="applicators" className="w-[150px] data-[state=active]:shadow-sm">Aplicadores</TabsTrigger>
-                    <TabsTrigger value="gerencial" className="w-[170px] data-[state=active]:shadow-sm">P&amp;L Gerencial</TabsTrigger>
                 </TabsList>
+
+                {/* ── CENTRO DE ACCIÓN TAB ── */}
+                <TabsContent value="action" className="space-y-2 animate-in fade-in-50 duration-500">
+                    <div className="mb-2">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-primary" />
+                            Centro de Acción
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Pendientes que necesitan atención: eventos, staff, CENNI y prospectos CRM.
+                        </p>
+                    </div>
+                    <ActionCenter />
+                </TabsContent>
 
                 {/* ── GENERAL TAB ── */}
                 <TabsContent value="overview" className="space-y-6 animate-in fade-in-50 duration-500">
@@ -176,34 +245,21 @@ export default function UnifiedDashboardPage() {
                         </Card>
                     </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ListTodo className="h-5 w-5 text-primary" />
-                                Mi trabajo
-                            </CardTitle>
-                            <CardDescription>Vista rápida de tareas asignadas a ti.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <TaskBucket title="Hoy" count={myToday.length} tasks={myToday} />
-                                <TaskBucket title="Con atraso" count={myOverdue.length} tasks={myOverdue} />
-                                <TaskBucket title="Siguiente" count={myNext.length} tasks={myNext} />
-                                <TaskBucket title="Sin programar" count={myUnscheduled.length} tasks={myUnscheduled} />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-8">
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <CalendarIcon className="h-5 w-5 text-primary" />
-                            Calendario de Sesiones
-                        </h3>
-                        <SessionCalendarMonthView
-                            events={events}
-                            currentMonth={currentMonth}
-                            onMonthChange={setCurrentMonth}
-                        />
+                    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <CalendarIcon className="h-5 w-5 text-primary" />
+                                Calendario de Sesiones
+                            </h3>
+                            <CalendarMonthView
+                                events={events}
+                                currentMonth={currentMonth}
+                                onMonthChange={setCurrentMonth}
+                            />
+                        </div>
+                        <div className="lg:pt-[52px]">
+                            <ActionCenter />
+                        </div>
                     </div>
                 </TabsContent>
 
@@ -262,7 +318,7 @@ export default function UnifiedDashboardPage() {
                                     {Object.entries(eventsStats.byExamType).map(([type, count]: [string, any]) => (
                                         <div key={type} className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <div className={cn("h-3 w-3 rounded-full", examDotBg(type))} />
+                                                <div className={cn("h-3 w-3 rounded-full", examColor(type).split(" ")[0])} />
                                                 <span className="font-medium uppercase">{type}</span>
                                             </div>
                                             <span className="text-muted-foreground font-semibold px-2 py-0.5 bg-muted rounded-full text-xs">{count}</span>

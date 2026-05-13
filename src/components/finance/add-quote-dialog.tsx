@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -30,73 +30,65 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2, Trash2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const lineSchema = z.object({
-    description: z.string().min(1, "Descripción requerida"),
-    quantity: z.coerce.number().positive("Cantidad > 0"),
-    unit_price: z.coerce.number().nonnegative("Precio válido"),
-});
-
 const quoteSchema = z.object({
+    folio: z.string().min(1, "El folio es requerido"),
     provider: z.string().min(1, "El proveedor es requerido"),
     description: z.string().default(""),
     status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
-    lines: z.array(lineSchema).min(1, "Agrega al menos una partida"),
 });
 
 type QuoteFormValues = z.infer<typeof quoteSchema>;
 
-interface AddQuoteDialogProps {
-    onSuccess?: () => void;
+interface Prospect {
+    id: string;
+    name: string;
+    company: string | null;
+    service_interest: string | null;
 }
 
-export function AddQuoteDialog({ onSuccess }: AddQuoteDialogProps) {
-    const [open, setOpen] = useState(false);
+interface AddQuoteDialogProps {
+    onSuccess?: () => void;
+    /** When provided, the dialog opens controlled and pre-fills from the prospect */
+    prospect?: Prospect | null;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+}
+
+export function AddQuoteDialog({ onSuccess, prospect, open: controlledOpen, onOpenChange }: AddQuoteDialogProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled ? (v: boolean) => onOpenChange?.(v) : setInternalOpen;
 
     const form = useForm<QuoteFormValues>({
         resolver: zodResolver(quoteSchema) as any,
         defaultValues: {
-            provider: "",
-            description: "",
+            folio: `COT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-`,
+            provider: prospect?.company ?? prospect?.name ?? "",
+            description: prospect?.service_interest ? `Cotización para ${prospect.name}${prospect.company ? ` (${prospect.company})` : ""} — ${prospect.service_interest}` : "",
             status: "PENDING",
-            lines: [{ description: "", quantity: 1, unit_price: 0 }],
         },
     });
-
-    const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
 
     async function onSubmit(values: QuoteFormValues) {
         setIsSubmitting(true);
         try {
-            const items = values.lines.map((l) => ({
-                description: l.description,
-                quantity: l.quantity,
-                unit_price: l.unit_price,
-            }));
             const response = await fetch("/api/v1/quotes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    provider: values.provider,
-                    description: values.description,
-                    status: values.status,
-                    items,
-                }),
+                body: JSON.stringify({ ...values, prospect_id: prospect?.id ?? null }),
             });
 
             if (!response.ok) throw new Error("Error al crear la cotización");
 
             toast.success("Cotización creada exitosamente");
             setOpen(false);
-            form.reset({
-                provider: "",
-                description: "",
-                status: "PENDING",
-                lines: [{ description: "", quantity: 1, unit_price: 0 }],
-            });
+            form.reset();
             onSuccess?.();
         } catch {
             toast.error("Hubo un problema al crear la cotización");
@@ -107,20 +99,34 @@ export function AddQuoteDialog({ onSuccess }: AddQuoteDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
+                    </Button>
+                </DialogTrigger>
+            )}
+            <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Agregar Nueva Cotización</DialogTitle>
+                    <DialogTitle>
+                        {prospect ? `Cotización — ${prospect.name}` : "Agregar Nueva Cotización"}
+                    </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            El folio se asigna automáticamente al crear la cotización (formato COT-AAAA-NNNNN).
-                        </p>
+                        <FormField
+                            control={form.control}
+                            name="folio"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Folio</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="COT-20260305-01" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="provider"
@@ -151,88 +157,13 @@ export function AddQuoteDialog({ onSuccess }: AddQuoteDialogProps) {
                                 </FormItem>
                             )}
                         />
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <FormLabel>Partidas</FormLabel>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => append({ description: "", quantity: 1, unit_price: 0 })}
-                                >
-                                    <Plus className="mr-1 h-3 w-3" /> Línea
-                                </Button>
-                            </div>
-                            <div className="rounded-md border divide-y">
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="p-3 space-y-2 bg-muted/20">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-medium text-muted-foreground">
-                                                Partida {index + 1}
-                                            </span>
-                                            {fields.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8"
-                                                    onClick={() => remove(index)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                        <FormField
-                                            control={form.control}
-                                            name={`lines.${index}.description`}
-                                            render={({ field: f }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input placeholder="Concepto / descripción" {...f} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`lines.${index}.quantity`}
-                                                render={({ field: f }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Cantidad</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" step="0.01" min={0} {...f} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name={`lines.${index}.unit_price`}
-                                                render={({ field: f }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Precio unit.</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" step="0.01" min={0} {...f} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                         <FormField
                             control={form.control}
                             name="status"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Estatus Inicial</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Selecciona un estatus" />
