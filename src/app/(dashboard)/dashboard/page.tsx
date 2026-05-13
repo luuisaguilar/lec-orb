@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ActionCenter } from "@/components/dashboard/action-center";
+import ActionCenter from "@/components/action-center/ActionCenter";
 
 // ── Exam colors ─────────────────────────────────────────────────────────────
 const EXAM_COLORS: Record<string, string> = {
