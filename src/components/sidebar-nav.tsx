@@ -34,10 +34,19 @@ interface NavItem {
     module: string;
 }
 
+/** Second level under a category (e.g. "Sistema Uno" inside Coordinación de Exámenes). */
+interface NavSubgroup {
+    label: string;
+    icon: string;
+    items: NavItem[];
+}
+
 interface NavGroup {
     label: string | null;
     icon: string;
     items: NavItem[];
+    /** When set (Coordinación de Exámenes), render nested collapsibles instead of a flat list. */
+    subgroups?: NavSubgroup[];
 }
 
 const CALENDARIO_SESIONES_NAV: NavGroup = {
@@ -122,6 +131,11 @@ const NATIVE_ROUTES: Record<string, string> = {
     "speaking-packs": "/dashboard/toefl/speaking-packs",
     "unoi-planning": "/dashboard/coordinacion-examenes/unoi-planeacion",
     "event-documents": "/dashboard/coordinacion-examenes/documentos-eventos",
+    "crm-pipeline": "/dashboard/crm/pipeline",
+    "crm-directory": "/dashboard/crm/directorio",
+    "crm-activities": "/dashboard/crm/actividades",
+    "crm-metrics": "/dashboard/crm/metricas",
+    "ielts": "/dashboard/coordinacion-examenes/ielts",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +151,86 @@ const CATEGORY_ICONS: Record<string, string> = {
     "Ajustes": "UserCog",
     "Académico": "GraduationCap",
     "Logística": "Truck",
+    "Comercial": "Users",
 };
+
+/** Slugs grouped under "Sistema Uno" inside Coordinación de Exámenes. */
+const COORD_EXAM_SISTEMA_UNO_SLUGS = new Set([
+    "schools",
+    "unoi-planning",
+    "applicators",
+    "calculator",
+    "payroll",
+    "ih-billing",
+]);
+
+/** Slugs grouped under "TOEFL". */
+const COORD_EXAM_TOEFL_SLUGS = new Set(["toefl", "toefl-codes", "speaking-packs"]);
+
+const COORD_EXAM_CENNI_SLUGS = new Set(["cenni"]);
+const COORD_EXAM_OOPT_SLUGS = new Set(["oopt-pdf"]);
+const COORD_EXAM_IELTS_SLUGS = new Set(["ielts"]);
+
+function moduleToNavItem(mod: ModuleRegistryEntry, category: string): NavItem {
+    if (
+        (category === "Coordinación de Exámenes" || category === "Institucional") &&
+        mod.slug === "project-management"
+    ) {
+        return {
+            label: "Proyectos (Coordinación)",
+            href: "/dashboard/coordinacion-examenes/proyectos",
+            icon: mod.icon,
+            module: mod.slug,
+        };
+    }
+    const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
+    return { label: mod.name, href, icon: mod.icon, module: mod.slug };
+}
+
+function buildCoordinationExamSubgroups(mods: ModuleRegistryEntry[]): NavSubgroup[] {
+    const sorted = [...mods].sort((a, b) => a.sort_order - b.sort_order);
+    const sistemaUno: NavItem[] = [];
+    const toefl: NavItem[] = [];
+    const cenni: NavItem[] = [];
+    const oopt: NavItem[] = [];
+    const ielts: NavItem[] = [];
+    const otros: NavItem[] = [];
+    for (const mod of sorted) {
+        const item = moduleToNavItem(mod, "Coordinación de Exámenes");
+        if (COORD_EXAM_SISTEMA_UNO_SLUGS.has(mod.slug)) sistemaUno.push(item);
+        else if (COORD_EXAM_TOEFL_SLUGS.has(mod.slug)) toefl.push(item);
+        else if (COORD_EXAM_CENNI_SLUGS.has(mod.slug)) cenni.push(item);
+        else if (COORD_EXAM_OOPT_SLUGS.has(mod.slug)) oopt.push(item);
+        else if (COORD_EXAM_IELTS_SLUGS.has(mod.slug)) ielts.push(item);
+        else otros.push(item);
+    }
+    const out: NavSubgroup[] = [];
+    if (sistemaUno.length > 0) {
+        out.push({ label: "Sistema Uno", icon: "Building2", items: sistemaUno });
+    }
+    if (toefl.length > 0) {
+        out.push({ label: "TOEFL", icon: "GraduationCap", items: toefl });
+    }
+    if (cenni.length > 0) {
+        out.push({ label: "CENNI", icon: "FileText", items: cenni });
+    }
+    if (oopt.length > 0) {
+        out.push({ label: "OOPT", icon: "FileText", items: oopt });
+    }
+    if (ielts.length > 0) {
+        out.push({ label: "IELTS", icon: "Languages", items: ielts });
+    }
+    if (otros.length > 0) {
+        out.push({ label: "Eventos y otros", icon: "Layers", items: otros });
+    }
+    return out;
+}
+
+function navItemIsActive(pathname: string, item: NavItem): boolean {
+    return item.href === "/dashboard"
+        ? pathname === "/dashboard"
+        : pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
 
 async function navFetcher(url: string) {
     const res = await fetch(url);
@@ -264,6 +357,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
         // Category groups
         const orderedCategories = [
+            "Comercial",
             "Coordinación de Exámenes",
             "Institucional", 
             "Inventario", 
@@ -283,18 +377,20 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             const mods = grouped[category];
             if (!mods || mods.length === 0) continue;
 
-            const items: NavItem[] = mods.map((mod) => {
-                if ((category === "Coordinación de Exámenes" || category === "Institucional") && mod.slug === "project-management") {
-                    return {
-                        label: "Proyectos (Coordinación)",
-                        href: "/dashboard/coordinacion-examenes/proyectos",
-                        icon: mod.icon,
-                        module: mod.slug,
-                    };
-                }
-                const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
-                return { label: mod.name, href, icon: mod.icon, module: mod.slug };
-            });
+            if (category === "Coordinación de Exámenes") {
+                const sorted = [...mods].sort((a, b) => a.sort_order - b.sort_order);
+                const subgroups = buildCoordinationExamSubgroups(sorted);
+                const items = subgroups.flatMap((s) => s.items);
+                result.push({
+                    label: category,
+                    icon: CATEGORY_ICONS[category] ?? "Layers",
+                    items,
+                    subgroups,
+                });
+                continue;
+            }
+
+            const items: NavItem[] = mods.map((mod) => moduleToNavItem(mod, category));
 
             result.push({
                 label: category,
@@ -413,11 +509,9 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                     }
 
                     // Group with collapsible children
-                    const isAnyChildActive = group.items.some((i) =>
-                        i.href === "/dashboard"
-                            ? pathname === "/dashboard"
-                            : pathname === i.href || pathname.startsWith(`${i.href}/`)
-                    );
+                    const isAnyChildActive = group.subgroups?.length
+                        ? group.subgroups.some((sg) => sg.items.some((i) => navItemIsActive(pathname, i)))
+                        : group.items.some((i) => navItemIsActive(pathname, i));
 
                     return (
                         <Collapsible key={`${group.label}-${idx}`} defaultOpen={isAnyChildActive} className="w-full">
@@ -448,30 +542,82 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
                             {!isCollapsed && (
                                 <CollapsibleContent className="space-y-1 px-3 pt-1 pb-2">
-                                    {group.items.map((item) => {
-                                        const SubIcon = getIcon(item.icon);
-                                        const isActive =
-                                            item.href === "/dashboard"
-                                                ? pathname === "/dashboard"
-                                                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                                    {group.subgroups && group.subgroups.length > 0 ? (
+                                        group.subgroups.map((sg) => {
+                                            const SgIcon = getIcon(sg.icon);
+                                            const sgActive = sg.items.some((i) => navItemIsActive(pathname, i));
+                                            return (
+                                                <Collapsible
+                                                    key={sg.label}
+                                                    defaultOpen={sgActive}
+                                                    className="w-full"
+                                                >
+                                                    <CollapsibleTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className={cn(
+                                                                "flex w-full items-center justify-between rounded-md py-1.5 pl-2 pr-1 text-xs font-semibold tracking-tight transition-colors hover:bg-accent/60",
+                                                                "[&[data-state=open]>svg:last-child]:rotate-180",
+                                                                sgActive
+                                                                    ? "text-foreground"
+                                                                    : "text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                        >
+                                                            <span className="flex min-w-0 items-center gap-2">
+                                                                <SgIcon className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                                                                <span className="truncate">{sg.label}</span>
+                                                            </span>
+                                                            <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-200" />
+                                                        </button>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent className="ml-2 border-l border-border/50 pl-2 space-y-0.5 py-0.5">
+                                                        {sg.items.map((item) => {
+                                                            const SubIcon = getIcon(item.icon);
+                                                            const isActive = navItemIsActive(pathname, item);
+                                                            return (
+                                                                <Link
+                                                                    key={item.href}
+                                                                    href={item.href}
+                                                                    className={cn(
+                                                                        "group/sub flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition-all",
+                                                                        "hover:bg-accent hover:text-accent-foreground",
+                                                                        isActive
+                                                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                                                            : "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-110" />
+                                                                    <span className="truncate">{item.label}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </CollapsibleContent>
+                                                </Collapsible>
+                                            );
+                                        })
+                                    ) : (
+                                        group.items.map((item) => {
+                                            const SubIcon = getIcon(item.icon);
+                                            const isActive = navItemIsActive(pathname, item);
 
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                className={cn(
-                                                    "group/sub flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                                                    "hover:bg-accent hover:text-accent-foreground",
-                                                    isActive
-                                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                                        : "text-muted-foreground"
-                                                )}
-                                            >
-                                                <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:rotate-6" />
-                                                <span className="truncate">{item.label}</span>
-                                            </Link>
-                                        );
-                                    })}
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className={cn(
+                                                        "group/sub flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                                                        "hover:bg-accent hover:text-accent-foreground",
+                                                        isActive
+                                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                                            : "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:rotate-6" />
+                                                    <span className="truncate">{item.label}</span>
+                                                </Link>
+                                            );
+                                        })
+                                    )}
                                 </CollapsibleContent>
                             )}
                         </Collapsible>
