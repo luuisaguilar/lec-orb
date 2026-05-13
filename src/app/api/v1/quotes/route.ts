@@ -34,6 +34,7 @@ const createQuoteSchema = z.object({
     valid_until: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
     supplier_id: z.string().uuid().optional().nullable(),
+    prospect_id: z.string().uuid().optional().nullable(),
     items: z.array(lineItemSchema).optional().default([]),
 });
 
@@ -73,6 +74,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             valid_until: parsed.data.valid_until?.trim() ? parsed.data.valid_until : null,
             notes: parsed.data.notes ?? null,
             supplier_id: parsed.data.supplier_id ?? null,
+            prospect_id: parsed.data.prospect_id ?? null,
             created_by: user.id,
             updated_by: user.id,
         })

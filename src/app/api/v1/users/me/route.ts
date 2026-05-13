@@ -23,4 +23,4 @@ export const GET = withAuth(async (req, { supabase, user, member }) => {
         role: member.role,
         permissions: access || []
     });
-}, { module: "users", action: "view" });
+}); // No module guard — every authenticated member can read their own profile

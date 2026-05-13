@@ -28,6 +28,8 @@ export type Module =
     | "budget"
     | "petty-cash"
     | "courses"
+    | "crm-prospects"
+    | "oopt-pdf"
     | "audit-log";
 
 export type Action =
@@ -179,6 +181,18 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
         update: ["admin", "supervisor"],
         delete: ["admin"],
     },
+    "crm-prospects": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor", "operador"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
+    "oopt-pdf": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor"],
+        update: ["admin", "supervisor"],
+        delete: ["admin"],
+    },
 };
 
 /**
@@ -261,6 +275,8 @@ export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Acti
     studio: { module: "studio", readAction: "read", writeAction: "manage", deleteAction: "manage" },
     courses: { module: "courses", readAction: "read", writeAction: "create", deleteAction: "delete" },
     cursos: { module: "courses", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    prospectos: { module: "crm-prospects", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    "oopt-pdf": { module: "oopt-pdf", readAction: "read", writeAction: "create", deleteAction: "delete" },
 };
 
 /**

@@ -40,7 +40,7 @@ export async function acceptInvitation(formData: FormData) {
         redirect(`/join/${token}?error=${encodeURIComponent("Ocurrió un error al procesar tu invitación. Intenta de nuevo o contacta al administrador.")}`);
     }
 
-    const { success, message, code } = result as { success: boolean; message?: string; code?: string };
+    const { success, message, code, role: acceptedRole } = result as { success: boolean; message?: string; code?: string; role?: string };
 
     if (!success) {
         // EXPIRED gets a query flag so the page can render a "request a new invite" CTA
@@ -48,6 +48,9 @@ export async function acceptInvitation(formData: FormData) {
         redirect(`/join/${token}?error=${encodeURIComponent(message || "No se pudo aceptar la invitación.")}${expiredFlag}`);
     }
 
-    // 3. Success — redirect to dashboard
+    // 3. Success — redirect to the correct entry point based on role
+    if (acceptedRole === 'applicator') {
+        redirect("/portal");
+    }
     redirect("/dashboard");
 }
