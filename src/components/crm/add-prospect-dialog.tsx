@@ -55,7 +55,7 @@ export default function AddProspectDialog({ children }: { children?: React.React
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ProspectFormValues>({
-    resolver: zodResolver(prospectSchema),
+    resolver: zodResolver(prospectSchema) as any,
     defaultValues: {
       name: "",
       email: "",

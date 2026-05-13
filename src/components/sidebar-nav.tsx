@@ -34,11 +34,14 @@ interface NavItem {
     module: string;
 }
 
-/** Second level under a category (e.g. "Sistema Uno" inside Coordinación de Exámenes). */
+/** Second level under a category (e.g. "TOEFL" or nested "Cambridge" → "Sistema Uno"). */
 interface NavSubgroup {
     label: string;
     icon: string;
-    items: NavItem[];
+    /** Leaf links when this row is a single collapsible (e.g. TOEFL). */
+    items?: NavItem[];
+    /** Extra nesting: e.g. Cambridge → Sistema Uno → links. */
+    children?: NavSubgroup[];
 }
 
 interface NavGroup {
@@ -47,6 +50,42 @@ interface NavGroup {
     items: NavItem[];
     /** When set (Coordinación de Exámenes), render nested collapsibles instead of a flat list. */
     subgroups?: NavSubgroup[];
+}
+
+/** Spanish A→Z (letra por letra); `numeric` pone “2” antes que “10”. */
+const SIDEBAR_LABEL_COLLATOR = new Intl.Collator("es", { sensitivity: "base", numeric: true });
+
+function compareSidebarLabels(a: string, b: string): number {
+    return SIDEBAR_LABEL_COLLATOR.compare(a.trim(), b.trim());
+}
+
+/** Title used to interleave “solo módulo” rows with category blocks (A→Z). */
+function navGroupSortKey(g: NavGroup): string {
+    if (g.label != null && g.label !== "") return g.label;
+    if (g.items.length >= 1) return g.items[0]?.label ?? "";
+    return "";
+}
+
+/** Sidebar module order: strict alphabetical by visible label. */
+function sortNavItemsAlphabetical(items: NavItem[]): NavItem[] {
+    return [...items].sort((a, b) => compareSidebarLabels(a.label, b.label));
+}
+
+/** Sort leaf links inside each Coordinación subgroup, then subgroup headers A–Z. */
+function sortCoordinationSubgroupTree(groups: NavSubgroup[]): NavSubgroup[] {
+    const mapped = groups.map((sg) => {
+        if (sg.children?.length) {
+            return {
+                ...sg,
+                children: sg.children.map((c) => ({
+                    ...c,
+                    items: sortNavItemsAlphabetical(c.items ?? []),
+                })),
+            };
+        }
+        return { ...sg, items: sortNavItemsAlphabetical(sg.items ?? []) };
+    });
+    return mapped.sort((a, b) => compareSidebarLabels(a.label, b.label));
 }
 
 const CALENDARIO_SESIONES_NAV: NavGroup = {
@@ -66,7 +105,7 @@ const CALENDARIO_SESIONES_NAV: NavGroup = {
 const GLOBAL_PROJECTS_GROUP: NavGroup = {
     label: "Proyectos (Empresa)",
     icon: "Kanban",
-    items: [
+    items: sortNavItemsAlphabetical([
         {
             label: "Mi trabajo",
             href: "/dashboard/mi-trabajo",
@@ -79,19 +118,16 @@ const GLOBAL_PROJECTS_GROUP: NavGroup = {
             icon: "Kanban",
             module: "project-management",
         },
-    ],
+    ]),
 };
 
-function prependDashboardEntrypoints(groups: NavGroup[]): NavGroup[] {
-    const dashIdx = groups.findIndex(
+function ensureDashboardFirst(groups: NavGroup[]): NavGroup[] {
+    const idx = groups.findIndex(
         (g) => g.label === null && g.items.length === 1 && g.items[0].href === "/dashboard"
     );
-    const dashboardGroup = dashIdx >= 0 ? groups[dashIdx]! : null;
-    const rest = dashIdx >= 0 ? groups.filter((_, i) => i !== dashIdx) : groups;
-    const head: NavGroup[] = [];
-    if (dashboardGroup) head.push(dashboardGroup);
-    head.push(CALENDARIO_SESIONES_NAV);
-    return [...head, ...rest];
+    if (idx <= 0) return groups;
+    const dashboardGroup = groups[idx]!;
+    return [dashboardGroup, ...groups.filter((_, i) => i !== idx)];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +147,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "exam-codes": "/dashboard/codigos",
     "oopt-pdf": "/dashboard/oopt-pdf",
     "calculator": "/dashboard/calculadora-tiempos",
-    "catalog": "/dashboard/catalogo",
+    "catalog": "/dashboard/catalogo/conceptos",
     "suppliers": "/dashboard/proveedores",
     "quotes": "/dashboard/cotizaciones",
     "purchase-orders": "/dashboard/ordenes",
@@ -147,22 +183,49 @@ const CATEGORY_ICONS: Record<string, string> = {
     "Inventario": "Package",
     "Exámenes": "GraduationCap",
     "Catálogos": "BookOpen",
+    "Directorio": "BookOpen",
     "Finanzas": "DollarSign",
     "Ajustes": "UserCog",
     "Académico": "GraduationCap",
-    "Logística": "Truck",
+    "Logística": "Library",
+    "Feria de libro": "Library",
     "Comercial": "Users",
 };
 
-/** Slugs grouped under "Sistema Uno" inside Coordinación de Exámenes. */
+const AJUSTES_CATEGORY = "Ajustes";
+
+/** Normalize DB/Studio labels onto internal bucket keys used for grouping + icons. */
+function canonicalSidebarCategory(category: string): string {
+    if (category === "Feria de libro") return "Logística";
+    if (category === "Directorio") return "Catálogos";
+    return category;
+}
+
+/** Label shown in the sidebar (DB bucket key may differ). */
+function categoryDisplayLabel(category: string): string {
+    if (category === "Logística") return "Feria de libro";
+    if (category === "Catálogos") return "Directorio";
+    return category;
+}
+
+function sortCategoryKeys(keys: string[]): string[] {
+    const rest = keys.filter((c) => c !== AJUSTES_CATEGORY);
+    rest.sort((a, b) =>
+        compareSidebarLabels(categoryDisplayLabel(a), categoryDisplayLabel(b))
+    );
+    return keys.includes(AJUSTES_CATEGORY) ? [...rest, AJUSTES_CATEGORY] : rest;
+}
+
+/** Slugs grouped under "Sistema Uno" (Cambridge / UNOi) inside Coordinación de Exámenes. */
 const COORD_EXAM_SISTEMA_UNO_SLUGS = new Set([
-    "schools",
     "unoi-planning",
-    "applicators",
     "calculator",
     "payroll",
     "ih-billing",
 ]);
+
+/** Escuelas y aplicadores: entradas propias bajo Directorio (no dentro del catálogo de conceptos). */
+const DIRECTORIO_UNOI_SLUGS = new Set(["schools", "applicators"]);
 
 /** Slugs grouped under "TOEFL". */
 const COORD_EXAM_TOEFL_SLUGS = new Set(["toefl", "toefl-codes", "speaking-packs"]);
@@ -188,14 +251,13 @@ function moduleToNavItem(mod: ModuleRegistryEntry, category: string): NavItem {
 }
 
 function buildCoordinationExamSubgroups(mods: ModuleRegistryEntry[]): NavSubgroup[] {
-    const sorted = [...mods].sort((a, b) => a.sort_order - b.sort_order);
     const sistemaUno: NavItem[] = [];
     const toefl: NavItem[] = [];
     const cenni: NavItem[] = [];
     const oopt: NavItem[] = [];
     const ielts: NavItem[] = [];
     const otros: NavItem[] = [];
-    for (const mod of sorted) {
+    for (const mod of mods) {
         const item = moduleToNavItem(mod, "Coordinación de Exámenes");
         if (COORD_EXAM_SISTEMA_UNO_SLUGS.has(mod.slug)) sistemaUno.push(item);
         else if (COORD_EXAM_TOEFL_SLUGS.has(mod.slug)) toefl.push(item);
@@ -206,7 +268,11 @@ function buildCoordinationExamSubgroups(mods: ModuleRegistryEntry[]): NavSubgrou
     }
     const out: NavSubgroup[] = [];
     if (sistemaUno.length > 0) {
-        out.push({ label: "Sistema Uno", icon: "Building2", items: sistemaUno });
+        out.push({
+            label: "Cambridge",
+            icon: "School",
+            children: [{ label: "Sistema Uno", icon: "Building2", items: sistemaUno }],
+        });
     }
     if (toefl.length > 0) {
         out.push({ label: "TOEFL", icon: "GraduationCap", items: toefl });
@@ -223,13 +289,23 @@ function buildCoordinationExamSubgroups(mods: ModuleRegistryEntry[]): NavSubgrou
     if (otros.length > 0) {
         out.push({ label: "Eventos y otros", icon: "Layers", items: otros });
     }
-    return out;
+    return sortCoordinationSubgroupTree(out);
 }
 
 function navItemIsActive(pathname: string, item: NavItem): boolean {
     return item.href === "/dashboard"
         ? pathname === "/dashboard"
         : pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+function flattenSubgroupItems(sg: NavSubgroup): NavItem[] {
+    if (sg.children?.length) return sg.children.flatMap(flattenSubgroupItems);
+    return sg.items ?? [];
+}
+
+function navSubgroupAnyActive(sg: NavSubgroup, pathname: string): boolean {
+    if (sg.children?.length) return sg.children.some((c) => navSubgroupAnyActive(c, pathname));
+    return (sg.items ?? []).some((i) => navItemIsActive(pathname, i));
 }
 
 async function navFetcher(url: string) {
@@ -249,13 +325,13 @@ const MODULE_PERMISSION_ALIAS: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Portal nav (static — no module registry needed for applicator portal)
 // ─────────────────────────────────────────────────────────────────────────────
-const PORTAL_ITEMS: NavItem[] = [
+const PORTAL_ITEMS: NavItem[] = sortNavItemsAlphabetical([
     { label: "Portal", href: "/portal", icon: "BarChart3", module: "inventory" },
     { label: "Mis eventos", href: "/portal/eventos", icon: "ClipboardList", module: "events" },
     { label: "Horarios", href: "/portal/horarios", icon: "Calendar", module: "events" },
     { label: "Nómina", href: "/portal/nomina", icon: "DollarSign", module: "payroll" },
     { label: "Métricas", href: "/portal/metricas", icon: "BarChart3", module: "dashboard" },
-];
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SidebarNav
@@ -338,51 +414,38 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             if (!mod.category) {
                 topLevel.push(mod);
             } else {
-                if (!grouped[mod.category]) grouped[mod.category] = [];
-                grouped[mod.category].push(mod);
+                const cat = canonicalSidebarCategory(mod.category);
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(mod);
             }
         }
 
-        const result: NavGroup[] = [];
+        const dashMod = topLevel.find((m) => m.slug === "dashboard");
+        const otherTop = topLevel.filter((m) => m.slug !== "dashboard");
+        otherTop.sort((a, b) => compareSidebarLabels(a.name, b.name));
 
-        // Top-level items (e.g. Dashboard — no category)
-        for (const mod of topLevel) {
+        const topGroupsSansDash: NavGroup[] = otherTop.map((mod) => {
             const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
-            result.push({
+            return {
                 label: null,
                 icon: mod.icon,
                 items: [{ label: mod.name, href, icon: mod.icon, module: mod.slug }],
-            });
-        }
+            };
+        });
 
-        // Category groups
-        const orderedCategories = [
-            "Comercial",
-            "Coordinación de Exámenes",
-            "Institucional", 
-            "Inventario", 
-            "Exámenes", 
-            "Académico",
-            "Logística",
-            "Catálogos", 
-            "Finanzas", 
-            "Ajustes",
-        ];
-        const allCategories = [
-            ...orderedCategories,
-            ...Object.keys(grouped).filter((c) => !orderedCategories.includes(c)),
-        ];
+        const categoryGroups: NavGroup[] = [];
+        const sortedCategoryKeys = sortCategoryKeys(Object.keys(grouped));
 
-        for (const category of allCategories) {
+        for (const category of sortedCategoryKeys) {
             const mods = grouped[category];
             if (!mods || mods.length === 0) continue;
 
             if (category === "Coordinación de Exámenes") {
-                const sorted = [...mods].sort((a, b) => a.sort_order - b.sort_order);
-                const subgroups = buildCoordinationExamSubgroups(sorted);
-                const items = subgroups.flatMap((s) => s.items);
-                result.push({
-                    label: category,
+                const modsForCoord = mods.filter((m) => !DIRECTORIO_UNOI_SLUGS.has(m.slug));
+                const subgroups = buildCoordinationExamSubgroups(modsForCoord);
+                const items = subgroups.flatMap(flattenSubgroupItems);
+                categoryGroups.push({
+                    label: categoryDisplayLabel(category),
                     icon: CATEGORY_ICONS[category] ?? "Layers",
                     items,
                     subgroups,
@@ -390,14 +453,45 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                 continue;
             }
 
-            const items: NavItem[] = mods.map((mod) => moduleToNavItem(mod, category));
+            let items: NavItem[] = sortNavItemsAlphabetical(
+                mods.map((mod) => moduleToNavItem(mod, category))
+            );
 
-            result.push({
-                label: category,
+            if (category === "Catálogos") {
+                const extras: NavItem[] = [];
+                for (const slug of DIRECTORIO_UNOI_SLUGS) {
+                    const mod = modules.find((m) => m.slug === slug);
+                    if (!mod) continue;
+                    if (mod.is_native && !canViewModule(slug)) continue;
+                    extras.push(moduleToNavItem(mod, category));
+                }
+                items = sortNavItemsAlphabetical([...items, ...extras]);
+            }
+
+            categoryGroups.push({
+                label: categoryDisplayLabel(category),
                 icon: CATEGORY_ICONS[category] ?? "Layers",
                 items,
             });
         }
+
+        const merged = [CALENDARIO_SESIONES_NAV, ...topGroupsSansDash, ...categoryGroups];
+        merged.sort((a, b) => compareSidebarLabels(navGroupSortKey(a), navGroupSortKey(b)));
+
+        const ajustesG = merged.find((g) => g.label === "Ajustes");
+        const mergedSansAjustes = merged.filter((g) => g.label !== "Ajustes");
+        const orderedMid = ajustesG ? [...mergedSansAjustes, ajustesG] : mergedSansAjustes;
+
+        const result: NavGroup[] = [];
+        if (dashMod) {
+            const href = NATIVE_ROUTES[dashMod.slug] ?? `/dashboard/m/${dashMod.slug}`;
+            result.push({
+                label: null,
+                icon: dashMod.icon,
+                items: [{ label: dashMod.name, href, icon: dashMod.icon, module: dashMod.slug }],
+            });
+        }
+        result.push(...orderedMid);
 
         if (canViewGlobalProjects) {
             const coordinationIndex = result.findIndex(
@@ -410,7 +504,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             }
         }
 
-        return prependDashboardEntrypoints(result);
+        return ensureDashboardFirst(result);
     }, [userData, modulesData, variant]);
 
     // ── Loading state ──────────────────────────────────────────────────────────
@@ -510,7 +604,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
 
                     // Group with collapsible children
                     const isAnyChildActive = group.subgroups?.length
-                        ? group.subgroups.some((sg) => sg.items.some((i) => navItemIsActive(pathname, i)))
+                        ? group.subgroups.some((sg) => navSubgroupAnyActive(sg, pathname))
                         : group.items.some((i) => navItemIsActive(pathname, i));
 
                     return (
@@ -544,8 +638,96 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                 <CollapsibleContent className="space-y-1 px-3 pt-1 pb-2">
                                     {group.subgroups && group.subgroups.length > 0 ? (
                                         group.subgroups.map((sg) => {
+                                            if (sg.children?.length) {
+                                                const ParentIcon = getIcon(sg.icon);
+                                                const parentActive = navSubgroupAnyActive(sg, pathname);
+                                                return (
+                                                    <Collapsible
+                                                        key={sg.label}
+                                                        defaultOpen={parentActive}
+                                                        className="w-full"
+                                                    >
+                                                        <CollapsibleTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                className={cn(
+                                                                    "flex w-full items-center justify-between rounded-md py-1.5 pl-2 pr-1 text-xs font-semibold tracking-tight transition-colors hover:bg-accent/60",
+                                                                    "[&[data-state=open]>svg:last-child]:rotate-180",
+                                                                    parentActive
+                                                                        ? "text-foreground"
+                                                                        : "text-muted-foreground hover:text-foreground"
+                                                                )}
+                                                            >
+                                                                <span className="flex min-w-0 items-center gap-2">
+                                                                    <ParentIcon className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                                                                    <span className="truncate">{sg.label}</span>
+                                                                </span>
+                                                                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-200" />
+                                                            </button>
+                                                        </CollapsibleTrigger>
+                                                        <CollapsibleContent className="ml-2 border-l border-border/50 pl-2 space-y-0.5 py-0.5">
+                                                            {sg.children.map((child) => {
+                                                                const ChildIcon = getIcon(child.icon);
+                                                                const childActive = (child.items ?? []).some((i) =>
+                                                                    navItemIsActive(pathname, i)
+                                                                );
+                                                                return (
+                                                                    <Collapsible
+                                                                        key={`${sg.label}-${child.label}`}
+                                                                        defaultOpen={childActive}
+                                                                        className="w-full"
+                                                                    >
+                                                                        <CollapsibleTrigger asChild>
+                                                                            <button
+                                                                                type="button"
+                                                                                className={cn(
+                                                                                    "flex w-full items-center justify-between rounded-md py-1.5 pl-2 pr-1 text-xs font-semibold tracking-tight transition-colors hover:bg-accent/60",
+                                                                                    "[&[data-state=open]>svg:last-child]:rotate-180",
+                                                                                    childActive
+                                                                                        ? "text-foreground"
+                                                                                        : "text-muted-foreground hover:text-foreground"
+                                                                                )}
+                                                                            >
+                                                                                <span className="flex min-w-0 items-center gap-2">
+                                                                                    <ChildIcon className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                                                                                    <span className="truncate">{child.label}</span>
+                                                                                </span>
+                                                                                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-200" />
+                                                                            </button>
+                                                                        </CollapsibleTrigger>
+                                                                        <CollapsibleContent className="ml-2 border-l border-border/40 pl-2 space-y-0.5 py-0.5">
+                                                                            {(child.items ?? []).map((item) => {
+                                                                                const SubIcon = getIcon(item.icon);
+                                                                                const isActive = navItemIsActive(pathname, item);
+                                                                                return (
+                                                                                    <Link
+                                                                                        key={item.href}
+                                                                                        href={item.href}
+                                                                                        className={cn(
+                                                                                            "group/sub flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition-all",
+                                                                                            "hover:bg-accent hover:text-accent-foreground",
+                                                                                            isActive
+                                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                                : "text-muted-foreground"
+                                                                                        )}
+                                                                                    >
+                                                                                        <SubIcon className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover/sub:scale-110" />
+                                                                                        <span className="truncate">{item.label}</span>
+                                                                                    </Link>
+                                                                                );
+                                                                            })}
+                                                                        </CollapsibleContent>
+                                                                    </Collapsible>
+                                                                );
+                                                            })}
+                                                        </CollapsibleContent>
+                                                    </Collapsible>
+                                                );
+                                            }
+
                                             const SgIcon = getIcon(sg.icon);
-                                            const sgActive = sg.items.some((i) => navItemIsActive(pathname, i));
+                                            const leafItems = sg.items ?? [];
+                                            const sgActive = leafItems.some((i) => navItemIsActive(pathname, i));
                                             return (
                                                 <Collapsible
                                                     key={sg.label}
@@ -571,7 +753,7 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                                                         </button>
                                                     </CollapsibleTrigger>
                                                     <CollapsibleContent className="ml-2 border-l border-border/50 pl-2 space-y-0.5 py-0.5">
-                                                        {sg.items.map((item) => {
+                                                        {leafItems.map((item) => {
                                                             const SubIcon = getIcon(item.icon);
                                                             const isActive = navItemIsActive(pathname, item);
                                                             return (

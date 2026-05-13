@@ -60,7 +60,7 @@ export default async function DynamicModulePage({ params }: PageProps) {
         "cenni": "/dashboard/cenni",
         "exam-codes": "/dashboard/codigos",
         "calculator": "/dashboard/calculadora-tiempos",
-        "catalog": "/dashboard/catalogo",
+        "catalog": "/dashboard/catalogo/conceptos",
         "quotes": "/dashboard/cotizaciones",
         "purchase-orders": "/dashboard/ordenes",
         "payments": "/dashboard/pagos",
