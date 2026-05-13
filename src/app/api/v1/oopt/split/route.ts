@@ -42,14 +42,17 @@ export const POST = withAuth(
         }
 
         try {
-            const body = await processOoptPdfSplit(pdfBuf, xlsUtf8);
+            const body = await processOoptPdfSplit(pdfBuf, xlsUtf8, { pdfFileName: pdfFile.name });
             return NextResponse.json(body);
         } catch (e: any) {
             console.error("[oopt/split]", e);
-            return NextResponse.json(
-                { error: e?.message ?? "Error al procesar el PDF." },
-                { status: 500 }
-            );
+            const msg = e?.message ?? "Error al procesar el PDF.";
+            const isUserInput =
+                msg.includes("no es un PDF") ||
+                msg.includes("TableData") ||
+                msg.includes("vacío") ||
+                msg.includes("falta la cabecera");
+            return NextResponse.json({ error: msg }, { status: isUserInput ? 400 : 500 });
         }
     },
     { module: "oopt-pdf", action: "view" }

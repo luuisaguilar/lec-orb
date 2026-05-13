@@ -9,6 +9,7 @@ import { extractText } from "unpdf";
 import { PDFDocument } from "pdf-lib";
 import { format, isValid, parse } from "date-fns";
 import { enGB } from "date-fns/locale";
+import { normalizePdfInputBytes } from "@/lib/oopt-pdf-validate";
 
 export type TableStudent = {
     last_name: string;
@@ -189,14 +190,17 @@ export function formatDateForFilename(dateStr: string): string {
 
 export async function processOoptPdfSplit(
     pdfBytes: Uint8Array,
-    xlsUtf8: string | null
+    xlsUtf8: string | null,
+    options?: { pdfFileName?: string }
 ): Promise<OoptSplitResponse> {
+    const pdf = normalizePdfInputBytes(pdfBytes, options?.pdfFileName ?? "documento.pdf");
+
     const tableStudents = xlsUtf8 ? parseTableDataXls(xlsUtf8) : [];
 
-    const { text: pageTexts } = await extractText(pdfBytes, { mergePages: false });
+    const { text: pageTexts } = await extractText(pdf, { mergePages: false });
     const totalPages = pageTexts.length;
 
-    const srcDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+    const srcDoc = await PDFDocument.load(pdf, { ignoreEncryption: true });
 
     const results: OoptSplitRow[] = [];
     const error_details: OoptSplitError[] = [];
