@@ -90,12 +90,11 @@ export function ScanDialog({ open, onOpenChange, onMovement, onAddPack }: ScanDi
     const applicators: OptionItem[] = applicatorsData?.applicators || [];
     const filteredApplicators = applicators.filter(a => a.authorized_exams && a.authorized_exams.length > 0);
 
-    // Auto-focus on mount and re-focus on blur (keyboard wedge pattern)
     useEffect(() => {
         if (open) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+            const id = setTimeout(() => inputRef.current?.focus(), 100);
+            return () => clearTimeout(id);
         } else {
-            // Reset state when dialog closes
             setCodigo("");
             setPack(null);
             setMovements([]);
