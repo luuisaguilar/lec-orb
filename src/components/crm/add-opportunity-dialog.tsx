@@ -57,7 +57,7 @@ export default function AddOpportunityDialog({ children }: { children?: React.Re
   const contacts = contactsData?.contacts || [];
 
   const form = useForm<OpportunityFormValues>({
-    resolver: zodResolver(opportunitySchema),
+    resolver: zodResolver(opportunitySchema) as any,
     defaultValues: {
       title: "",
       contact_id: "",
