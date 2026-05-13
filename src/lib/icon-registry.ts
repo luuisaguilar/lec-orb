@@ -30,6 +30,7 @@ import {
     History,
     Home,
     Inbox,
+    Languages,
     Layers,
     Link,
     List,
@@ -95,6 +96,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
     GraduationCap,
     BookOpen,
     Calculator,
+    Languages,
 
     // Communication
     Mail,
