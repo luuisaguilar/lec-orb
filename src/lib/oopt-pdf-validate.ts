@@ -1,20 +1,44 @@
 /**
- * Detect PDF magic (%PDF) and common mis-uploads (HTML, TableData.xls in wrong field).
+ * Detect PDF magic and common mis-uploads (HTML, TableData.xls in wrong field).
  * Used by the OOPT API route and the dashboard page (client pre-check).
+ *
+ * We match a real header `%PDF-<major>.<minor>` (same idea as pdf-lib), not the
+ * four-byte substring `%PDF` alone — that can appear inside streams and slicing
+ * there strips the true header, which then breaks pdf-lib with "No PDF header found".
  */
+
+function isDigit(b: number): boolean {
+    return b >= 0x30 && b <= 0x39;
+}
 
 export function findPdfHeaderOffset(buf: Uint8Array): number {
     const scanLimit = Math.min(buf.byteLength, 262144);
-    for (let i = 0; i <= scanLimit - 4; i++) {
-        if (buf[i] === 0x25 && buf[i + 1] === 0x50 && buf[i + 2] === 0x44 && buf[i + 3] === 0x46) {
-            return i;
+    // Need at least "%PDF-1.1" (8 bytes) to treat as a header start.
+    const lastStart = Math.min(scanLimit, buf.byteLength) - 8;
+    for (let i = 0; i <= lastStart; i++) {
+        if (
+            buf[i] !== 0x25 ||
+            buf[i + 1] !== 0x50 ||
+            buf[i + 2] !== 0x44 ||
+            buf[i + 3] !== 0x46 ||
+            buf[i + 4] !== 0x2d
+        ) {
+            continue;
         }
+        let j = i + 5;
+        if (j >= buf.byteLength || !isDigit(buf[j])) continue;
+        while (j < buf.byteLength && isDigit(buf[j])) j++;
+        if (j >= buf.byteLength || buf[j] !== 0x2e) continue;
+        j++;
+        if (j >= buf.byteLength || !isDigit(buf[j])) continue;
+        while (j < buf.byteLength && isDigit(buf[j])) j++;
+        return i;
     }
     return -1;
 }
 
 /**
- * Returns a buffer starting at %PDF, or throws an Error with a Spanish hint.
+ * Returns a buffer starting at a valid `%PDF-<major>.<minor>` header, or throws an Error with a Spanish hint.
  */
 export function normalizePdfInputBytes(buf: Uint8Array, fileName: string): Uint8Array {
     if (buf.byteLength === 0) {

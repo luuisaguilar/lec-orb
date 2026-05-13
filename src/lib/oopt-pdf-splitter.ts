@@ -193,14 +193,15 @@ export async function processOoptPdfSplit(
     xlsUtf8: string | null,
     options?: { pdfFileName?: string }
 ): Promise<OoptSplitResponse> {
-    const pdf = normalizePdfInputBytes(pdfBytes, options?.pdfFileName ?? "documento.pdf");
-
+    const normalized = normalizePdfInputBytes(pdfBytes, options?.pdfFileName ?? "documento.pdf");
     const tableStudents = xlsUtf8 ? parseTableDataXls(xlsUtf8) : [];
 
-    const { text: pageTexts } = await extractText(pdf, { mergePages: false });
+    const forText = Uint8Array.from(normalized);
+    const { text: pageTexts } = await extractText(forText, { mergePages: false });
     const totalPages = pageTexts.length;
 
-    const srcDoc = await PDFDocument.load(pdf, { ignoreEncryption: true });
+    const forStructure = Uint8Array.from(normalized);
+    const srcDoc = await PDFDocument.load(forStructure, { ignoreEncryption: true });
 
     const results: OoptSplitRow[] = [];
     const error_details: OoptSplitError[] = [];
