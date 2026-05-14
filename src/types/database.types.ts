@@ -6613,6 +6613,458 @@ export type Database = {
         }
         Relationships: []
       }
+      lec_course_offerings: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          starts_on: string | null
+          ends_on: string | null
+          participants_count: number
+          price_amount: number | null
+          program_project_id: string | null
+          notes: string | null
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          starts_on?: string | null
+          ends_on?: string | null
+          participants_count?: number
+          price_amount?: number | null
+          program_project_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          starts_on?: string | null
+          ends_on?: string | null
+          participants_count?: number
+          price_amount?: number | null
+          program_project_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_course_offerings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_course_offerings_program_project_id_fkey"
+            columns: ["program_project_id"]
+            isOneToOne: false
+            referencedRelation: "lec_program_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_cp_departments: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_cp_departments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_cp_exam_types: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_cp_exam_types_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_cp_product_services: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_cp_product_services_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_exam_sales_lines: {
+        Row: {
+          id: string
+          org_id: string
+          exam_month: string
+          line_no: number | null
+          candidate_or_institution: string
+          exam_type_id: string | null
+          exam_type_label: string | null
+          result_summary: string | null
+          email: string | null
+          phone: string | null
+          confirmation: string | null
+          exam_at: string | null
+          quantity: number
+          amount: number | null
+          survey_sent: boolean
+          checklist_done: boolean
+          school_id: string | null
+          event_id: string | null
+          notes: string | null
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          exam_month: string
+          line_no?: number | null
+          candidate_or_institution: string
+          exam_type_id?: string | null
+          exam_type_label?: string | null
+          result_summary?: string | null
+          email?: string | null
+          phone?: string | null
+          confirmation?: string | null
+          exam_at?: string | null
+          quantity?: number
+          amount?: number | null
+          survey_sent?: boolean
+          checklist_done?: boolean
+          school_id?: string | null
+          event_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          exam_month?: string
+          line_no?: number | null
+          candidate_or_institution?: string
+          exam_type_id?: string | null
+          exam_type_label?: string | null
+          result_summary?: string | null
+          email?: string | null
+          phone?: string | null
+          confirmation?: string | null
+          exam_at?: string | null
+          quantity?: number
+          amount?: number | null
+          survey_sent?: boolean
+          checklist_done?: boolean
+          school_id?: string | null
+          event_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_exam_sales_lines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_exam_sales_lines_exam_type_id_fkey"
+            columns: ["exam_type_id"]
+            isOneToOne: false
+            referencedRelation: "lec_cp_exam_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_exam_sales_lines_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_exam_sales_lines_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_kpi_size_comparison: {
+        Row: {
+          id: string
+          org_id: string
+          bucket_key: string
+          count_2025: number
+          count_2026: number
+          projected_2026: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          bucket_key: string
+          count_2025?: number
+          count_2026?: number
+          projected_2026?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          bucket_key?: string
+          count_2025?: number
+          count_2026?: number
+          projected_2026?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_kpi_size_comparison_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lec_program_projects: {
+        Row: {
+          id: string
+          org_id: string
+          period_month: string
+          department_id: string | null
+          description: string
+          client_type: string
+          product_service_id: string | null
+          product_service_label: string | null
+          beneficiaries_count: number
+          revenue_amount: number | null
+          size_code: string | null
+          status: string
+          evidence_office_url: string | null
+          evidence_satisfaction_url: string | null
+          evidence_survey_url: string | null
+          checklist_done: boolean
+          source_year: number
+          school_id: string | null
+          event_id: string | null
+          crm_opportunity_id: string | null
+          pm_project_id: string | null
+          notes: string | null
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          period_month: string
+          department_id?: string | null
+          description: string
+          client_type?: string
+          product_service_id?: string | null
+          product_service_label?: string | null
+          beneficiaries_count?: number
+          revenue_amount?: number | null
+          size_code?: string | null
+          status?: string
+          evidence_office_url?: string | null
+          evidence_satisfaction_url?: string | null
+          evidence_survey_url?: string | null
+          checklist_done?: boolean
+          source_year?: number
+          school_id?: string | null
+          event_id?: string | null
+          crm_opportunity_id?: string | null
+          pm_project_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          period_month?: string
+          department_id?: string | null
+          description?: string
+          client_type?: string
+          product_service_id?: string | null
+          product_service_label?: string | null
+          beneficiaries_count?: number
+          revenue_amount?: number | null
+          size_code?: string | null
+          status?: string
+          evidence_office_url?: string | null
+          evidence_satisfaction_url?: string | null
+          evidence_survey_url?: string | null
+          checklist_done?: boolean
+          source_year?: number
+          school_id?: string | null
+          event_id?: string | null
+          crm_opportunity_id?: string | null
+          pm_project_id?: string | null
+          notes?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lec_program_projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_program_projects_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "lec_cp_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_program_projects_product_service_id_fkey"
+            columns: ["product_service_id"]
+            isOneToOne: false
+            referencedRelation: "lec_cp_product_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_program_projects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_program_projects_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lec_program_projects_pm_project_id_fkey"
+            columns: ["pm_project_id"]
+            isOneToOne: false
+            referencedRelation: "pm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       kpi_dashboard: {

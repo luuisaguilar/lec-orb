@@ -151,5 +151,39 @@ describe("checkServerPermission matrix (9 grupos: role x action)", () => {
         );
         expect(allowed).toBe(false);
     });
+
+    it("crm API module: aggregates submodule rows (crm-pipeline) for view", async () => {
+        const crmSupabase = {
+            from(table: string) {
+                if (table !== "member_module_access") {
+                    throw new Error(`Unexpected table: ${table}`);
+                }
+                return {
+                    select() {
+                        return {
+                            eq() {
+                                return {
+                                    in: () =>
+                                        Promise.resolve({
+                                            data: [{ can_view: true, can_edit: true, can_delete: false }],
+                                            error: null,
+                                        }),
+                                };
+                            },
+                        };
+                    },
+                };
+            },
+        };
+
+        const allowed = await checkServerPermission(
+            crmSupabase as any,
+            "user-1",
+            "crm",
+            "view",
+            { id: "m1", role: "supervisor" }
+        );
+        expect(allowed).toBe(true);
+    });
 });
 

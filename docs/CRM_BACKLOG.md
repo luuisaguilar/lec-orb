@@ -1,6 +1,6 @@
 # CRM Module — Backlog
 
-Ultima actualizacion: 2026-05-12  
+Ultima actualizacion: 2026-05-14  
 ADR: `docs/adr/ADR-009-crm-module-foundation.md`  
 Tracking: `docs/CRM_SPRINT_TRACKER.md`
 
@@ -8,12 +8,12 @@ Tracking: `docs/CRM_SPRINT_TRACKER.md`
 
 ## Prioridad: Must (ERP GAP Matrix)
 
-> Cobertura actual: **Baja** — Solo tabla `whatsapp_leads` sin UI.  
-> Meta: Pipeline de venta completo y medible.
+> Cobertura actual: **Media** — Fase 1 (DB + API) y Fase 2 (UI core) completadas. Pipeline Kanban activo.  
+> Meta: Interconexiones (Fase 3) + Intelligence (Fase 4).
 
 ---
 
-## Fase 1 — Foundation (Sprint CRM-1)
+## ✅ Fase 1 — Foundation (Sprint CRM-1) — COMPLETADA
 
 **Estimado:** 2-3 dias | **Dependencias:** Ninguna
 
@@ -21,34 +21,34 @@ Tracking: `docs/CRM_SPRINT_TRACKER.md`
 
 | # | Ticket | SP | Owner | Estado |
 |---|--------|----|-------|--------|
-| F1-01 | Crear migracion `crm_contacts` (type, source, school_id FK, tags, assigned_to) | 3 | Dev | ⬜ Pendiente |
-| F1-02 | Crear migracion `crm_opportunities` (stages, contact_id FK, quote_id FK, probability, expected_amount) | 3 | Dev | ⬜ Pendiente |
-| F1-03 | Crear migracion `crm_activities` (types, contact_id FK, opportunity_id FK, due_date, status) | 2 | Dev | ⬜ Pendiente |
-| F1-04 | Registrar modulo CRM en `module_registry` (slug: `crm`, categoria: `Comercial`) | 1 | Dev | ⬜ Pendiente |
-| F1-05 | RLS policies para las 3 tablas (org-scoped, supervisors write) | 2 | Dev | ⬜ Pendiente |
-| F1-06 | API route `GET/POST /api/v1/crm/contacts` con `withAuth` + `logAudit` | 3 | Dev | ⬜ Pendiente |
-| F1-07 | API route `GET/PATCH/DELETE /api/v1/crm/contacts/[id]` | 2 | Dev | ⬜ Pendiente |
-| F1-08 | API route `GET/POST /api/v1/crm/opportunities` | 3 | Dev | ⬜ Pendiente |
-| F1-09 | API route `GET/PATCH/DELETE /api/v1/crm/opportunities/[id]` | 2 | Dev | ⬜ Pendiente |
-| F1-10 | API route `GET/POST /api/v1/crm/activities` | 2 | Dev | ⬜ Pendiente |
-| F1-11 | API route `PATCH /api/v1/crm/activities/[id]` (completar actividad) | 1 | Dev | ⬜ Pendiente |
+| F1-01 | Crear migracion `crm_contacts` (type, source, school_id FK, tags, assigned_to) | 3 | Dev | ✅ Done |
+| F1-02 | Crear migracion `crm_opportunities` (stages, contact_id FK, quote_id FK, probability, expected_amount) | 3 | Dev | ✅ Done |
+| F1-03 | Crear migracion `crm_activities` (types, contact_id FK, opportunity_id FK, due_date, status) | 2 | Dev | ✅ Done |
+| F1-04 | Registrar modulo CRM en `module_registry` (slug: `crm`, categoria: `Comercial`) | 1 | Dev | ✅ Done |
+| F1-05 | RLS policies para las 3 tablas (org-scoped, supervisors write) | 2 | Dev | ✅ Done |
+| F1-06 | API route `GET/POST /api/v1/crm/contacts` con `withAuth` + `logAudit` | 3 | Dev | ✅ Done |
+| F1-07 | API route `GET/PATCH/DELETE /api/v1/crm/contacts/[id]` | 2 | Dev | ✅ Done |
+| F1-08 | API route `GET/POST /api/v1/crm/opportunities` | 3 | Dev | ✅ Done |
+| F1-09 | API route `GET/PATCH/DELETE /api/v1/crm/opportunities/[id]` | 2 | Dev | ✅ Done |
+| F1-10 | API route `GET/POST /api/v1/crm/activities` (con paginación y filtros) | 2 | Dev | ✅ Done |
+| F1-11 | API route `PATCH /api/v1/crm/activities/[id]` (completar/editar actividad) | 1 | Dev | ✅ Done |
 | F1-12 | Script SQL migracion `whatsapp_leads` → `crm_contacts` (backfill) | 2 | Dev | ⬜ Pendiente |
-| F1-13 | Agregar ruta CRM al sidebar (`NATIVE_ROUTES` + `CATEGORY_ICONS`) | 1 | Dev | ⬜ Pendiente |
+| F1-13 | Agregar ruta CRM al sidebar (`NATIVE_ROUTES` + `CATEGORY_ICONS`) | 1 | Dev | ✅ Done |
 
 **Total SP Fase 1:** 27
 
 ### Done Criteria Fase 1
 
-- [ ] Migraciones aplicadas en Supabase sin errores
-- [ ] `database.types.ts` regenerado con las 3 nuevas tablas
-- [ ] APIs responden 200 en Postman/curl con auth token
-- [ ] RLS verificado: usuario sin org no ve datos
-- [ ] Modulo aparece en sidebar para usuarios con acceso
-- [ ] Leads de WhatsApp migrados como contactos CRM
+- [x] Migraciones aplicadas en Supabase sin errores
+- [x] `database.types.ts` regenerado con las 3 nuevas tablas
+- [x] APIs responden 200 en Postman/curl con auth token
+- [x] RLS verificado: usuario sin org no ve datos
+- [x] Modulo aparece en sidebar para usuarios con acceso
+- [ ] Leads de WhatsApp migrados como contactos CRM (pendiente backfill F1-12)
 
 ---
 
-## Fase 2 — UI Core (Sprint CRM-2)
+## ✅ Fase 2 — UI Core (Sprint CRM-2) — COMPLETADA
 
 **Estimado:** 3-4 dias | **Dependencias:** Fase 1 completa
 
@@ -56,29 +56,31 @@ Tracking: `docs/CRM_SPRINT_TRACKER.md`
 
 | # | Ticket | SP | Owner | Estado |
 |---|--------|----|-------|--------|
-| F2-01 | Pagina principal CRM `/dashboard/crm` con tabs (Pipeline / Contactos / Actividades) | 3 | Dev | ⬜ Pendiente |
-| F2-02 | Pipeline Kanban — tablero visual con columnas por stage (reutilizar patron `pm-kanban-board`) | 5 | Dev | ⬜ Pendiente |
-| F2-03 | Drag-and-drop para mover oportunidades entre stages | 3 | Dev | ⬜ Pendiente |
-| F2-04 | Directorio de contactos — tabla con busqueda, filtro por type/source/tags | 3 | Dev | ⬜ Pendiente |
-| F2-05 | Ficha de contacto (detail view) — datos, actividades, oportunidades, eventos asociados | 5 | Dev | ⬜ Pendiente |
-| F2-06 | Dialog "Nuevo contacto" con form (React Hook Form + Zod) | 2 | Dev | ⬜ Pendiente |
-| F2-07 | Dialog "Nueva oportunidad" vinculada a contacto | 2 | Dev | ⬜ Pendiente |
-| F2-08 | Timeline de actividades en ficha de contacto (patron SGC timeline) | 3 | Dev | ⬜ Pendiente |
-| F2-09 | Dialog "Nueva actividad" (tipo, asunto, vencimiento, contacto/oportunidad) | 2 | Dev | ⬜ Pendiente |
-| F2-10 | Cards de oportunidad en Kanban con monto, probabilidad, contacto, fecha cierre | 2 | Dev | ⬜ Pendiente |
+| F2-01 | Pagina principal CRM `/dashboard/crm` con tabs (Pipeline / Contactos / Actividades) | 3 | Dev | ✅ Done |
+| F2-02 | Pipeline Kanban — tablero visual con columnas por stage | 5 | Dev | ✅ Done |
+| F2-03 | Drag-and-drop para mover oportunidades entre stages | 3 | Dev | ✅ Done |
+| F2-04 | Directorio de contactos — tabla con busqueda, filtro por type/source/tags | 3 | Dev | ✅ Done |
+| F2-05 | Ficha de contacto (detail view) — datos, actividades, oportunidades | 5 | Dev | ✅ Done |
+| F2-06 | Dialog “Nuevo contacto” con form (React Hook Form + Zod) | 2 | Dev | ✅ Done |
+| F2-07 | Dialog “Nueva oportunidad” vinculada a contacto | 2 | Dev | ✅ Done |
+| F2-08 | Timeline / lista de actividades con filtros (tipo, estado) y acciones completar/eliminar | 3 | Dev | ✅ Done |
+| F2-09 | Dialog “Nueva actividad” (tipo, asunto, vencimiento, contacto/oportunidad) | 2 | Dev | ✅ Done |
+| F2-10 | Cards de oportunidad en Kanban con monto, probabilidad, contacto, fecha cierre | 2 | Dev | ✅ Done |
 | F2-11 | KPI cards en header: total pipeline value, win rate, actividades pendientes | 3 | Dev | ⬜ Pendiente |
-| F2-12 | Responsive design y animaciones premium (glassmorphism, hover effects) | 2 | Dev | ⬜ Pendiente |
+| F2-12 | Responsive design y animaciones premium (glassmorphism, hover effects) | 2 | Dev | ✅ Done |
+
+**Spec detalle / editar / eliminar oportunidad en pipeline:** `docs/CRM_OPPORTUNITY_DETAIL_PANEL_SPEC.md` (2026-05-14).
 
 **Total SP Fase 2:** 35
 
 ### Done Criteria Fase 2
 
-- [ ] Pipeline Kanban funcional con DnD
-- [ ] CRUD completo de contactos desde UI
-- [ ] CRUD completo de oportunidades desde UI
-- [ ] Timeline de actividades visible en ficha de contacto
-- [ ] KPI cards con datos reales
-- [ ] Build de produccion pass sin errores
+- [x] Pipeline Kanban funcional con DnD
+- [x] CRUD completo de contactos desde UI
+- [x] CRUD completo de oportunidades desde UI
+- [x] Actividades con filtros, completar y eliminar
+- [ ] KPI cards con datos reales (F2-11 pendiente)
+- [x] Build de produccion pass sin errores
 
 ---
 

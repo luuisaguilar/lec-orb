@@ -75,6 +75,13 @@ Este flujo define la base comun de seguridad y consistencia para todos los modul
 - Fundacion documentada y rutas base de implementacion.
 - Orientado a tableros/tareas transversales tipo kanban.
 
+### 4.7 Coordinacion proyectos LEC (indicadores / Excel)
+- Modulo nativo distinto del PM: tablas `lec_*`, API `/api/v1/coordinacion-proyectos/*`, UI `/dashboard/coordinacion-proyectos-lec/*`.
+- Sidebar: **categoria padre** `Coordinación de proyectos` (mismo nivel que Coordinación de Exámenes); convenciones en `docs/wiki/sidebar-modulos-y-agrupacion.md`.
+- Concentrado mensual, lineas de examenes, oferta de cursos, catalogos por org, comparativos KPI; import bulk JSON.
+- Enlaces opcionales a `schools`, `events`, `crm_opportunities`, `pm_projects` y hub desde Coordinacion de Examenes (`/dashboard/coordinacion-examenes/proyectos`).
+- Documentacion: `docs/COORDINACION_PROYECTOS_LEC.md`, wiki `docs/wiki/coordinacion-proyectos-lec.md`.
+
 ---
 
 ## 5) Estado de ejecucion y confiabilidad
@@ -150,3 +157,4 @@ Esto indica base tecnica estable para iteracion funcional continua.
 - Finanzas: `docs/FINANCE_MODULES.md`
 - Testing: `docs/TESTING_GUIDE.md`
 - Dashboard ejecutivo: `docs/executive-observability/README.md`
+- Coordinacion proyectos LEC: `docs/COORDINACION_PROYECTOS_LEC.md`, `docs/wiki/coordinacion-proyectos-lec.md`

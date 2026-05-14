@@ -11,8 +11,20 @@ import CrmPipelineTable from "./crm-pipeline-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddProspectDialog from "./add-prospect-dialog";
 
+async function crmOpportunitiesFetcher(url: string) {
+  const res = await fetch(url);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof body.error === "string" ? body.error : "Error al cargar oportunidades");
+  }
+  return body;
+}
+
 export default function CrmPipeline() {
-  const { data, error, isLoading, mutate } = useSWR<{ opportunities: CrmOpportunity[] }>("/api/v1/crm/opportunities");
+  const { data, error, isLoading, mutate } = useSWR<{ opportunities: CrmOpportunity[] }>(
+    "/api/v1/crm/opportunities",
+    crmOpportunitiesFetcher
+  );
   const [view, setView] = useState<"kanban" | "table">("kanban");
 
   const opportunities = data?.opportunities || [];

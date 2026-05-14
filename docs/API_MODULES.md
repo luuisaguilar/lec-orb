@@ -36,6 +36,7 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 | [TOEFL — Administrations](#toefl--administrations) | `/toefl/administrations` | GET POST | — | `toefl_administrations` |
 | [TOEFL — Codes](#toefl--codes) | `/toefl/codes` | GET POST | — | `toefl_codes` |
 | [Users](#users) | `/users` | GET DELETE | — | `org_members`, `profiles` |
+| [Coordinación proyectos LEC](#coordinación-proyectos-lec) | `/coordinacion-proyectos/*` | GET POST PATCH DELETE | — | `lec_program_projects`, `lec_exam_sales_lines`, `lec_course_offerings`, `lec_cp_*`, `lec_kpi_size_comparison` |
 
 ---
 
@@ -1150,6 +1151,63 @@ Actualiza rol, sede (`location` vs catálogo `org_locations`), vínculo a RRHH y
 }
 ```
 
+
+## Coordinación proyectos LEC
+
+**Ruta base:** `/api/v1/coordinacion-proyectos`  
+**RBAC module:** `coordinacion-proyectos-lec` (alias en código: `coordinacion-proyectos` → mismo módulo en `permissions.ts`)
+
+Documentación de producto y tablas: [COORDINACION_PROYECTOS_LEC.md](./COORDINACION_PROYECTOS_LEC.md). Guía operativa (import, subpantallas): [wiki/coordinacion-proyectos-lec.md](./wiki/coordinacion-proyectos-lec.md).
+
+### GET `/coordinacion-proyectos/overview`
+
+**Acción:** `view`  
+**Query:** `year` (default año actual).
+
+**Response 200 (ejemplo):**
+```json
+{
+  "year": 2026,
+  "programProjects": { "count": 0, "beneficiariesTotal": 0, "revenueTotal": 0, "missingRevenueCount": 0 },
+  "examLines": { "count": 0, "quantityTotal": 0, "amountTotal": 0 },
+  "courseOfferingsCount": 0
+}
+```
+
+### GET/POST `/coordinacion-proyectos/program-projects`
+
+**GET:** `view`. Query: `year`, `month` (1–12, con `year`), `limit`, `offset`.  
+**POST:** `edit`. Body validado con Zod (`period_month` formato `YYYY-MM-DD`, descripción, etc.).
+
+### GET/PATCH/DELETE `/coordinacion-proyectos/program-projects/[id]`
+
+**GET:** `view` · **PATCH:** `edit` · **DELETE:** `delete`
+
+### GET/POST `/coordinacion-proyectos/exam-lines` y `/exam-lines/[id]`
+
+Misma convención: listado con filtros por año/mes; CRUD por id.
+
+### GET/POST `/coordinacion-proyectos/course-offerings` y `/course-offerings/[id]`
+
+Cursos operativos (no el simulador `/api/v1/courses`).
+
+### GET/POST `/coordinacion-proyectos/catalog` y PATCH/DELETE `/catalog/[id]`
+
+Catálogos por org. **DELETE** requiere query `?kind=department|exam_type|product_service`.
+
+### GET/PATCH `/coordinacion-proyectos/kpi-comparison`
+
+Comparativos por tamaño. **PATCH** body: `{ "rows": [{ "id": "uuid", "count_2025"?: n, "count_2026"?: n, "projected_2026"?: n }] }`.
+
+### POST `/coordinacion-proyectos/import`
+
+**Acción:** `edit`  
+**Body:** `{ "entity": "program_projects" | "exam_sales_lines", "rows": [ { ... }, ... ] }` (máx. 2000 filas).  
+Mapeo flexible de claves tipo Excel — ver wiki.
+
+**Response 200:** `{ "inserted": number, "errors": string[] }` (máx. 50 errores devueltos).
+
+---
 
 ## SGC
 Ruta base: /api/v1/sgc  

@@ -197,8 +197,10 @@ export function CrmKanbanBoard({ opportunities, onMoveOpportunity, onEditOpportu
         const map = new Map<CrmOpportunityStage, CrmOpportunity[]>();
         for (const s of stages) map.set(s, []);
         for (const o of opportunities) {
-            const list = map.get(o.stage);
-            if (list) list.push(o);
+            // Same fallback as pipeline table: unknown DB values must not vanish from the board.
+            const stage: CrmOpportunityStage = stages.includes(o.stage) ? o.stage : "new";
+            const list = map.get(stage);
+            if (list) list.push({ ...o, stage });
         }
         for (const [, list] of map) {
             list.sort((a, b) => new Date(b.expected_close || 0).getTime() - new Date(a.expected_close || 0).getTime());

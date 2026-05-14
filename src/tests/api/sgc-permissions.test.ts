@@ -56,6 +56,7 @@ describe("SGC API - granular permissions via member_module_access", () => {
             "user-1",
             "sgc",
             "view",
+            { id: "member-1", role: "supervisor" },
         );
     });
 
@@ -91,6 +92,7 @@ describe("SGC API - granular permissions via member_module_access", () => {
             "user-1",
             "sgc",
             "edit",
+            { id: "member-1", role: "admin" },
         );
     });
 });

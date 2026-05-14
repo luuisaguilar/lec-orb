@@ -131,9 +131,12 @@ function ensureDashboardFirst(groups: NavGroup[]): NavGroup[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Native module → route mapping
-// Maps a module slug to its actual Next.js route path.
-// Custom modules (is_native=false) always go to /dashboard/m/[slug].
+// Sidebar grouping model (padre / hijos / subgrupos):
+// - module_registry.category → collapsible de primer nivel (ej. «Coordinación de proyectos»).
+// - Misma category → enlaces hermanos ordenados A→Z.
+// - Solo «Coordinación de Exámenes» usa subgrupos anidados (buildCoordinationExamSubgroups).
+// - «Coordinación de proyectos»: enlaces extra Catálogos / Evidencias / Comparativos (misma rama useMemo).
+// Doc: docs/wiki/sidebar-modulos-y-agrupacion.md
 // ─────────────────────────────────────────────────────────────────────────────
 const NATIVE_ROUTES: Record<string, string> = {
     "dashboard": "/dashboard",
@@ -172,6 +175,7 @@ const NATIVE_ROUTES: Record<string, string> = {
     "crm-activities": "/dashboard/crm/actividades",
     "crm-metrics": "/dashboard/crm/metricas",
     "ielts": "/dashboard/coordinacion-examenes/ielts",
+    "coordinacion-proyectos-lec": "/dashboard/coordinacion-proyectos-lec",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,6 +183,8 @@ const NATIVE_ROUTES: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 const CATEGORY_ICONS: Record<string, string> = {
     "Coordinación de Exámenes": "Building2",
+    /** Módulo padre hermano de «Coordinación de Exámenes» (indicadores / concentrado LEC). */
+    "Coordinación de proyectos": "Layers",
     "Institucional": "Building2",
     "Inventario": "Package",
     "Exámenes": "GraduationCap",
@@ -420,6 +426,23 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             }
         }
 
+        // Slug nativo conocido: siempre bajo el padre «Coordinación de proyectos» (mismo nivel que Exámenes),
+        // aunque `module_registry` aún tenga categoría antigua hasta aplicar migraciones.
+        const lecProjectsSlug = "coordinacion-proyectos-lec";
+        const coordProyectosParent = "Coordinación de proyectos";
+        for (const key of Object.keys(grouped)) {
+            const bucket = grouped[key];
+            if (!bucket?.length) continue;
+            const idx = bucket.findIndex((m) => m.slug === lecProjectsSlug);
+            if (idx < 0) continue;
+            if (key === coordProyectosParent) break;
+            const [moved] = bucket.splice(idx, 1);
+            if (!grouped[coordProyectosParent]) grouped[coordProyectosParent] = [];
+            if (!grouped[coordProyectosParent].some((m) => m.slug === lecProjectsSlug)) {
+                grouped[coordProyectosParent].push(moved);
+            }
+        }
+
         const dashMod = topLevel.find((m) => m.slug === "dashboard");
         const otherTop = topLevel.filter((m) => m.slug !== "dashboard");
         otherTop.sort((a, b) => compareSidebarLabels(a.name, b.name));
@@ -449,6 +472,24 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
                     icon: CATEGORY_ICONS[category] ?? "Layers",
                     items,
                     subgroups,
+                });
+                continue;
+            }
+
+            if (category === "Coordinación de proyectos") {
+                const cpSlug = "coordinacion-proyectos-lec";
+                const basePath = NATIVE_ROUTES[cpSlug] ?? "/dashboard/coordinacion-proyectos-lec";
+                const fromMods = mods.map((mod) => moduleToNavItem(mod, category));
+                const secondary: NavItem[] = [
+                    { label: "Catálogos", href: `${basePath}/catalogos`, icon: "BookOpen", module: cpSlug },
+                    { label: "Evidencias", href: `${basePath}/evidencias`, icon: "FolderOpen", module: cpSlug },
+                    { label: "Comparativos", href: `${basePath}/comparativos`, icon: "BarChart3", module: cpSlug },
+                ];
+                const items = [...fromMods, ...secondary];
+                categoryGroups.push({
+                    label: categoryDisplayLabel(category),
+                    icon: CATEGORY_ICONS[category] ?? "Layers",
+                    items,
                 });
                 continue;
             }
@@ -494,11 +535,18 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
         result.push(...orderedMid);
 
         if (canViewGlobalProjects) {
-            const coordinationIndex = result.findIndex(
-                (group) => group.label === "Coordinación de Exámenes" || group.label === "Institucional"
-            );
-            if (coordinationIndex >= 0) {
-                result.splice(coordinationIndex + 1, 0, GLOBAL_PROJECTS_GROUP);
+            const anchorLabels = [
+                "Coordinación de Exámenes",
+                "Coordinación de proyectos",
+                "Institucional",
+            ] as const;
+            let insertAfter = -1;
+            for (const lbl of anchorLabels) {
+                const i = result.findIndex((g) => g.label === lbl);
+                if (i > insertAfter) insertAfter = i;
+            }
+            if (insertAfter >= 0) {
+                result.splice(insertAfter + 1, 0, GLOBAL_PROJECTS_GROUP);
             } else {
                 result.push(GLOBAL_PROJECTS_GROUP);
             }

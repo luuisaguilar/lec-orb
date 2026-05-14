@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (Payroll consolidation + CRM fix + Applicator binding + invitation flow fixes) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (CRM activities + Applicator explicit binding + invitation email-mismatch UX) |
 
 ---
 
@@ -12,10 +12,12 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 |------|--------|
 | Build / Typecheck | Pass sin errores (`npm run build`) |
 | ESLint | Pass (`0` errores) |
-| Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
+| Vitest (unit/integration) | `40` archivos, `259` tests, `255` passing — 4 fallas pre-existentes en `sgc-permissions` / `coordinacion-proyectos` |
 | Playwright (E2E) | Pass (`10/10`) |
 | **RBAC / Permisos** | **AUDITADO** - Fix alias resolution, module_registry gaps corregidos |
-| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Nómina desglosada (payroll_line_items), auto-link por email y binding explícito por `applicator_id` funcionales. |
+| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Nómina desglosada, auto-link por email y binding explícito por `applicator_id` funcionales. |
+| **CRM** | **ACTIVO** - Kanban pipeline, contactos, oportunidades, actividades (filtros, completar, eliminar), API paginada |
+| **Invitaciones** | **MEJORADO** - Binding explícito de aplicadores por `applicator_id` + fix UX de email mismatch en `/join/[token]` |
 | **Portal Escuelas** | **PLANEADO** - Escuelas piden acceso, alcance por definir |
 | Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
 | Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
