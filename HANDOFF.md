@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-07 (PM phase 1.1 scope-role-personal) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-13 (RBAC audit + portal planning) |
 
 ---
 
@@ -14,6 +14,9 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | ESLint | Pass (`0` errores) |
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
+| **RBAC / Permisos** | **AUDITADO** - Fix alias resolution, module_registry gaps corregidos |
+| **Portal Aplicadores** | **COMPLETADO** - Dashboard, eventos, nómina, métricas |
+| **Portal Escuelas** | **PLANEADO** - Escuelas piden acceso, alcance por definir |
 | Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
 | Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
 | Finance - Caja Chica | CRUD + balance RPC + Excel export/import |
@@ -21,7 +24,8 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Finance - Dashboard P&L | **EN DESARROLLO** - Consolidación de ingresos/egresos |
 | SGC (Calidad) | **COMPLETADO** - Estabilización técnica (Stats API + Timeline NC resiliente) |
 | Cursos e Inventario | **COMPLETADO** - Simulador ROI + Control de stock multi-ubicación |
-| Project Management (Asana/Trello/Monday style) | **EN DESARROLLO** - MVP DB/API/UI activo + scope team/role/personal |
+| Project Management | **EN DESARROLLO** - MVP DB/API/UI activo + scope team/role/personal |
+| Dashboard diferenciado por rol | **DIFERIDO** - Diseño documentado en `.codex-review/` |
 
 ---
 
@@ -163,10 +167,15 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 - [x] Implementar API base `/api/v1/pm/projects|boards|tasks`
 - [x] Implementar UI MVP inicial en `/dashboard/proyectos`
 - [x] Agregar fase 1.1 de segmentacion de tareas (`scope`, `role_target`, `is_private`)
+- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission`
+- [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada (suppliers, documents slug)
 - [ ] Completar UI de creacion/edicion de tareas por alcance (team/role/personal)
+- [ ] **Definir alcance Portal de Escuelas** (preguntas en `.codex-review/NEXT_SESSION_TODO.md`)
+- [ ] Construir Portal de Escuelas (`(school-portal)` + `withSchoolAuth`)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
 - [ ] Conectar `fn_expire_old_invitations()` a Vercel Cron diario
 - [ ] Agregar CTA en `/join/[token]?expired=1` para pedir nueva invitacion
+- [ ] Dashboard diferenciado por rol (diseño en `.codex-review/RBAC_MATRIX_2026-05-13.md`)
 
 ### Datos / operacion
 
@@ -180,7 +189,6 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica
 - [ ] Staging environment con org de prueba
-- [ ] Validar propuesta de 9 grupos de permisos con gerencia
 - [ ] Cron `fn_expire_old_invitations()` (Vercel Cron / pg_cron)
 
 ---
@@ -218,8 +226,11 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 |---------|-----------|
 | `CLAUDE.md` | Arquitectura, patrones criticos, done criteria, backlog tecnico |
 | `HANDOFF.md` | Este archivo — resumen ejecutivo y backlog operativo |
+| `AGENTS.md` | Contexto específico para agentes no-Claude (Antigravity, Cursor, Copilot) |
 | `docs/ROADMAP.md` | Priorizacion actualizada |
 | `INFRASTRUCTURE_STATUS.md` | Estado operativo y readiness de lanzamiento |
+| `.codex-review/RBAC_MATRIX_2026-05-13.md` | Matriz RBAC, gaps corregidos, dashboard por rol |
+| `.codex-review/NEXT_SESSION_TODO.md` | Portal de escuelas: preguntas pendientes |
 | `docs/adr/ADR-007-project-management-module-foundation.md` | Decision del modulo PM transversal |
 | `docs/PM_RUNBOOK.md` | Operacion, validacion y troubleshooting del modulo PM |
 | `docs/PM_PATHS_AND_ROUTES.md` | Mapa de rutas/archivos/migraciones del modulo PM |

@@ -57,22 +57,31 @@ src/
 │   │       ├── finanzas/
 │   │       │   ├── caja-chica/   ← Petty Cash UI
 │   │       │   └── presupuesto/  ← Budget UI
-│   │       └── [20+ módulos]     ← applicators, events, users, etc.
-│   ├── (portal)/                 ← Portal para applicators
-│   └── api/v1/                   ← 64 route handlers
-│       ├── finance/petty-cash/   ← CRUD + balance RPC
-│       ├── finance/budget/       ← Upsert + comparative
+│   │       └── [20+ módulos]     ← applicators, events, users, crm, sgc, etc.
+│   ├── (portal)/                 ← Portal para applicators (layout independiente)
+│   ├── join/[token]/             ← Aceptar invitación org
+│   ├── join-portal/[token]/      ← Vincular aplicador a portal
+│   └── api/v1/                   ← 70+ route handlers
+│       ├── auth/post-login-redirect/ ← Redirect inteligente post-login
+│       ├── finance/              ← petty-cash, budget, ih, travel-expenses
 │       ├── invitations/          ← Creación + aceptación
-│       └── [19 módulos más]
+│       ├── crm/                  ← Pipeline, contactos, oportunidades
+│       ├── pm/                   ← Project management
+│       └── [15+ módulos más]
 ├── components/                   ← Componentes React reutilizables
 ├── lib/
-│   ├── auth/with-handler.ts      ← withAuth — WRAPPER OBLIGATORIO
+│   ├── auth/
+│   │   ├── with-handler.ts      ← withAuth — WRAPPER OBLIGATORIO
+│   │   ├── permissions.ts       ← checkServerPermission + MODULE_ALIAS_MAP
+│   │   ├── with-applicator.ts   ← withApplicatorAuth (portal)
+│   │   └── get-member.ts        ← getAuthenticatedMember
 │   ├── supabase/                 ← Clientes (browser, server, admin, proxy)
 │   ├── finance/export-xlsx.ts    ← Exportación Excel
 │   ├── email/resend.ts           ← Integración Resend
 │   ├── audit/                    ← logAudit()
 │   └── ...
-└── types/                        ← Tipos TypeScript globales
+├── types/                        ← Tipos TypeScript globales
+└── .codex-review/                ← Auditorías, matrices RBAC, TODOs
 ```
 
 ## Comandos
@@ -185,8 +194,20 @@ if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 ### RBAC — roles y módulos
 
 Roles activos: `admin`, `supervisor`, `operador`, `applicator`.
+Roles planeados: `executive`, `school` (portales dedicados).
+
 Al extender rutas con permisos nuevos, verificar la consistencia entre el **module slug**
 y el **permission-module name** — son distintos y su desalineación rompe el acceso.
+
+**Alias resolution (mayo 2026):** `checkServerPermission()` ahora resuelve `MODULE_ALIAS_MAP`
+antes de consultar `member_module_access`. Esto permite usar aliases como `"finanzas"` o
+`"examenes"` en `withAuth({ module })` sin bloquear a supervisores/operadores.
+
+**Fail-closed:** Si no existe row en `member_module_access` para un módulo, el acceso se niega.
+Asegurar que todo nuevo módulo nativo se registre en `module_registry` **antes** de usarlo
+como guard en `withAuth`.
+
+Documentación completa: `.codex-review/RBAC_MATRIX_2026-05-13.md`
 
 ### Sentry — bootstrap modernos (no crear archivos legacy)
 
@@ -319,11 +340,19 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 4. Usuario visita el enlace `/join/[token]` → se le pide login/registro si no está autenticado
 5. Después del login, se redirige a `/join/[token]?next=...` preservando el token
 6. El usuario acepta → RPC atómica `fn_accept_invitation` procesa la invitación
+7. RPC seedea `member_module_access` automáticamente según el rol (migración `20260512`)
+8. Redirect: `applicator` → `/portal`, resto → `/dashboard`
 
 **Archivos clave:**
 - `src/app/join/[token]/page.tsx` — página de aceptación
 - `src/app/join/[token]/actions.ts` — Server Action (nunca throw, siempre redirect)
 - `src/app/join/[token]/queries.ts` — queries con admin client
+
+**Post-login redirect (`/api/v1/auth/post-login-redirect`):**
+- Prioridad 1: ¿Tiene perfil de aplicador? → `/portal`
+- Prioridad 2: ¿Invite pendiente de portal? → `/join-portal/{token}`
+- Prioridad 3: ¿Invite pendiente de org? → `/join/{token}`
+- Default: `/dashboard`
 
 **Endpoints de limpieza:**
 - `DELETE /api/v1/invitations/[id]` — elimina invitación individual (no-pendiente)
@@ -338,6 +367,8 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 - Al firmarse un usuario con invitación pendiente, `handle_new_user` **no** crea org personal
   (evita el bug de doble membership → `.single()` 403). El trigger `fn_audit_log` llena tanto
   `operation` (NOT NULL) como la columna legacy `action`.
+- `fn_accept_invitation` seedea `member_module_access` para roles no-applicator (admin: view+edit+delete,
+  supervisor: view+edit, operador: view). Esto evita dashboards vacíos.
 
 **Vencimiento automático (abril 2026):**
 - `org_invitations.expires_at` (NOT NULL, default `now() + 7 days`).
@@ -347,6 +378,32 @@ Gestión de casos CENNI (Certificado Nacional de Nivel de Idioma).
 - RPC `fn_accept_invitation` retorna `code='EXPIRED'` y flippea status a `'expired'` cuando el token aún es pending pero `expires_at < now()`. La página `/join/[token]` recibe `?expired=1` para renderizar CTA de "pedir nueva invitación" (UI pendiente).
 - RPC helper `fn_expire_old_invitations()` (service_role only): bulk-flip de pendientes vencidas. Listo para colgarse de un cron.
 - Migración: `20260428_org_invitations_expires_at.sql`. Tras aplicar, regenerar `database.types.ts`.
+
+## Portales
+
+### Portal de Aplicadores (`/portal`) — ACTIVO
+
+Route group `(portal)` con layout independiente y `PortalShell`.
+Auth: `withApplicatorAuth()` en `src/lib/auth/with-applicator.ts`.
+
+**Páginas:**
+- `/portal` — Dashboard (próximo evento, balance pendiente, turnos completados)
+- `/portal/eventos` — Slots asignados al aplicador
+- `/portal/horarios` — Calendario de turnos
+- `/portal/nomina` — Payroll entries del aplicador
+- `/portal/metricas` — Stats personales
+
+**Join flow separado:** `/join-portal/[token]` con RPC `fn_accept_applicator_portal_invitation`
+y tabla `applicator_portal_invitations`.
+
+### Portal de Escuelas — 🔜 PLANEADO (escuelas ya piden acceso)
+
+Patrón: replicar `(portal)` como `(school-portal)`.
+Ver `.codex-review/NEXT_SESSION_TODO.md` para preguntas pendientes de alcance.
+
+### Portal Ejecutivos — 🔜 PLANEADO (sin demanda aún)
+
+Patrón: replicar como `(executive)` con sidebar read-only de KPIs.
 
 ## Testing
 
@@ -554,18 +611,30 @@ viaticos (
 ### Pendientes técnicos (cualquier sprint)
 
 1. **Smoke test** de viáticos en dashboard productivo.
-2. **Validación** de 9 grupos de permisos con gerencia.
-3. **KPI cards** adicionales en Caja Chica.
+2. **KPI cards** adicionales en Caja Chica.
+3. **Dashboard diferenciado por rol** — diseño documentado en `.codex-review/RBAC_MATRIX_2026-05-13.md` (DIFERIDO).
+
+### Prioridad alta — Portal de Escuelas
+
+- **Las escuelas ya están pidiendo acceso** — definir alcance antes de construir.
+- Preguntas pendientes documentadas en `.codex-review/NEXT_SESSION_TODO.md`.
+- Patrón de implementación: replicar `(portal)` + `withSchoolAuth()` + `school_portal_invitations`.
 
 ### Prioridad media/baja
 
 - KPI cards y gráficas en Caja Chica
 - Dashboard CENNI: cards por estatus + gráfica (Sprint 5, el endpoint ya retorna `cenni.byStatus`)
-- Permisos por puesto (9 grupos propuestos en Obsidian — pendiente validación con gerencia)
 - Staging environment con org de prueba dedicada
-- Portal de aplicadores (construido, no terminado)
+- Portal de aplicadores — construido y funcional (mayo 2026)
 - DMS: control de revisiones y versiones
-- IELTS / OOPT: sin módulo en plataforma
+- Portal Ejecutivos — sin demanda actual
+
+### Migraciones recientes (mayo 2026)
+
+| Migración | Estado | Descripción |
+|-----------|--------|-------------|
+| `20260512_invitation_seed_module_access.sql` | ✅ Aplicada | Seed `member_module_access` al aceptar invitación |
+| `20260514_fix_module_registry_gaps.sql` | ✅ Aplicada | Fix suppliers, documents slug, access rows |
 
 ---
 
@@ -576,14 +645,6 @@ viaticos (
 - ✅ `lib/supabase/proxy.ts` sin early return de DEMO_MODE
 - ✅ Build limpio + 26 archivos test + 164 tests verdes
 - ⚠️ `lib/demo/config.ts` y `lib/demo/data.ts` **NO eliminar** — los tests los usan con mock `DEMO_MODE=false`
-
-**Completado abril 2026 (Sentry):**
-- ✅ `@sentry/nextjs` v10 instalado y configurado
-- ✅ Bootstrap server/edge en `src/instrumentation.ts`
-- ✅ Bootstrap browser en `src/instrumentation-client.ts` (NO usar el legacy `sentry.client.config.ts`)
-- ✅ `withSentryConfig` en `next.config.ts` (source maps + Vercel Cron Monitors)
-- ✅ Env vars `NEXT_PUBLIC_SENTRY_DSN` y `SENTRY_AUTH_TOKEN` activas en Vercel
-- ✅ Sample rate: 10% en prod, 100% en dev
 
 **Completado abril 2026 (Sentry):**
 - ✅ `@sentry/nextjs` v10 instalado y configurado

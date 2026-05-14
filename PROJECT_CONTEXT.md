@@ -10,7 +10,14 @@ Este documento define el estado, tecnologías y reglas arquitectónicas del proy
 ### Módulos Principales
 - **Caja Chica (Petty Cash)**: Registro transaccional diario (Ingresos/Egresos) por organización.
 - **Presupuesto (Budgeting)**: Establecimiento de metas mensuales y análisis de variaciones.
-- **Gestión de Organizaciones**: Infraestructura multi-empresa con roles y permisos granulares.
+- **CRM**: Pipeline, contactos, oportunidades y actividades.
+- **SGC (Calidad)**: No conformidades, auditorías, evaluaciones de riesgo.
+- **Gestión de Organizaciones**: Infraestructura multi-empresa con RBAC granular.
+
+### Portales
+- **Portal Aplicadores** (`/portal`): Dashboard, turnos, nómina, métricas. Auth: `withApplicatorAuth()`.
+- **Portal Escuelas** (🔜 planeado): Escuelas piden acceso. Alcance por definir.
+- **Portal Ejecutivos** (🔜 planeado): Sin demanda actual.
 
 ---
 
@@ -41,6 +48,9 @@ Este documento define el estado, tecnologías y reglas arquitectónicas del proy
 - **Localización**: `src/app/api/v1/...`
 - **Autenticación**: Se usa el HOC `withAuth(handler, { module, action })`.
 - **Contexto**: El handler recibe `supabase`, `user` y `member` (con datos de la organización y el rol).
+- **Alias resolution**: `checkServerPermission()` resuelve `MODULE_ALIAS_MAP` automáticamente
+  (ej. `"finanzas"` → `"payments"`, `"examenes"` → `"exam-codes"`).
+- **Fail-closed**: Si no existe row en `member_module_access`, el acceso se niega (admin siempre pasa).
 - **Ejemplo**: `src/app/api/v1/finance/petty-cash/route.ts`.
 
 ### 3. Lógica de Negocio y Dinero
@@ -73,8 +83,9 @@ Este documento define el estado, tecnologías y reglas arquitectónicas del proy
 ## 📝 Reglas para Nuevos Módulos
 Al desarrollar un nuevo módulo (ej. Inventario, Nómina):
 1. **Esquema**: Definir tablas con `org_id` y habilitar RLS.
-2. **Sidebars**: Registrar el módulo en la tabla `module_registry` para que aparezca en el menú.
-3. **API**: Usar `withAuth` con el nombre del módulo en los permisos.
+2. **Module Registry**: Registrar el módulo en `module_registry` (migración SQL) **antes** de usarlo como guard.
+3. **API**: Usar `withAuth` con el slug del módulo. Si se usa un alias español, asegurar que esté en `MODULE_ALIAS_MAP`.
 4. **Validación**: Definir esquemas Zod para todos los inputs de usuario.
 5. **Logs**: Implementar `logAudit` en todas las acciones de escritura.
 6. **Tests**: Crear el archivo de test correspondiente en `src/tests/` antes de completar la implementación.
+7. **Documentación**: Actualizar `CLAUDE.md`, `HANDOFF.md` y `.codex-review/RBAC_MATRIX_2026-05-13.md`.

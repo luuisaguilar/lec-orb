@@ -1,5 +1,6 @@
+import { PayrollTable } from "./payroll-table";
 import {
-    Table,
+    Table, // Keeping these in case they are used elsewhere, though they aren't anymore here
     TableBody,
     TableCell,
     TableHead,
@@ -106,72 +107,10 @@ export default async function PortalPayrollPage() {
                     <CardDescription>Todos los registros de nómina emitidos a tu nombre.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 sm:p-6">
-                    {enrichedPayroll.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground">
-                            No hay registros de nómina disponibles.
-                        </div>
-                    ) : (
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead>Período</TableHead>
-                                        <TableHead>Estatus</TableHead>
-                                        <TableHead className="text-right">Horas</TableHead>
-                                        <TableHead className="text-right">Tarifa</TableHead>
-                                        <TableHead className="text-right hidden sm:table-cell">Subtotal</TableHead>
-                                        <TableHead className="text-right hidden sm:table-cell">Ajustes</TableHead>
-                                        <TableHead className="text-right">Total</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {enrichedPayroll.map((entry: any) => (
-                                        <TableRow key={entry.id}>
-                                            <TableCell className="font-medium">
-                                                <div>{entry.period?.name || "Desconocido"}</div>
-                                                <div className="text-xs text-muted-foreground hidden sm:block">
-                                                    Generado:{" "}
-                                                    {entry.created_at
-                                                        ? format(new Date(entry.created_at), "d MMM yyyy", { locale: es })
-                                                        : "—"}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    variant={entry.status === "paid" ? "secondary" : "outline"}
-                                                    className={
-                                                        entry.status === "paid"
-                                                            ? "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
-                                                            : "bg-orange-100/50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50"
-                                                    }
-                                                >
-                                                    {entry.status === "paid" ? "Pagado" : "Pendiente"}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">{Number(entry.hours_worked ?? 0)}h</TableCell>
-                                            <TableCell className="text-right">${Number(entry.rate_per_hour ?? 0)}</TableCell>
-                                            <TableCell className="text-right hidden sm:table-cell">
-                                                $
-                                                {Number(entry.subtotal ?? 0).toLocaleString("es-MX", {
-                                                    minimumFractionDigits: 2,
-                                                })}
-                                            </TableCell>
-                                            <TableCell className="text-right hidden sm:table-cell text-muted-foreground">
-                                                {Number(entry.adjustments ?? 0) > 0 ? "+" : ""}
-                                                {Number(entry.adjustments ?? 0)}
-                                            </TableCell>
-                                            <TableCell className="text-right font-bold text-base">
-                                                $
-                                                {Number(entry.total ?? 0).toLocaleString("es-MX", {
-                                                    minimumFractionDigits: 2,
-                                                })}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
+                    <PayrollTable 
+                        enrichedPayroll={enrichedPayroll} 
+                        lineItems={res.data.line_items ?? []} 
+                    />
                 </CardContent>
             </Card>
         </div>

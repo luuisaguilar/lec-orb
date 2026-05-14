@@ -6,13 +6,15 @@ Digital platform for multi-tenant operational and financial management across LE
 
 ## Project Snapshot
 
-Verified on **2026-05-02**:
+Verified on **2026-05-13**:
 
 - Build / typecheck: passing (`npm run build`)
 - Vitest: passing (`26` files, `164` tests)
 - ESLint: passing (`0` errors)
 - Playwright E2E: passing (`10/10`)
 - Sentry: active (`orb-lec`)
+- RBAC: audited — alias resolution fixed, module_registry gaps resolved
+- Portal (Applicators): active at `/portal`
 - `DEMO_MODE`: removed from production auth/API flow; `src/lib/demo/*` remains for tests and placeholder portal data
 
 ## Project Overview
@@ -34,8 +36,11 @@ The app is built with Next.js App Router and Supabase, with tenant isolation by 
 - Caja Chica: movement tracking, balance, receipts, Excel import/export
 - Presupuesto: monthly upsert plus budget-vs-actual comparison
 - CENNI: CRUD, bulk import, status tracking, certificate upload/view/send
-- Invitations: create, resend, accept via RPC, expiration flow
-- Multi-tenant org management: RBAC, audit log, notifications, documents
+- Invitations: create, resend, accept via RPC, expiration flow, auto-seed permissions
+- Multi-tenant org management: RBAC with alias resolution, audit log, notifications, documents
+- CRM: pipeline, contacts, opportunities, activities
+- Portal (Applicators): dedicated portal with schedule, payroll, and metrics
+- SGC (Quality): non-conformities, audits, risk assessments, KPI tracking
 
 ## Project Management Module (In Progress)
 
@@ -88,6 +93,8 @@ npm run dev
 - [Project Management Module](./docs/PROJECT_MANAGEMENT_MODULE.md) - technical blueprint for PM MVP implementation
 - [Executive Dashboard + Observability](./docs/executive-observability/README.md) - screens, KPIs, backlog, handoff, runbook, and paths
 - [Executive Dashboard Ticket Board](./docs/executive-observability/TICKETS_SPRINT_BOARD.md) - sprint-ready tickets with estimates and dependencies
+- [RBAC Matrix](./.codex-review/RBAC_MATRIX_2026-05-13.md) - role permissions, module gaps, dashboard suggestions
+- [Next Session TODO](./.codex-review/NEXT_SESSION_TODO.md) - school portal planning questions
 
 ---
 

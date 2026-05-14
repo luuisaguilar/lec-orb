@@ -30,6 +30,9 @@ const enUS: Record<DictionaryKey, string> = {
     "common.comingSoonDesc": "This module is under development.",
     "common.noResults": "No results",
 
+    // Header / shell
+    "header.mobileNavTitle": "Navigation menu",
+
     // Auth
     "auth.login": "Log In",
     "auth.logout": "Log Out",
