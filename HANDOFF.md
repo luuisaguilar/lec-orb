@@ -167,23 +167,15 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission`
-- [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada (suppliers, documents slug)
-- [x] Validación E2E del **Portal de Aplicadores** en producción (`orb.lec.mx/portal`)
-<<<<<<< HEAD
-- [x] Consolidación de **Nómina Histórica** (Feb/Mar) con desgloses expandibles
-- [x] Fix **CRM Pipeline**: visibilidad de oportunidades restaurada (fix property mapping)
-- [x] Fix org aislada de Diana (`dsuastegui@lec.mx`) — movida a LEC org como `admin`
-- [x] Fix auth flow: Supabase email confirmation desactivado
+- [x] Auditoría RBAC completa + fix alias resolution (Solucionado)
+- [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada
+- [x] Validación E2E del **Portal de Aplicadores** en producción
+- [x] Consolidación de **Nómina Histórica** (Feb/Mar) con desgloses
+- [x] Fix **CRM Pipeline**: visibilidad de oportunidades restaurada
 - [x] Auto-link aplicadores por email en invitación y login
-- [ ] **Aplicar migración** `20260612_fix_applicator_portal_registration_and_linking.sql` en Supabase SQL Editor (pendiente en prod)
-- [x] Provisión manual de periodos de Nómina Abril y Mayo 2026
-=======
-- [x] Fix org aislada de Diana (`dsuastegui@lec.mx`) — movida a LEC org como `admin`
-- [x] Fix auth flow: Supabase email confirmation desactivado (plataforma es invite-only)
-- [x] Auto-link aplicadores por email en invitación (`fn_accept_invitation`) y en login (`post-login-redirect`) — [PR #71](https://github.com/luuisaguilar/lec-orb/pull/71)
-- [ ] **Aplicar migración** `20260513_fn_accept_invitation_link_applicator.sql` en Supabase SQL Editor (pendiente de aplicar en prod)
->>>>>>> feat/applicator-auto-link
+- [x] Provisión de periodos de Nómina Abril y Mayo 2026
+- [ ] **Aplicar migración** `20260612_fix_applicator_portal_registration_and_linking.sql` en Supabase SQL Editor (PENDIENTE EN PROD)
+- [ ] **Ejecutar "Recalcular Nómina"** para Mayo Q1/Q2 en el dashboard Admin para automatizar desgloses actuales.
 - [ ] **Definir alcance Portal de Escuelas** (preguntas en `.codex-review/NEXT_SESSION_TODO.md`)
 - [ ] Construir Portal de Escuelas (`(school-portal)` + `withSchoolAuth`)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
