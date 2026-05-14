@@ -20,6 +20,7 @@ const inviteSchema = z
         sendEmail: z.boolean().optional().default(true),
         job_title: z.string().max(200).optional(),
         hr_profile_id: uuidFromClient,
+        applicator_id: uuidFromClient,
         location: z.string().min(1, "Sede requerida").max(200),
         // Optional override. DB default is 7 days; valid range 1–60.
         expiresInDays: z.number().int().min(1).max(60).optional(),
@@ -32,6 +33,13 @@ const inviteSchema = z
                 code: z.ZodIssueCode.custom,
                 message: "Debes elegir un puesto del organigrama (perfil HR) o escribir un rol empresa.",
                 path: ["job_title"],
+            });
+        }
+        if (data.applicator_id && data.role !== "applicator") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Solo se puede vincular un aplicador cuando el rol es 'applicator'.",
+                path: ["applicator_id"],
             });
         }
     });
@@ -79,6 +87,41 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
     }
     const { job_title: inviteJobTitle, hr_profile_id: inviteHrProfileId } = resolved;
 
+    // Validate applicator binding: must belong to org, not already linked, and email must match
+    let inviteApplicatorId: string | null = null;
+    if (parsed.data.applicator_id) {
+        const { data: applicator, error: applicatorError } = await supabase
+            .from("applicators")
+            .select("id, email, auth_user_id, deleted_at, org_id")
+            .eq("id", parsed.data.applicator_id)
+            .eq("org_id", member.org_id)
+            .is("deleted_at", null)
+            .maybeSingle();
+
+        if (applicatorError) throw applicatorError;
+        if (!applicator) {
+            return NextResponse.json(
+                { error: "Aplicador no encontrado o no pertenece a tu organización." },
+                { status: 400 }
+            );
+        }
+        if (applicator.auth_user_id) {
+            return NextResponse.json(
+                { error: "Este aplicador ya tiene una cuenta vinculada." },
+                { status: 409 }
+            );
+        }
+        const applicatorEmail = (applicator.email ?? "").trim().toLowerCase();
+        const inviteEmail = parsed.data.email.trim().toLowerCase();
+        if (applicatorEmail && applicatorEmail !== inviteEmail) {
+            return NextResponse.json(
+                { error: "El correo de la invitación no coincide con el del aplicador seleccionado." },
+                { status: 400 }
+            );
+        }
+        inviteApplicatorId = applicator.id;
+    }
+
     const expiresAt = parsed.data.expiresInDays
         ? new Date(Date.now() + parsed.data.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : undefined;
@@ -91,6 +134,7 @@ export const POST = withAuth(async (req, { supabase, user, member }) => {
             role: parsed.data.role,
             job_title: inviteJobTitle,
             hr_profile_id: inviteHrProfileId,
+            applicator_id: inviteApplicatorId,
             location: parsed.data.location.trim(),
             invited_by: user.id,
             ...(expiresAt ? { expires_at: expiresAt } : {}),

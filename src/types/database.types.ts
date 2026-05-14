@@ -3207,6 +3207,7 @@ export type Database = {
       org_invitations: {
         Row: {
           accepted_at: string | null
+          applicator_id: string | null
           created_at: string
           email: string
           expires_at: string
@@ -3222,6 +3223,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          applicator_id?: string | null
           created_at?: string
           email: string
           expires_at?: string
@@ -3237,6 +3239,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          applicator_id?: string | null
           created_at?: string
           email?: string
           expires_at?: string
@@ -3251,6 +3254,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "org_invitations_applicator_id_fkey"
+            columns: ["applicator_id"]
+            isOneToOne: false
+            referencedRelation: "applicators"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "org_invitations_hr_profile_id_fkey"
             columns: ["hr_profile_id"]
