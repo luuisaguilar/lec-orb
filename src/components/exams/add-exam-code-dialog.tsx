@@ -86,7 +86,7 @@ export function AddExamCodeDialog({ onSuccess }: AddExamCodeDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-[#002e5d] hover:bg-[#001f3f]">
+                <Button className="bg-[#002e5d] text-white hover:bg-[#001f3f]">
                     <Plus className="mr-2 h-4 w-4" /> Agregar Código
                 </Button>
             </DialogTrigger>
@@ -168,7 +168,7 @@ export function AddExamCodeDialog({ onSuccess }: AddExamCodeDialogProps) {
                             />
                         </div>
                         <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting} className="w-full bg-[#002e5d] hover:bg-[#001f3f]">
+                            <Button type="submit" disabled={isSubmitting} className="w-full bg-[#002e5d] text-white hover:bg-[#001f3f]">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Registrar
                             </Button>

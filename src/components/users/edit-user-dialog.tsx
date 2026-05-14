@@ -339,7 +339,7 @@ export function EditUserDialog({ memberId, open, onOpenChange, onSuccess }: Edit
                     <Button
                         onClick={handleSave}
                         disabled={isSaving || isLoading}
-                        className="bg-[#002e5d] hover:bg-[#001f3f]"
+                        className="bg-[#002e5d] text-white hover:bg-[#001f3f]"
                     >
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Guardar Cambios
