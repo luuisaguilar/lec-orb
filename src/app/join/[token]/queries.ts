@@ -5,6 +5,7 @@ export interface InvitationPreview {
     role: string;
     jobTitle: string | null;
     location: string | null;
+    invitedEmail: string;
     invitedEmailMasked: string;
     expiresAt: string | null;
 }
@@ -75,6 +76,7 @@ export async function getInvitationResult(token: string): Promise<InvitationResu
             role: invitation.role,
             jobTitle: invitation.job_title ?? null,
             location: invitation.location ?? null,
+            invitedEmail: invitation.email,
             invitedEmailMasked,
             expiresAt: null,
         },

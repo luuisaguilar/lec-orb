@@ -16,6 +16,7 @@ import {
     Shield,
     Briefcase,
     UserPlus,
+    UserCheck,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -50,11 +51,19 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 const CUSTOM_HR = "__custom__";
+const NO_APPLICATOR_LINK = "__none__";
 
 type HrProfileOption = {
     id: string;
     role_title: string;
     area?: string | null;
+};
+
+type ApplicatorOption = {
+    id: string;
+    name: string;
+    email: string | null;
+    auth_user_id: string | null;
 };
 
 const formSchema = z
@@ -112,9 +121,16 @@ export function InviteUserDialog({
     const [sendEmail, setSendEmail] = useState(true);
     const [copied, setCopied] = useState(false);
     const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
+    const [linkedApplicatorId, setLinkedApplicatorId] = useState<string>(NO_APPLICATOR_LINK);
 
     const { data: hrProfilesData } = useSWR("/api/v1/hr/profiles", fetcher);
     const { data: orgLocationsData } = useSWR("/api/v1/org-locations", fetcher);
+    const { data: applicatorsData } = useSWR("/api/v1/applicators", fetcher);
+    const availableApplicators = useMemo(() => {
+        const raw = ((applicatorsData?.applicators ?? []) as ApplicatorOption[])
+            .filter((a) => a?.id && a.name && a.email && !a.auth_user_id);
+        return [...raw].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    }, [applicatorsData]);
     const profiles = useMemo(() => {
         const raw = ((hrProfilesData?.profiles ?? []) as HrProfileOption[]).filter((p) => p?.id && p.role_title?.trim());
         return [...raw].sort((a, b) => a.role_title.localeCompare(b.role_title, "es"));
@@ -161,6 +177,7 @@ export function InviteUserDialog({
         setSendEmail(true);
         setCopied(false);
         setInviteResult(null);
+        setLinkedApplicatorId(NO_APPLICATOR_LINK);
         const first = locationNames[0] ?? "";
         const defaultHr = profiles[0]?.id ?? CUSTOM_HR;
         form.reset({
@@ -211,6 +228,10 @@ export function InviteUserDialog({
                 payload.hr_profile_id = values.hr_profile_id;
             }
 
+            if (values.role === "applicator" && linkedApplicatorId !== NO_APPLICATOR_LINK) {
+                payload.applicator_id = linkedApplicatorId;
+            }
+
             const response = await fetch("/api/v1/invitations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -239,6 +260,7 @@ export function InviteUserDialog({
                 job_title: defaultHr === CUSTOM_HR ? "" : (profiles[0]?.role_title ?? ""),
                 location: defaultSede,
             });
+            setLinkedApplicatorId(NO_APPLICATOR_LINK);
             onInviteSuccess();
 
             if (!sendEmail) {
@@ -261,6 +283,25 @@ export function InviteUserDialog({
     }
 
     const hrPick = form.watch("hr_profile_id");
+    const rolePick = form.watch("role");
+
+    useEffect(() => {
+        if (rolePick !== "applicator" && linkedApplicatorId !== NO_APPLICATOR_LINK) {
+            setLinkedApplicatorId(NO_APPLICATOR_LINK);
+        }
+    }, [rolePick, linkedApplicatorId]);
+
+    function handleLinkApplicator(value: string) {
+        setLinkedApplicatorId(value);
+        if (value === NO_APPLICATOR_LINK) {
+            form.setValue("email", "", { shouldValidate: true });
+            return;
+        }
+        const picked = availableApplicators.find((a) => a.id === value);
+        if (picked?.email) {
+            form.setValue("email", picked.email, { shouldValidate: true });
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -369,18 +410,37 @@ export function InviteUserDialog({
                             <FormField
                                 control={form.control}
                                 name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Correo electronico</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input placeholder="correo@ejemplo.com" className="pl-9" {...field} />
+                                render={({ field }) => {
+                                    const isLocked = linkedApplicatorId !== NO_APPLICATOR_LINK;
+                                    return (
+                                        <FormItem>
+                                            <div className="flex items-center justify-between">
+                                                <FormLabel>Correo electronico</FormLabel>
+                                                {isLocked && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleLinkApplicator(NO_APPLICATOR_LINK)}
+                                                        className="text-xs text-blue-500 hover:text-blue-400"
+                                                    >
+                                                        Cambiar
+                                                    </button>
+                                                )}
                                             </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="correo@ejemplo.com"
+                                                        className="pl-9"
+                                                        readOnly={isLocked}
+                                                        {...field}
+                                                    />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
 
                             <FormField
@@ -412,6 +472,39 @@ export function InviteUserDialog({
                                     </FormItem>
                                 )}
                             />
+
+                            {rolePick === "applicator" && (
+                                <FormItem>
+                                    <FormLabel>Vincular con aplicador existente</FormLabel>
+                                    <Select
+                                        value={linkedApplicatorId}
+                                        onValueChange={handleLinkApplicator}
+                                        disabled={availableApplicators.length === 0}
+                                    >
+                                        <SelectTrigger>
+                                            <div className="flex items-center gap-2">
+                                                <UserCheck className="h-4 w-4 text-muted-foreground" />
+                                                <SelectValue placeholder="Crear cuenta nueva (no vincular)" />
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={NO_APPLICATOR_LINK}>
+                                                Crear cuenta nueva (no vincular)
+                                            </SelectItem>
+                                            {availableApplicators.map((a) => (
+                                                <SelectItem key={a.id} value={a.id}>
+                                                    {a.name} — {a.email}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                        {availableApplicators.length === 0
+                                            ? "No hay aplicadores sin cuenta en tu directorio."
+                                            : "Pre-llena el correo del aplicador. Al aceptar la invitación, su row del directorio se vinculará a la cuenta."}
+                                    </FormDescription>
+                                </FormItem>
+                            )}
 
                             <FormField
                                 control={form.control}

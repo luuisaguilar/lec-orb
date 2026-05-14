@@ -43,6 +43,15 @@ const createChain = (data: unknown, error: unknown = null) => ({
     then: vi.fn((resolve: (value: any) => void) => resolve({ data, error })),
 });
 
+// Helper extendido para queries de applicators (usa .is() y .maybeSingle())
+const createApplicatorChain = (data: unknown, error: unknown = null) => ({
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockReturnThis(),
+    then: vi.fn((resolve: (value: any) => void) => resolve({ data, error })),
+});
+
 type Handler = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>;
 
 describe("Invitations API Route", () => {
@@ -227,6 +236,190 @@ describe("Invitations API Route", () => {
             await response.json();
 
             expect(response.status).toBe(400);
+        });
+
+        // -------------------------------------------------------- applicator binding
+        describe("applicator_id binding", () => {
+            const baseApplicatorPayload = {
+                email: "aplicador@test.com",
+                role: "applicator",
+                sendEmail: false,
+                location: "Sede Central",
+                job_title: "Aplicador",
+            };
+
+            it("binds applicator by ID when valid applicator_id is provided", async () => {
+                const APP_ID = "a0000000-0000-4000-8000-000000000001";
+                const applicator = {
+                    id: APP_ID,
+                    email: "aplicador@test.com",
+                    auth_user_id: null,
+                    deleted_at: null,
+                    org_id: "org-uuid-001",
+                };
+                const invitationData = {
+                    id: "inv-new",
+                    token: "tok-bind",
+                    email: "aplicador@test.com",
+                    role: "applicator",
+                    applicator_id: APP_ID,
+                    org_id: "org-uuid-001",
+                };
+
+                const applicatorsChain = createApplicatorChain(applicator);
+                const invitationsChain = createChain(invitationData);
+
+                const mockSupabase = {
+                    from: vi.fn((table: string) => {
+                        if (table === "applicators") return applicatorsChain;
+                        if (table === "org_invitations") return invitationsChain;
+                        return invitationsChain;
+                    }),
+                } as unknown as AuthContext["supabase"];
+
+                const req = new NextRequest("http://localhost/api/v1/invitations", {
+                    method: "POST",
+                    body: JSON.stringify({ ...baseApplicatorPayload, applicator_id: APP_ID }),
+                });
+
+                const response = await (POST as unknown as Handler)(req, {
+                    supabase: mockSupabase,
+                    user: mockUser,
+                    member: mockMember,
+                    enrichAudit: vi.fn(),
+                });
+                const body = await response.json();
+
+                expect(response.status).toBe(200);
+                expect(body.invitation.applicator_id).toBe(APP_ID);
+                expect(body.joinUrl).toContain("/join/");
+            });
+
+            it("returns 400 when applicator_id does not belong to org", async () => {
+                const UNKNOWN_ID = "b0000000-0000-4000-8000-000000000002";
+                const applicatorsChain = createApplicatorChain(null);
+
+                const mockSupabase = {
+                    from: vi.fn((table: string) => {
+                        if (table === "applicators") return applicatorsChain;
+                        return createChain(null);
+                    }),
+                } as unknown as AuthContext["supabase"];
+
+                const req = new NextRequest("http://localhost/api/v1/invitations", {
+                    method: "POST",
+                    body: JSON.stringify({ ...baseApplicatorPayload, applicator_id: UNKNOWN_ID }),
+                });
+
+                const response = await (POST as unknown as Handler)(req, {
+                    supabase: mockSupabase,
+                    user: mockUser,
+                    member: mockMember,
+                    enrichAudit: vi.fn(),
+                });
+                const body = await response.json();
+
+                expect(response.status).toBe(400);
+                expect(body.error).toMatch(/no encontrado/i);
+            });
+
+            it("returns 409 when applicator already has auth_user_id", async () => {
+                const APP_ID = "c0000000-0000-4000-8000-000000000003";
+                const applicator = {
+                    id: APP_ID,
+                    email: "aplicador@test.com",
+                    auth_user_id: "d0000000-0000-4000-8000-000000000099",
+                    deleted_at: null,
+                    org_id: "org-uuid-001",
+                };
+                const applicatorsChain = createApplicatorChain(applicator);
+
+                const mockSupabase = {
+                    from: vi.fn((table: string) => {
+                        if (table === "applicators") return applicatorsChain;
+                        return createChain(null);
+                    }),
+                } as unknown as AuthContext["supabase"];
+
+                const req = new NextRequest("http://localhost/api/v1/invitations", {
+                    method: "POST",
+                    body: JSON.stringify({ ...baseApplicatorPayload, applicator_id: APP_ID }),
+                });
+
+                const response = await (POST as unknown as Handler)(req, {
+                    supabase: mockSupabase,
+                    user: mockUser,
+                    member: mockMember,
+                    enrichAudit: vi.fn(),
+                });
+                const body = await response.json();
+
+                expect(response.status).toBe(409);
+                expect(body.error).toMatch(/vinculada/i);
+            });
+
+            it("returns 400 when invite email does not match applicator email", async () => {
+                const APP_ID = "e0000000-0000-4000-8000-000000000004";
+                const applicator = {
+                    id: APP_ID,
+                    email: "otro@test.com",
+                    auth_user_id: null,
+                    deleted_at: null,
+                    org_id: "org-uuid-001",
+                };
+                const applicatorsChain = createApplicatorChain(applicator);
+
+                const mockSupabase = {
+                    from: vi.fn((table: string) => {
+                        if (table === "applicators") return applicatorsChain;
+                        return createChain(null);
+                    }),
+                } as unknown as AuthContext["supabase"];
+
+                const req = new NextRequest("http://localhost/api/v1/invitations", {
+                    method: "POST",
+                    body: JSON.stringify({ ...baseApplicatorPayload, applicator_id: APP_ID }),
+                });
+
+                const response = await (POST as unknown as Handler)(req, {
+                    supabase: mockSupabase,
+                    user: mockUser,
+                    member: mockMember,
+                    enrichAudit: vi.fn(),
+                });
+                const body = await response.json();
+
+                expect(response.status).toBe(400);
+                expect(body.error).toMatch(/no coincide/i);
+            });
+
+            it("returns 400 (Zod) when applicator_id is set but role is not applicator", async () => {
+                const VALID_UUID = "f0000000-0000-4000-8000-000000000005";
+                const mockSupabase = { from: vi.fn() } as unknown as AuthContext["supabase"];
+
+                const req = new NextRequest("http://localhost/api/v1/invitations", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        email: "aplicador@test.com",
+                        role: "operador",
+                        sendEmail: false,
+                        location: "Sede Central",
+                        job_title: "Operador",
+                        applicator_id: VALID_UUID,
+                    }),
+                });
+
+                const response = await (POST as unknown as Handler)(req, {
+                    supabase: mockSupabase,
+                    user: mockUser,
+                    member: mockMember,
+                    enrichAudit: vi.fn(),
+                });
+                const body = await response.json();
+
+                expect(response.status).toBe(400);
+                expect(body.details).toBeDefined();
+            });
         });
 
         it("should still succeed and return joinUrl even when email fails to send", async () => {

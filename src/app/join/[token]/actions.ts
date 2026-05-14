@@ -54,3 +54,10 @@ export async function acceptInvitation(formData: FormData) {
     }
     redirect("/dashboard");
 }
+
+export async function signOutForInvite(formData: FormData) {
+    const token = formData.get("token")?.toString() ?? "";
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect(`/join/${token}`);
+}

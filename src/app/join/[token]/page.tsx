@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, XCircle, UserPlus, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, UserPlus, AlertTriangle, Clock, MailWarning } from "lucide-react";
 import { getInvitationResult } from "./queries";
-import { acceptInvitation } from "./actions";
+import { acceptInvitation, signOutForInvite } from "./actions";
 
 export default async function JoinPage({
     params,
@@ -112,7 +112,48 @@ export default async function JoinPage({
         );
     }
 
-    // 3. Confirm Join
+    // 3a. Email mismatch — logged in with a different account than the one invited
+    const sessionEmail = (user.email ?? "").trim().toLowerCase();
+    const invitedEmail = preview.invitedEmail.trim().toLowerCase();
+
+    if (sessionEmail !== invitedEmail) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+                <Card className="max-w-md w-full text-center p-6 border-t-4 border-t-amber-500 shadow-xl">
+                    <MailWarning className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                    <CardHeader>
+                        <CardTitle className="text-2xl">Correo de sesión diferente</CardTitle>
+                        <CardDescription>
+                            Esta invitación se envió a un correo distinto al de tu sesión actual. Para aceptarla, accede con el correo invitado o crea una cuenta nueva con ese mismo correo.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-left">
+                        <div className="rounded-md border bg-amber-50 p-3 text-sm space-y-1">
+                            <p>
+                                <strong>Invitación para:</strong> {preview.invitedEmailMasked}
+                            </p>
+                            <p>
+                                <strong>Tu sesión:</strong> {user.email}
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <form action={signOutForInvite}>
+                                <input type="hidden" name="token" value={token} />
+                                <Button type="submit" className="w-full bg-[#002e5d] text-white hover:bg-[#001f3f]">
+                                    Cerrar sesión y acceder con el correo invitado
+                                </Button>
+                            </form>
+                            <Button asChild variant="outline" className="w-full">
+                                <Link href={`/register?next=/join/${token}`}>Crear cuenta nueva</Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    // 3b. Confirm Join
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
             <Card className="max-w-md w-full text-center p-6 border-t-4 border-t-green-500 shadow-xl">
