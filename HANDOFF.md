@@ -2,11 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-<<<<<<< HEAD
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (Payroll consolidation + CRM fix + Applicator auto-link) |
-=======
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (Applicator auto-link + invitation flow fixes) |
->>>>>>> feat/applicator-auto-link
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (Payroll consolidation + CRM fix + Applicator binding + invitation flow fixes) |
 
 ---
 
@@ -19,11 +15,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
 | **RBAC / Permisos** | **AUDITADO** - Fix alias resolution, module_registry gaps corregidos |
-<<<<<<< HEAD
-| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Nómina desglosada (payroll_line_items) y auto-link por email funcional. |
-=======
-| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Auto-link por email en invitación y login. PR #71 mergeado. |
->>>>>>> feat/applicator-auto-link
+| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Nómina desglosada (payroll_line_items), auto-link por email y binding explícito por `applicator_id` funcionales. |
 | **Portal Escuelas** | **PLANEADO** - Escuelas piden acceso, alcance por definir |
 | Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
 | Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
@@ -167,12 +159,15 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [x] Auditoría RBAC completa + fix alias resolution (Solucionado)
-- [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada
-- [x] Validación E2E del **Portal de Aplicadores** en producción
-- [x] Consolidación de **Nómina Histórica** (Feb/Mar) con desgloses
-- [x] Fix **CRM Pipeline**: visibilidad de oportunidades restaurada
-- [x] Auto-link aplicadores por email en invitación y login
+- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission`
+- [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada (suppliers, documents slug)
+- [x] Validación E2E del **Portal de Aplicadores** en producción (`orb.lec.mx/portal`)
+- [x] Consolidación de **Nómina Histórica** (Feb/Mar) con desgloses expandibles
+- [x] Fix **CRM Pipeline**: visibilidad de oportunidades restaurada (fix property mapping)
+- [x] Fix org aislada de Diana (`dsuastegui@lec.mx`) — movida a LEC org como `admin`
+- [x] Fix auth flow: Supabase email confirmation desactivado (plataforma es invite-only)
+- [x] Auto-link aplicadores por email en invitación (`fn_accept_invitation`) y en login (`post-login-redirect`)
+- [x] Binding explícito de aplicadores por `applicator_id` al invitar + fix UX email mismatch en `/join/[token]`
 - [x] Provisión de periodos de Nómina Abril y Mayo 2026
 - [ ] **Aplicar migración** `20260612_fix_applicator_portal_registration_and_linking.sql` en Supabase SQL Editor (PENDIENTE EN PROD)
 - [ ] **Ejecutar "Recalcular Nómina"** para Mayo Q1/Q2 en el dashboard Admin para automatizar desgloses actuales.
