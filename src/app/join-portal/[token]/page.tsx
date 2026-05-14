@@ -90,7 +90,7 @@ export default async function JoinPortalPage({
                             llegó esta invitación.
                         </p>
                         <div className="flex flex-col gap-2">
-                            <Button asChild className="bg-[#002e5d]">
+                            <Button asChild className="bg-[#002e5d] text-white">
                                 <Link href={`/register?next=/join-portal/${token}`}>Crear cuenta</Link>
                             </Button>
                             <Button asChild variant="outline">
