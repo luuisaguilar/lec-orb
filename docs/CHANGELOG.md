@@ -4,6 +4,20 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-14] - Applicator Portal Validation + Auto-link Flow
+
+- **fix(auth)**: desactivada confirmación de email en Supabase — plataforma es invite-only, el paso extra de confirmación causaba fricción innecesaria.
+- **fix(db)**: corregido org aislada de usuario invitado (`dsuastegui@lec.mx`) mediante `fn_cleanup_isolated_org`. El trigger `handle_new_user` creaba org personal aunque hubiera invitación pendiente.
+- **feat(applicators)**: auto-link de registro en `applicators` al aceptar invitación — `fn_accept_invitation` busca fila existente por email con `auth_user_id = NULL` y la vincula; si no existe, la crea. Cubre el caso de aplicadores pre-cargados en el directorio antes de tener cuenta.
+- **feat(auth)**: auto-link por email en `post-login-redirect` — si al hacer login existe un `applicators` sin `auth_user_id` con ese email, se vincula y redirige a `/portal` sin necesidad de pasar por el flujo de invitación.
+- **fix(portal)**: corregidos usuarios de prueba (`hola@luisaguilaraguila.com`, `adrian_gamez15@hotmail.com`) que quedaron sin org o sin fila en `applicators` tras bugs del flujo de invitación anterior.
+- **validation**: Portal de Aplicadores validado e2e en producción (`orb.lec.mx/portal`) — eventos, horarios y nómina funcionando.
+- **pr**: [PR #71](https://github.com/luuisaguilar/lec-orb/pull/71) — applicator auto-link (migration + route).
+- **pending(db)**: aplicar migración `20260513_fn_accept_invitation_link_applicator.sql` en Supabase SQL Editor.
+- **known-bug(db)**: `fn_cleanup_isolated_org` falla con FK constraint al borrar org personal (trigger `fn_audit_log` usa `org_id` que se está borrando). Fix documentado en deuda técnica de `HANDOFF.md`.
+
+---
+
 ## [2026-05-04] - SGC Stabilization & Finance Integration (Sprint 04 completion)
 
 - **fix(sgc)**: resolved HTTP 500 internal server errors in SGC Stats API by aligning queries with `risk_assessments` and stabilizing date column fallbacks (`detection_date`, `completed_at`, `updated_at`).
