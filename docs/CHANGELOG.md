@@ -4,6 +4,14 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-14] - Payroll & CRM Consolidation
+- **Applicator Portal**: Finalized onboarding for top-tier applicators (Selene Moreno, Lupita Zatarain, Claudia Camarena, Ruth Quintero).
+- **Production Resilience**: Patched `handle_new_user` and `fn_accept_applicator_portal_invitation` to handle production schema discrepancies (missing `email` and `updated_at`).
+- **Payroll Breakdown**: Implemented granular event-level tracking by populating `payroll_line_items`. This enables the "Events/Hours" breakdown in both Admin and Applicator portals.
+- **CRM Fix**: Resolved a critical bug where opportunities were not appearing in the Kanban board due to a property mapping mismatch (`opportunities` vs `data`).
+- **Data Provisioning**: Manually provisioned April and May payroll periods to enable automatic recalculation.
+- **Documentation**: Updated `AGENTS.md` and Wiki with CRM/Payroll schema "gotchas".
+
 ## [2026-05-14] - Applicator Portal Validation + Auto-link Flow
 
 - **fix(auth)**: desactivada confirmación de email en Supabase — plataforma es invite-only, el paso extra de confirmación causaba fricción innecesaria.

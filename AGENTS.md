@@ -36,6 +36,9 @@ Debido a la migración de esquemas de auditoría y nombres de columnas históric
 2. **Applicators**: No existe columna `status`. El email **no es único**; usar lógica de búsqueda manual en scripts de seeding.
 3. **Payroll v2**: Las `payroll_entries` aún requieren columnas legadas `NOT NULL` (`rate_per_hour`, `subtotal`, `total`) para compatibilidad.
 4. **Event Staff**: Llenar `status` ('confirmed') y `acknowledgment_status` para asegurar visibilidad en nómina y portal.
+5. **CRM Columns**: La tabla `crm_opportunities` usa `title` (no name) y `expected_amount` (no amount).
+6. **CRM API**: El endpoint `/api/v1/crm/opportunities` devuelve `{ opportunities: [...] }`. No usar `.data` directamente.
+7. **Payroll Detail**: Para ver eventos y horas en el portal/admin, se DEBE insertar en `payroll_line_items` vinculado al `entry_id`.
 
 ## Flujo: nuevo componente UI
 
