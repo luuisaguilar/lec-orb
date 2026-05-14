@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-13 (Applicator Portal Finalized + School Portal Planning) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-14 (Applicator auto-link + invitation flow fixes) |
 
 ---
 
@@ -15,7 +15,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
 | **RBAC / Permisos** | **AUDITADO** - Fix alias resolution, module_registry gaps corregidos |
-| **Portal Aplicadores** | **COMPLETADO** - Flujo e2e probado: asignaciones (`event_staff`), horarios (`event_slots`), nómina desglosada y confirmación |
+| **Portal Aplicadores** | **COMPLETADO + VALIDADO** - Flujo e2e probado en producción. Auto-link por email en invitación y login. PR #71 mergeado. |
 | **Portal Escuelas** | **PLANEADO** - Escuelas piden acceso, alcance por definir |
 | Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
 | Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
@@ -159,12 +159,13 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission` (Solucionado)
+- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission`
 - [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada (suppliers, documents slug)
-- [x] Validación E2E del **Portal de Aplicadores**: 
-  - Visualización de confirmaciones en `event_staff`.
-  - Generación y consulta de horarios específicos `event_slots`.
-  - Visualización histórica de recibos de nómina con detalles de desglose expandible (`payroll_line_items`).
+- [x] Validación E2E del **Portal de Aplicadores** en producción (`orb.lec.mx/portal`)
+- [x] Fix org aislada de Diana (`dsuastegui@lec.mx`) — movida a LEC org como `admin`
+- [x] Fix auth flow: Supabase email confirmation desactivado (plataforma es invite-only)
+- [x] Auto-link aplicadores por email en invitación (`fn_accept_invitation`) y en login (`post-login-redirect`) — [PR #71](https://github.com/luuisaguilar/lec-orb/pull/71)
+- [ ] **Aplicar migración** `20260513_fn_accept_invitation_link_applicator.sql` en Supabase SQL Editor (pendiente de aplicar en prod)
 - [ ] **Definir alcance Portal de Escuelas** (preguntas en `.codex-review/NEXT_SESSION_TODO.md`)
 - [ ] Construir Portal de Escuelas (`(school-portal)` + `withSchoolAuth`)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
@@ -181,10 +182,12 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 ### Deuda tecnica
 
 - [x] PR #31 ya mergeado: mantener monitoreo de Security Advisor para `hr_profiles` (RLS guard aplicado)
+- [ ] Bug en `fn_cleanup_isolated_org`: falla con FK constraint al borrar org personal porque `fn_audit_log` trigger intenta insertar con `org_id` de la org que se está borrando. Fix: en `fn_audit_log`, set `org_id = NULL` cuando `TG_TABLE_NAME = 'organizations'`.
 - [ ] Sustituir "Language Evaluation Center" -> "Languages Education Consulting" en toda la UI
 - [ ] KPI cards en Caja Chica
 - [ ] Staging environment con org de prueba
 - [ ] Cron `fn_expire_old_invitations()` (Vercel Cron / pg_cron)
+- [ ] UI en formulario de invitación: mostrar banner cuando el email ya existe en `applicators` sin `auth_user_id` ("se vinculará automáticamente")
 
 ---
 
@@ -198,7 +201,8 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | Gestion transversal de tareas/proyectos (tipo Asana/Trello/Monday) | Mixto (Excel/WhatsApp/seguimiento manual) | Sprint 5-6 |
 | Cursos | Sistema externo | Sprint 4 |
 | Ferias de libros | Manual | Sprint 4 |
-| IELTS / OOPT | Sin rastreo | Sin asignar |
+| Post-Evento: OOPT/Cambridge, Expediente (DMS) y USB Log | Sin rastreo digital unificado | Sprint Post-Evento (Fase A) |
+| Post-Evento: Resultados, Certificados y Analítica Académica | Procesos dispersos / Reportes Manuales | Sprint Post-Evento (Fase B/C/D) |
 
 ---
 
@@ -224,6 +228,7 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 | `AGENTS.md` | Contexto específico para agentes no-Claude (Antigravity, Cursor, Copilot) |
 | `docs/ROADMAP.md` | Priorizacion actualizada |
 | `INFRASTRUCTURE_STATUS.md` | Estado operativo y readiness de lanzamiento |
+| `docs/POST_EXAM_OPERATIONS_AND_ANALYTICS.md` | **NUEVO:** Arquitectura de Módulo Post-Evento, Destrucción USBs, Certificados y Analítica |
 | `.codex-review/RBAC_MATRIX_2026-05-13.md` | Matriz RBAC, gaps corregidos, dashboard por rol |
 | `.codex-review/NEXT_SESSION_TODO.md` | Portal de escuelas: preguntas pendientes |
 | `docs/adr/ADR-007-project-management-module-foundation.md` | Decision del modulo PM transversal |
