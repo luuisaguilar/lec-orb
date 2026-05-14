@@ -5,8 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Building2 } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { mutate } from "swr";
+import type { CrmOpportunity, CrmOpportunityStage } from "./crm-kanban-board";
 
 import {
   Dialog,
@@ -109,17 +110,47 @@ export default function AddProspectDialog({ children }: { children?: React.React
         throw new Error(errorData.error || "Error al crear la oportunidad.");
       }
 
+      const { opportunity: rawOpp } = await oppRes.json();
+      const validStages: readonly CrmOpportunityStage[] = ["new", "qualified", "proposal", "negotiation", "won", "lost"];
+      const stage: CrmOpportunityStage = validStages.includes(rawOpp?.stage as CrmOpportunityStage)
+        ? (rawOpp.stage as CrmOpportunityStage)
+        : "new";
+      const enriched: CrmOpportunity = {
+        id: rawOpp.id,
+        title: rawOpp.title,
+        stage,
+        expected_amount: Number(rawOpp.expected_amount ?? 0),
+        probability: Number(rawOpp.probability ?? 0),
+        expected_close: rawOpp.expected_close ?? null,
+        contact_name: data.name,
+      };
+
       toast.success("Prospecto y oportunidad creados exitosamente.");
-      
-      // Revalidate both endpoints
+
       mutate(
         (key) => typeof key === "string" && key.startsWith("/api/v1/crm/contacts"),
         undefined,
         { revalidate: true }
       );
+      // Merge into the exact cache key the pipeline uses, then revalidate so the board stays in sync with the server.
       mutate(
-        (key) => typeof key === "string" && key.startsWith("/api/v1/crm/opportunities"),
-        undefined,
+        "/api/v1/crm/opportunities",
+        (current: { opportunities: CrmOpportunity[]; total?: number } | undefined) => {
+          if (!current?.opportunities) {
+            return { opportunities: [enriched], total: 1 };
+          }
+          const idx = current.opportunities.findIndex((o) => o.id === enriched.id);
+          if (idx >= 0) {
+            const next = [...current.opportunities];
+            next[idx] = { ...next[idx], ...enriched };
+            return { ...current, opportunities: next };
+          }
+          return {
+            ...current,
+            opportunities: [enriched, ...current.opportunities],
+            total: (current.total ?? current.opportunities.length) + 1,
+          };
+        },
         { revalidate: true }
       );
       
@@ -260,7 +291,7 @@ export default function AddProspectDialog({ children }: { children?: React.React
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Etapa Inicial</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="border-indigo-500/20 focus:ring-indigo-500/30">
                             <SelectValue placeholder="Etapa" />
@@ -270,7 +301,9 @@ export default function AddProspectDialog({ children }: { children?: React.React
                           <SelectItem value="new">Nuevo (Lead)</SelectItem>
                           <SelectItem value="qualified">Calificado</SelectItem>
                           <SelectItem value="proposal">Propuesta / Cotización</SelectItem>
+                          <SelectItem value="negotiation">Negociación</SelectItem>
                           <SelectItem value="won">Ganado / Inscrito</SelectItem>
+                          <SelectItem value="lost">Perdido</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

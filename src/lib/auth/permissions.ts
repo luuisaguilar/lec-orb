@@ -31,7 +31,8 @@ export type Module =
     | "crm-prospects"
     | "oopt-pdf"
     | "ielts"
-    | "audit-log";
+    | "audit-log"
+    | "coordinacion-proyectos-lec";
 
 export type Action =
     | "read"
@@ -200,6 +201,12 @@ const permissionsMap: Record<Module, Partial<Record<Action, Role[]>>> = {
         update: ["admin", "supervisor"],
         delete: ["admin"],
     },
+    "coordinacion-proyectos-lec": {
+        read: ["admin", "supervisor", "operador"],
+        create: ["admin", "supervisor", "operador"],
+        update: ["admin", "supervisor", "operador"],
+        delete: ["admin", "supervisor"],
+    },
 };
 
 /**
@@ -285,7 +292,22 @@ export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Acti
     prospectos: { module: "crm-prospects", readAction: "read", writeAction: "create", deleteAction: "delete" },
     "oopt-pdf": { module: "oopt-pdf", readAction: "read", writeAction: "create", deleteAction: "delete" },
     ielts: { module: "ielts", readAction: "read", writeAction: "create", deleteAction: "delete" },
+    "coordinacion-proyectos-lec": {
+        module: "coordinacion-proyectos-lec",
+        readAction: "read",
+        writeAction: "create",
+        deleteAction: "delete",
+    },
+    "coordinacion-proyectos": {
+        module: "coordinacion-proyectos-lec",
+        readAction: "read",
+        writeAction: "create",
+        deleteAction: "delete",
+    },
 };
+
+/** Native CRM API routes use `module: "crm"`; `member_module_access` rows use submodule slugs (crm-pipeline, …). */
+const CRM_ACCESS_SLUGS = ["crm", "crm-pipeline", "crm-directory", "crm-activities", "crm-metrics"] as const;
 
 /**
  * Server-side helper to check granular permissions.
@@ -293,42 +315,73 @@ export const MODULE_ALIAS_MAP: Record<string, { module: Module; readAction: Acti
  * Lookup order:
  * 1. Admin shortcut — always true
  * 2. member_module_access table (granular per-member settings)
- * 3. Static permissionsMap fallback (role-based default) — prevents supervisor lockout
- *    when no row exists in member_module_access yet
+ * 3. Fail-closed if no matching rows
+ *
+ * When `requestMember` is passed (from withAuth), avoids a second `org_members` query and stays aligned
+ * with `getAuthenticatedMember` (important for multi-org users).
  */
 export async function checkServerPermission(
     supabase: any,
     userId: string,
     module: string,
-    action: "view" | "edit" | "delete"
+    action: "view" | "edit" | "delete",
+    requestMember?: { id: string; role: string }
 ): Promise<boolean> {
-    // 1. Get member role
-    const { data: member } = await supabase
-        .from('org_members')
-        .select('id, role')
-        .eq('user_id', userId)
-        .single();
+    let memberId: string;
+    let role: string;
 
-    if (!member) return false;
-    if (member.role === 'admin') return true; // Admin always has access
+    if (requestMember) {
+        memberId = requestMember.id;
+        role = requestMember.role;
+    } else {
+        const { data: member } = await supabase
+            .from("org_members")
+            .select("id, role")
+            .eq("user_id", userId)
+            .single();
 
-    // 2. Check granular access table
-    const { data: access } = await supabase
-        .from('member_module_access')
-        .select('can_view, can_edit, can_delete')
-        .eq('member_id', member.id)
-        .eq('module', module)
-        .single();
+        if (!member) return false;
+        memberId = member.id;
+        role = member.role;
+    }
 
-    if (access) {
-        // Granular row exists — use it
-        if (action === "view") return access.can_view;
-        if (action === "edit") return access.can_edit;
-        if (action === "delete") return access.can_delete;
+    if (role === "admin") return true;
+
+    if (module === "crm") {
+        const { data: rows, error } = await supabase
+            .from("member_module_access")
+            .select("can_view, can_edit, can_delete")
+            .eq("member_id", memberId)
+            .in("module", [...CRM_ACCESS_SLUGS]);
+
+        if (error || !rows?.length) return false;
+
+        const agg = rows.reduce(
+            (a, r) => ({
+                can_view: a.can_view || Boolean(r.can_view),
+                can_edit: a.can_edit || Boolean(r.can_edit),
+                can_delete: a.can_delete || Boolean(r.can_delete),
+            }),
+            { can_view: false, can_edit: false, can_delete: false }
+        );
+
+        if (action === "view") return agg.can_view || agg.can_edit;
+        if (action === "edit") return agg.can_edit;
+        if (action === "delete") return agg.can_delete;
         return false;
     }
 
-    // 3. Fail-closed: if no granular row exists, access is denied.
-    // Our Phase 2 migration ensures all existing members have these rows.
+    const { data: access, error } = await supabase
+        .from("member_module_access")
+        .select("can_view, can_edit, can_delete")
+        .eq("member_id", memberId)
+        .eq("module", module)
+        .single();
+
+    if (error || !access) return false;
+
+    if (action === "view") return access.can_view;
+    if (action === "edit") return access.can_edit;
+    if (action === "delete") return access.can_delete;
     return false;
 }

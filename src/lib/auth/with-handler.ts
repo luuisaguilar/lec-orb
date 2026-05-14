@@ -77,7 +77,8 @@ export function withAuth(handler: Handler, options?: WithAuthOptions) {
                     supabase,
                     user.id,
                     options.module,
-                    options.action
+                    options.action,
+                    { id: member.id, role: member.role }
                 );
                 if (!hasPerm) {
                     return NextResponse.json(
