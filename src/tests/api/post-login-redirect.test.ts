@@ -53,6 +53,20 @@ function mockAdminClient(params: {
 
     createAdminClientMock.mockReturnValue({
         from: vi.fn((table: string) => {
+            if (table === "applicators") {
+                return {
+                    select: vi.fn().mockReturnThis(),
+                    ilike: vi.fn().mockReturnThis(),
+                    is: vi.fn().mockReturnThis(),
+                    maybeSingle: vi.fn().mockResolvedValue({
+                        data: null,
+                        error: null,
+                    }),
+                    update: vi.fn().mockReturnThis(),
+                    eq: vi.fn().mockReturnThis(),
+                };
+            }
+
             if (table === "applicator_portal_invitations") {
                 return {
                     select: vi.fn().mockReturnThis(),
