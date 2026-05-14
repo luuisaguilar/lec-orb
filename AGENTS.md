@@ -31,6 +31,12 @@ Debido a la migración de esquemas de auditoría y nombres de columnas históric
 2. **Fechas**: Siempre proveer fallbacks para columnas de fecha (`detection_date`, `completed_at`). Si el valor es nulo, usar `created_at` o la fecha actual para evitar errores en el dashboard de métricas.
 3. **Tablas de Riesgo**: Usar siempre `risk_assessments` (no `sgc_risks`).
 
+## Gotchas de Base de Datos (Seeding & Migrations)
+1. **Case Sensitivity**: Los estados en `events` y `event_slots` **DEBEN** ser mayúsculas (`COMPLETED`, `PUBLISHED`, `CONFIRMED`).
+2. **Applicators**: No existe columna `status`. El email **no es único**; usar lógica de búsqueda manual en scripts de seeding.
+3. **Payroll v2**: Las `payroll_entries` aún requieren columnas legadas `NOT NULL` (`rate_per_hour`, `subtotal`, `total`) para compatibilidad.
+4. **Event Staff**: Llenar `status` ('confirmed') y `acknowledgment_status` para asegurar visibilidad en nómina y portal.
+
 ## Flujo: nuevo componente UI
 
 1. Revisar `src/components/` — puede existir algo reutilizable
@@ -52,11 +58,11 @@ Debido a la migración de esquemas de auditoría y nombres de columnas históric
 
 ## Flujo: Portales
 
-| Portal | Route Group | Auth Handler | Estado |
-|--------|------------|-------------|--------|
-| Aplicadores | `(portal)` | `withApplicatorAuth` | ✅ Activo |
-| Escuelas | `(school-portal)` 🔜 | `withSchoolAuth` 🔜 | ⏳ Escuelas piden acceso |
-| Ejecutivos | `(executive)` 🔜 | TBD | Sin demanda |
+| Portal | URL Producción | Route Group | Auth Handler | Estado |
+|--------|----------------|------------|-------------|--------|
+| Aplicadores | `orb.lec.mx` | `(portal)` | `withApplicatorAuth` | ✅ Activo |
+| Escuelas | `school.lec.mx` 🔜 | `(school-portal)` 🔜 | `withSchoolAuth` 🔜 | ⏳ Escuelas piden acceso |
+| Ejecutivos | TBD | `(executive)` 🔜 | TBD | Sin demanda |
 
 **PRÓXIMA SESIÓN:** Preguntar a Luis por respuestas en `.codex-review/NEXT_SESSION_TODO.md`
 antes de construir el portal de escuelas.
