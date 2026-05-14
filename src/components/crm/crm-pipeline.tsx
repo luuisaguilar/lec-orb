@@ -23,7 +23,7 @@ export default function CrmPipeline() {
       if (!current) return current;
       return {
         ...current,
-        data: current.data.map((o) => (o.id === id ? { ...o, stage: newStage } : o)),
+        opportunities: current.opportunities.map((o) => (o.id === id ? { ...o, stage: newStage } : o)),
       };
     }, false);
 
