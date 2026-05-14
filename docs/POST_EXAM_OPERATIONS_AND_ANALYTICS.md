@@ -21,23 +21,31 @@ Al estar vinculada a un evento (`event_id`), la documentación hereda el `exam_t
 
 ---
 
-## 2. Control de Inventario de Seguridad (Speaking Packs y USBs)
+## 2. Control de Inventario de Seguridad (Speaking Packs y USB Audios)
 
-Basado en los estrictos requerimientos de Cambridge para el manejo de material de examen (*Secure Area Logging*). El actual módulo de inventario (`packs`) se expandirá para soportar no solo *Speaking Packs* sino también **USBs de Audio** y otros materiales controlados.
+Basado en los estrictos requerimientos de Cambridge para el manejo de material de examen (*Secure Area Logging*). El actual módulo de inventario (`packs`) se expandirá para soportar no solo *Speaking Packs* físicos, sino también el ciclo de vida y **borrado seguro** de los **USBs de Audio** y otros medios digitales.
 
-### Cambios al Esquema de Inventario
-1. **Tipos de Material (`pack_type`)**: Clasificar en `SPEAKING_PACK`, `USB_AUDIO`, `TEST_PAPERS`.
-2. **Log de Custodia Estricto (Movements)**: Modificar `movements` (o crear una vista/tabla de auditoría) para capturar exactamente el formato de Cambridge:
-   - `Session Date` (Fecha del examen)
-   - `Time Out` / `Date of removal` (Hora y fecha exacta de salida del área segura).
-   - `Recipient` / `Signature` (Nombre y firma digital/acuse del aplicador o SE).
-   - `Return Date` / `Return Time` (Hora exacta de reingreso al área segura).
-   - `Returner Signature` (Firma digital de quien recibe el material de vuelta).
+### 2.1. Log de Speaking Packs (Físicos)
+Modificar `movements` (o crear una tabla de auditoría dedicada) para capturar el formato exacto de salida y reingreso:
+- `Session Date` (Fecha del examen).
+- `Time Out` / `Date of removal` (Hora y fecha exacta de salida del área segura).
+- `Recipient` / `Signature` (Nombre y firma digital/acuse del aplicador o SE).
+- `Return Date` / `Return Time` (Hora exacta de reingreso al área segura).
+- `Returner Signature` (Firma digital de quien recibe el material de vuelta).
+
+### 2.2. Log de USBs y Archivos de Audio (Destrucción Segura)
+A diferencia de los packs físicos, los medios digitales con archivos de audio (USBs, Laptops) requieren una trazabilidad estricta sobre la **eliminación de los archivos** post-evento. El sistema registrará:
+- `Venue` (Sede donde se usaron los audios).
+- `Exam` & `Session Date`.
+- `Storage Device` (Identificador del USB o Laptop donde se descargaron/guardaron los archivos).
+- `Deletion Date` (Fecha exacta en que los archivos de audio fueron eliminados del dispositivo).
+- `Deleted By` (Usuario/Coordinador que eliminó o confirmó la eliminación de los archivos).
+- `Remaining Devices` (Control de dispositivos rezagados que aún puedan contener los archivos y seguimiento de quién/cuándo los eliminó finalmente).
 
 ### Flujo Operativo en el Sistema
-1. El coordinador de exámenes (Administrador del Área Segura) prepara los USBs y Speaking Packs.
-2. Al entregarlos al aplicador, el sistema genera el **Log de Salida** con hora exacta. El aplicador firma de recibido (en una tablet/celular o aceptando una notificación en su portal).
-3. Al terminar el evento, el aplicador devuelve el material. El coordinador registra el **Log de Entrada** asegurando que no se haya perdido ni copiado ningún material.
+1. **Salida/Descarga**: El coordinador registra la asignación del dispositivo (USB-01) al evento.
+2. **Reingreso (Packs Físicos)**: El aplicador devuelve el Speaking Pack. El coordinador registra el **Log de Entrada** asegurando que no falte material.
+3. **Destrucción (USBs/Audios)**: Posterior al evento, el coordinador inserta el USB, borra los archivos de audio, y entra a LEC Orb para confirmar la destrucción, firmando digitalmente el campo `Deleted By`.
 
 ---
 
