@@ -4,6 +4,16 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-14] - Applicator Explicit Binding + CRM Activities + Invitation UX
+
+- **feat(invitations)**: binding explícito de aplicadores al invitar — nuevo campo `applicator_id` en `org_invitations` (FK con `ON DELETE SET NULL`, índice parcial). El diálogo de invitación muestra un selector de aplicadores existentes sin cuenta cuando `role = applicator`; seleccionar uno pre-llena el email como readonly.
+- **feat(invitations)**: fix UX email mismatch en `/join/[token]` — si la sesión activa corresponde a un email diferente al invitado, se muestra una card con opción de "Cerrar sesión" (server action `signOutForInvite`) o "Crear cuenta nueva", en lugar del error genérico anterior.
+- **feat(db)**: migración `20260613_org_invitations_applicator_id.sql` — agrega columna `applicator_id` con FK e índice.
+- **feat(db)**: migración `20260613_fn_accept_invitation_bind_by_id.sql` — actualiza `fn_accept_invitation` con resolución de 3 pasos: (1) bind por ID explícito, (2) fallback por email match, (3) INSERT nuevo. Registra `applicator_id` y `bound_by_id` en audit log.
+- **feat(crm)**: actividades con filtros (tipo, estado), marcar como completada, eliminar. API con paginación en `GET /api/v1/crm/activities`.
+- **test**: 5 nuevos casos en `invitations.test.ts` cubriendo todos los paths de applicator binding (happy path, org mismatch, ya vinculado, email mismatch, rol incorrecto). Suite pasa 255/259 (4 fallas pre-existentes ajenas).
+- **docs**: wiki `invitaciones-campos-y-api.md` actualizada con flujo completo, esquema, migraciones, garantías y riesgos residuales.
+
 ## [2026-05-14] - Payroll & CRM Consolidation
 - **Applicator Portal**: Finalized onboarding for top-tier applicators (Selene Moreno, Lupita Zatarain, Claudia Camarena, Ruth Quintero).
 - **Production Resilience**: Patched `handle_new_user` and `fn_accept_applicator_portal_invitation` to handle production schema discrepancies (missing `email` and `updated_at`).

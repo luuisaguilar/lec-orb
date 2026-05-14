@@ -6,15 +6,17 @@ Digital platform for multi-tenant operational and financial management across LE
 
 ## Project Snapshot
 
-Verified on **2026-05-13**:
+Verified on **2026-05-14**:
 
 - Build / typecheck: passing (`npm run build`)
-- Vitest: passing (`26` files, `164` tests)
+- Vitest: passing (`40` files, `259` tests, `255` passing — 4 pre-existing in `sgc-permissions` / `coordinacion-proyectos`)
 - ESLint: passing (`0` errors)
 - Playwright E2E: passing (`10/10`)
 - Sentry: active (`orb-lec`)
 - RBAC: audited — alias resolution fixed, module_registry gaps resolved
-- Portal (Applicators): active at `/portal`
+- Portal (Applicators): active at `/portal` — auto-link by email + explicit binding by `applicator_id`
+- Invitations: explicit applicator binding (`applicator_id` on `org_invitations`) + email-mismatch UX fix at `/join/[token]`
+- CRM: Kanban pipeline, activities (filter/complete/delete), contacts, opportunities with paginated API
 - `DEMO_MODE`: removed from production auth/API flow; `src/lib/demo/*` remains for tests and placeholder portal data
 
 ## Project Overview
@@ -36,10 +38,10 @@ The app is built with Next.js App Router and Supabase, with tenant isolation by 
 - Caja Chica: movement tracking, balance, receipts, Excel import/export
 - Presupuesto: monthly upsert plus budget-vs-actual comparison
 - CENNI: CRUD, bulk import, status tracking, certificate upload/view/send
-- Invitations: create, resend, accept via RPC, expiration flow, auto-seed permissions
+- Invitations: create, resend, accept via RPC, expiration flow, auto-seed permissions, explicit applicator binding
 - Multi-tenant org management: RBAC with alias resolution, audit log, notifications, documents
-- CRM: pipeline, contacts, opportunities, activities
-- Portal (Applicators): dedicated portal with schedule, payroll, and metrics
+- CRM: Kanban pipeline, contacts, opportunities, activities (filter/complete/delete), paginated API
+- Portal (Applicators): dedicated portal with schedule, payroll, metrics; auto-link by email + `applicator_id` binding
 - SGC (Quality): non-conformities, audits, risk assessments, KPI tracking
 
 ## Project Management Module (In Progress)

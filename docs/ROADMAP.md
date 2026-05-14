@@ -1,27 +1,25 @@
 # Roadmap - LEC Orb
 
-Ultima actualizacion: 2026-05-07
+Ultima actualizacion: 2026-05-14
 
 ---
 
-## Estado verificado el 2026-05-04
+## Estado verificado el 2026-05-14
 
 - `npm run build`: pass (Exit code: 0)
-- `npm test`: pass (`26` archivos, `164` tests)
+- `npm test`: pass (`40` archivos, `259` tests, `255` passing)
 - `npm run lint`: pass
-- `npm run test:e2e`: pass
+- `npm run test:e2e`: pass (`10/10`)
 - **SGC Stabilization**: COMPLETADA (Stats API fixed, NC Detail resilient).
 - **Viaticos**: COMPLETADA (Schema verified, API integrated, UI ready).
 - **Sprint 4**: 100% COMPLETADO (Cursos + Inventario + SGC Stabilization).
-- `npm run test:e2e`: pass (`10/10` + new `travel-expenses` suite)
 - Supabase Security Advisor en `hr_profiles`: resuelto con PR #31 (RLS guard)
 - **UI/UX Audit**: Pass (Refinamiento "Premium SaaS" completado)
-- **Portal de Aplicadores**: Migrado a datos reales (Supabase integration complete)
-- **Phase 3**: COMPLETADA (Motor de nómina dinámico + P&L de eventos operativos)
-- **Logística**: Nueva tabla `event_staff` para roles (SE, ADMIN, INVIGILATOR, SUPER) integrada
-- **Nómina**: Motor de cálculo dinámico implementado vía RPC con soporte para roles y tarifas variables
-- **P&L**: Dashboard financiero de eventos conectado a datos reales de staff
-- **SGC Navigation**: Resuelto (Fix aplicado y validado)
+- **Portal de Aplicadores**: COMPLETADO + VALIDADO en producción — nómina desglosada, auto-link por email y binding explícito por `applicator_id`
+- **Invitaciones**: Binding explícito de aplicadores + fix email-mismatch UX en `/join/[token]`
+- **CRM**: Kanban pipeline activo, contactos, oportunidades, actividades con filtros y paginación
+- **Nómina Histórica**: Consolidada Feb/Mar con desgloses expandibles (`payroll_line_items`)
+- **RBAC**: Auditado — fix alias resolution, module_registry gaps corregidos
 
 Diagnostico E2E actual:
 
@@ -34,14 +32,18 @@ Diagnostico E2E actual:
 ## Completado
 
 - Multi-tenant auth con aislamiento por `org_id` y RLS
-- Flujo completo de invitaciones con RPC atomica y expiracion por `expires_at`
+- Flujo completo de invitaciones con RPC atomica y expiracion por `expires_at`; binding explícito de aplicadores (`applicator_id`)
+- Email-mismatch UX en `/join/[token]`: sesión equivocada detectada server-side, opciones de sign-out o registro
 - CENNI con 5 estatus canonicos y campos `fecha_recepcion`, `fecha_revision`, `motivo_rechazo`
 - Caja Chica, Presupuesto y **Viáticos** operativos.
 - Modulos operativos: Events, Applicators, Schools, TOEFL, Payroll, SGC, RRHH, IH Billing, Cursos e Inventario.
-- **Nómina de Eventos (Fase 3)**: Cálculo dinámico por rol y P&L de eventos.
+- **Nómina de Eventos (Fase 3)**: Cálculo dinámico por rol y P&L de eventos. Nómina Histórica consolidada con `payroll_line_items`.
+- **Portal de Aplicadores**: Validado en producción. Auto-link por email + binding explícito por `applicator_id`.
+- **CRM Fase 1 + 2**: Pipeline Kanban, contactos, oportunidades, actividades (filtros/completar/eliminar), API paginada.
 - **SGC Fase 1**: Estabilización técnica de métricas y vistas de detalle.
 - Refinamiento Visual "Premium SaaS" y Calculadora 2.0.
 - Fix de navegación SGC y scroll de sidebar unificado.
+- RBAC: alias resolution fix, module_registry gaps corregidos, plataforma invite-only (email confirmation desactivado).
 
 ---
 

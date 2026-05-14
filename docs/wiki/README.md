@@ -2,7 +2,7 @@
 title: "LEC Orb Wiki — índice temático"
 slug: wiki-index
 date: 2026-05-09
-updated: 2026-05-09
+updated: 2026-05-14
 tags: [wiki, moc, index, knowledge-map]
 status: active
 audience: [engineering]
@@ -65,7 +65,7 @@ Este documento agrupa el conocimiento del repo **por dominio de negocio y por de
 | Invitaciones / guías | [ONBOARDING_INVITACIONES_Y_GUIAS](../ONBOARDING_INVITACIONES_Y_GUIAS.md) | [ADR-001](../adr/ADR-001-invitation-rpc.md) |
 | **Contrato técnico POST invitaciones** | **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)** | — |
 
-Detalle de validación (Zod, sede, puesto, orden 400 vs 403): **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)**.
+Detalle de validación (Zod, sede, puesto, orden 400 vs 403), binding explícito de aplicadores (`applicator_id`), RPC `fn_accept_invitation` 3-step resolution: **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)**.
 
 ---
 
@@ -97,12 +97,15 @@ Detalle de validación (Zod, sede, puesto, orden 400 vs 403): **[invitaciones-ca
 
 ---
 
-## G. Finanzas
+## G. Finanzas y CRM
 
 | Tema | Documentos |
 |------|------------|
 | Módulos financieros | [FINANCE_MODULES](../FINANCE_MODULES.md) |
 | Backlog Caja Chica | [LEC_Backlog_POA_CajaChica](../../LEC_Backlog_POA_CajaChica.md) |
+| **Consolidación nóminas + CRM** | **[consolidacion-nominas-y-crm](./consolidacion-nominas-y-crm.md)** |
+| CRM — backlog y fases | [CRM_BACKLOG](../CRM_BACKLOG.md) |
+| CRM — análisis y decisiones | [CRM_ANALYSIS](../CRM_ANALYSIS.md), [CRM_HANDOFF](../CRM_HANDOFF.md) |
 
 ---
 
@@ -168,7 +171,8 @@ Entrada: [executive-observability/README](../executive-observability/README.md).
 | Tema | Archivo |
 |------|---------|
 | Coordinación de exámenes + documentos de evento | [eventos-documentos-coordinacion](./eventos-documentos-coordinacion.md) |
-| Invitaciones — campos y API | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
+| Invitaciones — campos, API y binding de aplicadores | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
+| Consolidación nóminas + CRM (gotchas del schema) | [consolidacion-nominas-y-crm](./consolidacion-nominas-y-crm.md) |
 
 ---
 
