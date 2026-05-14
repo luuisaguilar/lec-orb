@@ -89,6 +89,7 @@ export default function CoordinacionExamenesProyectosPage() {
                     <QuickLink href="/dashboard/codigos" title="Codigos de examen" description="Disponibilidad de codigos" />
                     <QuickLink href="/dashboard/toefl/codigos" title="TOEFL - Codigos" description="Lotes y disponibilidad" />
                     <QuickLink href="/dashboard/toefl/administraciones" title="TOEFL - Administraciones" description="Calendario operativo" />
+                    <QuickLink href="/dashboard/coordinacion-proyectos-lec" title="Coordinación proyectos LEC" description="Indicadores, exámenes vendidos, cursos" />
                 </CardContent>
             </Card>
 

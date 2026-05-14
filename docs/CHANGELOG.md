@@ -4,6 +4,20 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-14] - Coordinacion proyectos LEC (modulo nativo)
+
+- **feat(db)**: migracion `20260614_coordinacion_proyectos_lec.sql` — tablas `lec_program_projects`, `lec_exam_sales_lines`, `lec_course_offerings`, catalogos `lec_cp_*`, `lec_kpi_size_comparison`, RLS por `org_id`, registro en `module_registry` (`coordinacion-proyectos-lec`), permisos y seed de `member_module_access`.
+- **feat(api)**: rutas `GET/POST/PATCH/DELETE` y bulk import bajo `/api/v1/coordinacion-proyectos/*` (overview, program-projects, exam-lines, course-offerings, catalog, kpi-comparison, import).
+- **feat(ui)**: shell y subrutas en `/dashboard/coordinacion-proyectos-lec/*`; enlace rapido desde `/dashboard/coordinacion-examenes/proyectos`.
+- **feat(rbac)**: modulo `coordinacion-proyectos-lec` en matriz de permisos.
+- **test**: `src/tests/api/coordinacion-proyectos.test.ts`.
+- **docs**: `docs/COORDINACION_PROYECTOS_LEC.md`, `docs/wiki/coordinacion-proyectos-lec.md`, entradas en `docs/API_MODULES.md`, `docs/index.md`, `docs/wiki/README.md`, `docs/DATABASE_SCHEMA.md` (seccion 16), `docs/LEC_ORB_MASTER_MAP.md` (4.7).
+- **fix(nav)**: el módulo vive en un **padre de sidebar propio** «Coordinación de proyectos» (hermano de «Coordinación de Exámenes»); el cliente reubica el slug `coordinacion-proyectos-lec` si el registry aún no migró.
+- **feat(db)**: migraciones `20260615_coordinacion_proyectos_lec_nav_category.sql`, `20260616_coordinacion_proyectos_sidebar_parent.sql` — `category` y nombre en `module_registry`.
+- **docs**: [wiki/sidebar-modulos-y-agrupacion.md](./wiki/sidebar-modulos-y-agrupacion.md) — plantilla para pedir padres/submódulos al agente.
+
+---
+
 ## [2026-05-14] - Applicator Explicit Binding + CRM Activities + Invitation UX
 
 - **feat(invitations)**: binding explícito de aplicadores al invitar — nuevo campo `applicator_id` en `org_invitations` (FK con `ON DELETE SET NULL`, índice parcial). El diálogo de invitación muestra un selector de aplicadores existentes sin cuenta cuando `role = applicator`; seleccionar uno pre-llena el email como readonly.

@@ -856,3 +856,22 @@ La planeacion del dashboard ejecutivo y el modulo de observabilidad (incluyendo 
 
 - `docs/adr/ADR-008-executive-dashboard-and-observability.md`
 - `docs/executive-observability/DB_SCHEMA_PROPOSAL.md`
+
+---
+
+## 16. Coordinación proyectos LEC (`lec_*`)
+
+Migración: `supabase/migrations/20260614_coordinacion_proyectos_lec.sql`.
+
+| Tabla | Rol |
+|-------|-----|
+| `lec_cp_departments` | Catálogo departamentos por `org_id`. |
+| `lec_cp_exam_types` | Catálogo tipos de examen. |
+| `lec_cp_product_services` | Catálogo producto/servicio. |
+| `lec_program_projects` | Concentrado de proyectos (mes, departamento, ingresos, evidencias, FK opcionales a `schools`, `events`, `crm_opportunities`, `pm_projects`). |
+| `lec_exam_sales_lines` | Líneas mensuales de exámenes vendidos/aplicados. |
+| `lec_course_offerings` | Cursos operativos (no confundir con proyecciones del simulador en `courses` / API `/api/v1/courses`). |
+| `lec_kpi_size_comparison` | Comparativos por bucket de tamaño de proyecto. |
+
+Todas con **RLS** por `org_id` y políticas alineadas a miembros autenticados. Detalle funcional: [COORDINACION_PROYECTOS_LEC.md](./COORDINACION_PROYECTOS_LEC.md).
+

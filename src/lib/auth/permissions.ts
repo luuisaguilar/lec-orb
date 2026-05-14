@@ -356,8 +356,9 @@ export async function checkServerPermission(
 
         if (error || !rows?.length) return false;
 
-        const agg = rows.reduce(
-            (a, r) => ({
+        type AccessFlags = { can_view: boolean; can_edit: boolean; can_delete: boolean };
+        const agg = (rows as AccessFlags[]).reduce(
+            (a: AccessFlags, r: AccessFlags) => ({
                 can_view: a.can_view || Boolean(r.can_view),
                 can_edit: a.can_edit || Boolean(r.can_edit),
                 can_delete: a.can_delete || Boolean(r.can_delete),

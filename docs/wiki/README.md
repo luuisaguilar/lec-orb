@@ -52,6 +52,7 @@ Este documento agrupa el conocimiento del repo **por dominio de negocio y por de
 | Esquema de datos | [DATABASE_SCHEMA](../DATABASE_SCHEMA.md) |
 | RBAC / grupos | [RBAC_9_GROUPS_VALIDATION](../RBAC_9_GROUPS_VALIDATION.md) |
 | Modo demo | [DEMO_MODE](../DEMO_MODE.md) |
+| **Sidebar — jerarquía padre/hijo/subgrupos** | **[sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)** |
 
 **Índice de dependencias sugerido:** `module_registry` (Supabase) ↔ [API_MODULES](../API_MODULES.md) ↔ sidebar Next (`src/components/sidebar-nav.tsx`). Actualizar los tres cuando cambie categoría de un módulo.
 
@@ -69,15 +70,16 @@ Detalle de validación (Zod, sede, puesto, orden 400 vs 403), binding explícito
 
 ---
 
-## E. Project management (empresa) y coordinación
+## E. Project management (empresa), coordinación LEC y PM
 
 | Tema | Documentos | ADR |
 |------|------------|-----|
 | Módulo PM | [PROJECT_MANAGEMENT_MODULE](../PROJECT_MANAGEMENT_MODULE.md) | [ADR-007](../adr/ADR-007-project-management-module-foundation.md) |
 | Rutas PM | [PM_PATHS_AND_ROUTES](../PM_PATHS_AND_ROUTES.md) | |
 | Runbook PM | [PM_RUNBOOK](../PM_RUNBOOK.md) | |
+| **Coordinación proyectos LEC (indicadores / Excel)** | [COORDINACION_PROYECTOS_LEC.md](../COORDINACION_PROYECTOS_LEC.md), **[wiki coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md)** | — |
 
-**Rutas de aplicación (referencia rápida):** `/dashboard/proyectos-global/*`, `/dashboard/proyectos` — detalle en [PM_PATHS_AND_ROUTES](../PM_PATHS_AND_ROUTES.md).
+**Rutas de aplicación (referencia rápida):** `/dashboard/proyectos-global/*`, `/dashboard/proyectos` — PM; bloque sidebar **`Coordinación de proyectos`** (hermano de Coordinación de Exámenes) → **`/dashboard/coordinacion-proyectos-lec/*`**.
 
 ---
 
@@ -91,9 +93,9 @@ Detalle de validación (Zod, sede, puesto, orden 400 vs 403), binding explícito
 | Redirecciones legacy | `src/app/(dashboard)/dashboard/institucional/` → rutas nuevas |
 | Registro módulo documentos | `supabase/migrations/20260507_event_documents_module.sql` |
 | Categorías sidebar | `supabase/migrations/20260524_coordinacion_examenes_sidebar.sql` |
-| Navegación | `src/components/sidebar-nav.tsx` |
+| Navegación | `src/components/sidebar-nav.tsx` (jerarquía: [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)) |
 
-**Enlaces de dominio relacionados:** [CAMBRIDGE_LOGISTICS_IMPORT_MATRIX](../CAMBRIDGE_LOGISTICS_IMPORT_MATRIX.md), [API_MODULES](../API_MODULES.md) (módulo `event-documents`).
+**Enlaces de dominio relacionados:** [CAMBRIDGE_LOGISTICS_IMPORT_MATRIX](../CAMBRIDGE_LOGISTICS_IMPORT_MATRIX.md), [API_MODULES](../API_MODULES.md) (módulo `event-documents`), **[Coordinación proyectos LEC](./coordinacion-proyectos-lec.md)** (indicadores y exámenes comerciales en paralelo a eventos).
 
 ---
 
@@ -173,6 +175,8 @@ Entrada: [executive-observability/README](../executive-observability/README.md).
 | Coordinación de exámenes + documentos de evento | [eventos-documentos-coordinacion](./eventos-documentos-coordinacion.md) |
 | Invitaciones — campos, API y binding de aplicadores | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
 | Consolidación nóminas + CRM (gotchas del schema) | [consolidacion-nominas-y-crm](./consolidacion-nominas-y-crm.md) |
+| **Coordinación proyectos LEC** (indicadores, exámenes, cursos, import) | **[coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md)** |
+| **Sidebar — padres, hijos, subgrupos y plantilla para el agente** | **[sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)** |
 
 ---
 
@@ -188,6 +192,8 @@ LEC_ORB_MASTER_MAP ←→ API_MODULES ←→ DATABASE_SCHEMA
 ONBOARDING + ADR-001 → invitations API → join flow
        ↓
 PM module (ADR-007) ↔ proyectos-global / proyectos
+       ↓
+Coordinación proyectos LEC (lec_*) ↔ eventos / escuelas / CRM / documentos
        ↓
 SGC (ADR-005/006) — Finance — Executive observability (ADR-008)
 ```

@@ -2,7 +2,7 @@
 title: "LEC Orb — Mapa de contenidos (MOC)"
 slug: docs-index
 date: 2026-05-09
-updated: 2026-05-09
+updated: 2026-05-14
 status: active
 audience: [engineering, product, operations]
 related_components:
@@ -48,7 +48,8 @@ Este archivo es el **índice maestro** (*Map of Content*) del repositorio `lec-o
 
 | Recurso | Para qué sirve |
 |--------|----------------|
-| [API_MODULES](./API_MODULES.md) | Catálogo de módulos API y convenciones. |
+| [API_MODULES](./API_MODULES.md) | Catálogo de módulos API y convenciones (incluye **Coordinación proyectos LEC**). |
+| [COORDINACION_PROYECTOS_LEC](./COORDINACION_PROYECTOS_LEC.md) | Módulo nativo: indicadores, exámenes mensuales, cursos operativos; tablas `lec_*` y RBAC. |
 | [DATABASE_SCHEMA](./DATABASE_SCHEMA.md) | Esquema y convenciones de datos (alto nivel). |
 | [RBAC_9_GROUPS_VALIDATION](./RBAC_9_GROUPS_VALIDATION.md) | Validación de grupos y permisos (RBAC). |
 | [DEMO_MODE](./DEMO_MODE.md) | Modo demo: motivación y comportamiento esperado. |
@@ -74,6 +75,8 @@ Este archivo es el **índice maestro** (*Map of Content*) del repositorio `lec-o
 | [PM_PATHS_AND_ROUTES](./PM_PATHS_AND_ROUTES.md) | Rutas y paths del área PM. |
 | [PM_RUNBOOK](./PM_RUNBOOK.md) | Runbook operativo PM. |
 | [ADR-007 — PM foundation](./adr/ADR-007-project-management-module-foundation.md) | Decisión de arquitectura del PM. |
+| [COORDINACION_PROYECTOS_LEC](./COORDINACION_PROYECTOS_LEC.md) | Concentrado operativo/comercial (indicadores, exámenes mensuales, cursos); distinto del PM Kanban. |
+| [Wiki — Coordinación proyectos LEC](./wiki/coordinacion-proyectos-lec.md) | Guía operativa: acceso, import JSON, integraciones. |
 
 ---
 
@@ -159,6 +162,8 @@ Todos bajo [`docs/adr/`](./adr/):
 - **[Índice del Wiki (temas, dependencias y enlaces)](./wiki/README.md)** — lectura recomendada después de este MOC.
 - **[Eventos — documentos y Coordinación de Exámenes](./wiki/eventos-documentos-coordinacion.md)** — rutas, tags, migraciones y navegación.
 - **[Invitaciones — campos obligatorios y API](./wiki/invitaciones-campos-y-api.md)** — contrato Zod, orden de validación y sedes/puesto.
+- **[Coordinación proyectos LEC](./wiki/coordinacion-proyectos-lec.md)** — indicadores, exámenes, cursos, importación e integración con otros módulos.
+- **[Sidebar — módulos padre / submódulos / plantilla para el agente](./wiki/sidebar-modulos-y-agrupacion.md)** — `module_registry.category`, `sidebar-nav.tsx`, casos especiales (Coordinación de Exámenes).
 
 ---
 
