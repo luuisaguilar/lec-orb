@@ -32,6 +32,23 @@ export async function GET() {
         try {
             const admin = createAdminClient();
             const normalizedEmail = user.email.trim().toLowerCase();
+
+            // Option B: auto-link applicator by email when auth_user_id not set yet
+            const { data: unlinkedApplicator } = await admin
+                .from("applicators")
+                .select("id")
+                .ilike("email", normalizedEmail)
+                .is("auth_user_id", null)
+                .is("deleted_at", null)
+                .maybeSingle();
+
+            if (unlinkedApplicator) {
+                await admin
+                    .from("applicators")
+                    .update({ auth_user_id: user.id })
+                    .eq("id", unlinkedApplicator.id);
+                return NextResponse.json({ redirectTo: "/portal" });
+            }
             const nowIso = new Date().toISOString();
             const { data: pendingPortalInvite } = await admin
                 .from("applicator_portal_invitations")
