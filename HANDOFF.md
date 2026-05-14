@@ -2,7 +2,7 @@
 
 Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `CLAUDE.md`.
 
-**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-13 (RBAC audit + portal planning) |
+**Repo canonico:** `lec-orb` | **Ultima actualizacion:** 2026-05-13 (Applicator Portal Finalized + School Portal Planning) |
 
 ---
 
@@ -15,7 +15,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 | Vitest (unit/integration) | `26` archivos, `164` tests, `22/22` modulos API cubiertos |
 | Playwright (E2E) | Pass (`10/10`) |
 | **RBAC / Permisos** | **AUDITADO** - Fix alias resolution, module_registry gaps corregidos |
-| **Portal Aplicadores** | **COMPLETADO** - Dashboard, eventos, nómina, métricas |
+| **Portal Aplicadores** | **COMPLETADO** - Flujo e2e probado: asignaciones (`event_staff`), horarios (`event_slots`), nómina desglosada y confirmación |
 | **Portal Escuelas** | **PLANEADO** - Escuelas piden acceso, alcance por definir |
 | Finance - Nómina Operativa | **COMPLETADO** - Motor dinámico, P&L real, recalculo |
 | Finance - Viáticos | **COMPLETADO** - Módulo integrado, esquema verificado, UI operativa |
@@ -35,7 +35,7 @@ Resumen ejecutivo del estado del proyecto. Para contexto tecnico completo ver `C
 |--------|--------|-------|
 | Sprint 1: Estabilización | Completado | Auth, CENNI, Caja Chica base. |
 | Sprint 2: IH Billing | Completado | Facturación, CxC, Viáticos. |
-| Sprint 3: Nómina y Eventos | Completado | Pulido visual y auditoría terminada. |
+| Sprint 3: Nómina y Eventos | Completado | Pulido visual, auditoría y portal de aplicadores terminados al 100%. |
 | Sprint 4: Cursos y Ferias | Completado | Simulador financiero + Inventario + SGC Stabilization. |
 | Sprint 5: Dashboard Gerencial | **En curso** | Consolidación de P&L de todos los módulos financieros. |
 
@@ -159,17 +159,12 @@ applicator_role_tariffs  -- tarifa por rol por ano (SE, ADMIN, INVIGILATOR, SUPE
 
 ### Alta prioridad
 
-- [x] Merge PR #29 de Viaticos (incluye migración `20260503_travel_expenses.sql`)
-- [x] Merge PR #32 (fix SGC + Refinamiento Visual Premium)
-- [x] Plan Dashboard Ejecutivo + Observabilidad documentado
-- [x] Documentar decision arquitectonica del modulo PM (`ADR-007`)
-- [x] Definir esquema SQL `pm_*` (proyectos, tableros, columnas, tareas, comentarios)
-- [x] Implementar API base `/api/v1/pm/projects|boards|tasks`
-- [x] Implementar UI MVP inicial en `/dashboard/proyectos`
-- [x] Agregar fase 1.1 de segmentacion de tareas (`scope`, `role_target`, `is_private`)
-- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission`
+- [x] Auditoría RBAC completa + fix alias resolution en `checkServerPermission` (Solucionado)
 - [x] Migración `20260514_fix_module_registry_gaps.sql` aplicada (suppliers, documents slug)
-- [ ] Completar UI de creacion/edicion de tareas por alcance (team/role/personal)
+- [x] Validación E2E del **Portal de Aplicadores**: 
+  - Visualización de confirmaciones en `event_staff`.
+  - Generación y consulta de horarios específicos `event_slots`.
+  - Visualización histórica de recibos de nómina con detalles de desglose expandible (`payroll_line_items`).
 - [ ] **Definir alcance Portal de Escuelas** (preguntas en `.codex-review/NEXT_SESSION_TODO.md`)
 - [ ] Construir Portal de Escuelas (`(school-portal)` + `withSchoolAuth`)
 - [ ] Smoke test funcional de Viaticos en dashboard productivo
