@@ -12,10 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddProspectDialog from "./add-prospect-dialog";
 
 export default function CrmPipeline() {
-  const { data, error, isLoading, mutate } = useSWR<{ data: CrmOpportunity[] }>("/api/v1/crm/opportunities");
+  const { data, error, isLoading, mutate } = useSWR<{ opportunities: CrmOpportunity[] }>("/api/v1/crm/opportunities");
   const [view, setView] = useState<"kanban" | "table">("kanban");
 
-  const opportunities = data?.data || [];
+  const opportunities = data?.opportunities || [];
 
   const handleMoveOpportunity = async (id: string, newStage: CrmOpportunityStage) => {
     // Optimistic update
