@@ -28,6 +28,9 @@ const esMX = {
     "common.comingSoonDesc": "Este módulo está en desarrollo.",
     "common.noResults": "Sin resultados",
 
+    // Header / shell
+    "header.mobileNavTitle": "Menú de navegación",
+
     // Auth
     "auth.login": "Iniciar Sesión",
     "auth.logout": "Cerrar Sesión",

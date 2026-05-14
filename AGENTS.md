@@ -42,6 +42,27 @@ Debido a la migración de esquemas de auditoría y nombres de columnas históric
 
 ---
 
+## Flujo: RBAC y permisos
+
+1. `checkServerPermission()` resuelve `MODULE_ALIAS_MAP` antes de consultar `member_module_access`
+2. Aliases como `"finanzas"` → `"payments"` y `"examenes"` → `"exam-codes"` se resuelven automáticamente
+3. **Fail-closed**: si no hay row en `member_module_access`, el acceso se niega (excepto admin)
+4. Todo nuevo módulo **debe** registrarse en `module_registry` (migración SQL) antes de usarse como guard
+5. Documentación completa: `.codex-review/RBAC_MATRIX_2026-05-13.md`
+
+## Flujo: Portales
+
+| Portal | Route Group | Auth Handler | Estado |
+|--------|------------|-------------|--------|
+| Aplicadores | `(portal)` | `withApplicatorAuth` | ✅ Activo |
+| Escuelas | `(school-portal)` 🔜 | `withSchoolAuth` 🔜 | ⏳ Escuelas piden acceso |
+| Ejecutivos | `(executive)` 🔜 | TBD | Sin demanda |
+
+**PRÓXIMA SESIÓN:** Preguntar a Luis por respuestas en `.codex-review/NEXT_SESSION_TODO.md`
+antes de construir el portal de escuelas.
+
+---
+
 ## Restricciones (no tocar sin instrucción explícita)
 
 | Archivo/Carpeta | Razón |

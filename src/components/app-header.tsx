@@ -4,7 +4,7 @@ import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SettingsDropdown } from "@/components/settings-dropdown";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { useI18n } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +42,7 @@ export function AppHeader({ variant }: AppHeaderProps) {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-64 p-0 pt-8 overflow-hidden">
+                    <SheetTitle className="sr-only">{t("header.mobileNavTitle")}</SheetTitle>
                     <div className="h-full min-h-0 overflow-y-auto px-4 pb-4">
                         <SidebarNav variant={variant} />
                     </div>
