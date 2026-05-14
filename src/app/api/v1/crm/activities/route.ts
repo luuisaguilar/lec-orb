@@ -22,34 +22,81 @@ const createActivitySchema = z.object({
 // List activities with optional filters
 // ─────────────────────────────────────────────────────────────────────────────
 
+const activityTypes = ["call", "email", "meeting", "task", "whatsapp", "note"] as const;
+const activityStatuses = ["pending", "done", "cancelled"] as const;
+
+/** Strip SQL LIKE wildcards from user input so ilike patterns stay predictable. */
+function sanitizeIlikeTerm(raw: string): string {
+    // Commas break PostgREST `or=(...)` filter lists; LIKE wildcards are stripped for predictable matching.
+    return raw.replace(/\\/g, "").replace(/%/g, "").replace(/_/g, "").replace(/,/g, " ").trim();
+}
+
 export const GET = withAuth(async (req, { supabase, member }) => {
     const url = new URL(req.url);
-    const type = url.searchParams.get("type");
-    const contactId = url.searchParams.get("contact_id");
-    const opportunityId = url.searchParams.get("opportunity_id");
-    const status = url.searchParams.get("status");
-    const assignedTo = url.searchParams.get("assigned_to");
-    const q = url.searchParams.get("q")?.trim();
-    const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
+    const typeRaw = url.searchParams.get("type");
+    const contactIdRaw = url.searchParams.get("contact_id");
+    const opportunityIdRaw = url.searchParams.get("opportunity_id");
+    const statusRaw = url.searchParams.get("status");
+    const assignedToRaw = url.searchParams.get("assigned_to");
+    const qRaw = url.searchParams.get("q")?.trim() ?? "";
+
+    const limitParam = parseInt(url.searchParams.get("limit") ?? "50", 10);
+    const offsetParam = parseInt(url.searchParams.get("offset") ?? "0", 10);
+    const limit = Math.min(Math.max(1, Number.isFinite(limitParam) ? limitParam : 50), 100);
+    const offset = Math.max(0, Number.isFinite(offsetParam) ? offsetParam : 0);
+
+    const type =
+        typeRaw && activityTypes.includes(typeRaw as (typeof activityTypes)[number])
+            ? (typeRaw as (typeof activityTypes)[number])
+            : null;
+    const status =
+        statusRaw && activityStatuses.includes(statusRaw as (typeof activityStatuses)[number])
+            ? (statusRaw as (typeof activityStatuses)[number])
+            : null;
+
+    const contactParsed = contactIdRaw?.trim()
+        ? z.string().uuid().safeParse(contactIdRaw.trim())
+        : null;
+    const contactId = contactParsed?.success ? contactParsed.data : null;
+
+    const opportunityParsed = opportunityIdRaw?.trim()
+        ? z.string().uuid().safeParse(opportunityIdRaw.trim())
+        : null;
+    const opportunityId = opportunityParsed?.success ? opportunityParsed.data : null;
+
+    const assignedParsed = assignedToRaw?.trim()
+        ? z.string().uuid().safeParse(assignedToRaw.trim())
+        : null;
+    const assignedTo = assignedParsed?.success ? assignedParsed.data : null;
+
+    const searchTerm = sanitizeIlikeTerm(qRaw);
 
     let query = supabase
         .from("crm_activities")
         .select("*, crm_contacts(id, name, type), crm_opportunities(id, title)", { count: "exact" })
         .eq("org_id", member.org_id)
         .order("due_date", { ascending: true, nullsFirst: false })
-        .limit(limit);
+        .range(offset, offset + limit - 1);
 
     if (type) query = query.eq("type", type);
     if (contactId) query = query.eq("contact_id", contactId);
     if (opportunityId) query = query.eq("opportunity_id", opportunityId);
     if (status) query = query.eq("status", status);
     if (assignedTo) query = query.eq("assigned_to", assignedTo);
-    if (q) query = query.or(`subject.ilike.%${q}%`);
+    if (searchTerm.length > 0) {
+        const pat = `%${searchTerm}%`;
+        query = query.or(`subject.ilike.${pat},description.ilike.${pat}`);
+    }
 
     const { data, error, count } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ activities: data ?? [], total: count ?? 0 });
+    return NextResponse.json({
+        activities: data ?? [],
+        total: count ?? 0,
+        limit,
+        offset,
+    });
 }, { module: "crm", action: "view" });
 
 // ─────────────────────────────────────────────────────────────────────────────
