@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CP_MODULE } from "@/lib/coordinacion-proyectos/schemas";
 import { useUser } from "@/lib/hooks/use-user";
+import { CpDeniedState, CpLoadingState, CpPanel } from "../_components/cp-ui";
 
 export default function ImportarCpPage() {
     const { hasPermission, isLoading: userLoading } = useUser();
@@ -15,16 +16,19 @@ export default function ImportarCpPage() {
     const [json, setJson] = useState("[]");
     const [busy, setBusy] = useState(false);
 
-    if (userLoading) return <p className="text-muted-foreground">Cargando…</p>;
-    if (!hasPermission(CP_MODULE, "edit")) return <p className="text-destructive">Se requiere permiso de edición.</p>;
+    if (userLoading) return <CpLoadingState />;
+    if (!hasPermission(CP_MODULE, "edit")) {
+        return <CpDeniedState message="Se requiere permiso de edición para importar." />;
+    }
 
     const run = async () => {
         let rows: unknown[];
         try {
             rows = JSON.parse(json);
             if (!Array.isArray(rows)) throw new Error("Debe ser un arreglo JSON");
-        } catch (e: any) {
-            toast.error(e?.message || "JSON inválido");
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "JSON inválido";
+            toast.error(msg);
             return;
         }
         setBusy(true);
@@ -46,16 +50,18 @@ export default function ImportarCpPage() {
     };
 
     return (
-        <div className="max-w-3xl space-y-4">
-            <p className="text-sm text-muted-foreground">
-                Pega un arreglo JSON de filas. Para proyectos se reconocen campos como Mes (ENE…), Departamento, Descripción, Tipo de
-                cliente, Producto/Servicio, Beneficiados, Ingreso, Tamaño. Para exámenes: exam_month o Mes, candidato, examen, cantidad,
-                monto.
+        <CpPanel
+            title="Importación masiva"
+            description="JSON de filas según la entidad elegida. Revisa la wiki para el mapeo de columnas tipo Excel."
+        >
+            <p className="text-sm leading-relaxed text-muted-foreground">
+                Para proyectos se reconocen campos como Mes (ENE…), Departamento, Descripción, Tipo de cliente, Producto/Servicio,
+                Beneficiados, Ingreso, Tamaño. Para exámenes: exam_month o Mes, candidato, examen, cantidad, monto.
             </p>
             <div className="space-y-2">
-                <Label>Entidad</Label>
+                <Label className="text-foreground">Entidad</Label>
                 <Select value={entity} onValueChange={(v) => setEntity(v as typeof entity)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-border/90 bg-background dark:bg-background/80">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -65,12 +71,17 @@ export default function ImportarCpPage() {
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label>JSON (arreglo de objetos)</Label>
-                <Textarea value={json} onChange={(e) => setJson(e.target.value)} rows={14} className="font-mono text-xs" />
+                <Label className="text-foreground">JSON (arreglo de objetos)</Label>
+                <Textarea
+                    value={json}
+                    onChange={(e) => setJson(e.target.value)}
+                    rows={14}
+                    className="font-mono text-xs leading-relaxed border-border/90 bg-muted/30 text-foreground dark:bg-muted/15"
+                />
             </div>
-            <Button onClick={run} disabled={busy}>
+            <Button type="button" onClick={run} disabled={busy} className="shadow-sm">
                 {busy ? "Importando…" : "Importar"}
             </Button>
-        </div>
+        </CpPanel>
     );
 }

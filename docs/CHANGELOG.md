@@ -4,6 +4,33 @@ Cambios ordenados de mas reciente a mas antiguo.
 
 ---
 
+## [2026-05-15] - Documentacion backend Paso 2 (flujos E2E)
+
+- **docs**: [BACKEND_FLOWS.md](./BACKEND_FLOWS.md) — siete flujos F1–F7 (invitación, evento Cambridge, nómina, IH CxC, portal, concentrado LEC, CRM→cotización) con Mermaid, tablas API y badges 🟢/🟡/🔵.
+- **docs**: enlaces en [index.md](./index.md), [wiki/README.md](./wiki/README.md), [COORDINACIONES_LEC_ARQUITECTURA.md](./COORDINACIONES_LEC_ARQUITECTURA.md); plan Paso 2 completado.
+
+---
+
+## [2026-05-15] - Documentacion backend Paso 1 (schema + API huecos)
+
+- **docs**: [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) — §17 `org_locations`, §18 CRM, §19 IH Billing, §20 courses/inventory, §21 PM, §22 RPC/Storage; `org_members.location` documentado.
+- **docs**: [API_MODULES.md](./API_MODULES.md) — capitulos CRM, IH Billing, PM, Courses; indice y filas RBAC ampliadas.
+- **docs**: [BACKEND_DOCUMENTATION_PLAN.md](./BACKEND_DOCUMENTATION_PLAN.md) — Paso 1 marcado completado en checklist.
+
+---
+
+## [2026-05-15] - Documentacion coordinaciones LEC y wiki
+
+- **docs**: [BACKEND_DOCUMENTATION_PLAN.md](./BACKEND_DOCUMENTATION_PLAN.md) — plan maestro en 4 pasos (schema/API, BACKEND_FLOWS, check:api-docs, estados implementado vs planificado); prompts por paso para agente.
+- **chore**: script `scripts/check-coordinaciones-sidebar-drift.ts` + `npm run check:sidebar-docs` — valida alineacion `sidebar-nav.tsx` ↔ auditoria wiki.
+- **docs**: nuevo [COORDINACIONES_LEC_ARQUITECTURA.md](./COORDINACIONES_LEC_ARQUITECTURA.md) — arquitectura de los cuatro ejes, glosario «proyectos», sidebar objetivo, plan por fases.
+- **wiki**: [auditoria-coordinaciones-sidebar.md](./wiki/auditoria-coordinaciones-sidebar.md) — inventario sidebar mayo 2026, matrices condensar/agregar, diagramas.
+- **wiki**: [sedes-multisede-y-aislamiento-operativo.md](./wiki/sedes-multisede-y-aislamiento-operativo.md) — Baja California, capas RBAC/RLS/UI, checklist implementacion.
+- **wiki**: [coordinacion-proyectos-lec.md](./wiki/coordinacion-proyectos-lec.md) — guia operativa del hub (pestañas, departamentos, import).
+- **docs**: actualizados [index.md](./index.md), [wiki/README.md](./wiki/README.md), [LEC_ORB_MASTER_MAP.md](./LEC_ORB_MASTER_MAP.md) (§4.8), enlaces en sidebar-modulos, sidebar-navegacion, COORDINACION_PROYECTOS_LEC.
+
+---
+
 ## [2026-05-14] - Coordinacion proyectos LEC (modulo nativo)
 
 - **feat(db)**: migracion `20260614_coordinacion_proyectos_lec.sql` — tablas `lec_program_projects`, `lec_exam_sales_lines`, `lec_course_offerings`, catalogos `lec_cp_*`, `lec_kpi_size_comparison`, RLS por `org_id`, registro en `module_registry` (`coordinacion-proyectos-lec`), permisos y seed de `member_module_access`.

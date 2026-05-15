@@ -1,135 +1,140 @@
 ---
-title: "Coordinación proyectos LEC — guía operativa y wiki"
+title: "Coordinación proyectos LEC — guía operativa"
 slug: coordinacion-proyectos-lec-wiki
-date: 2026-05-14
-updated: 2026-05-14
-tags: [wiki, projects, indicators, exams, courses, navigation, supabase]
+date: 2026-05-15
+updated: 2026-05-15
+tags: [wiki, coordinacion-proyectos-lec, operations]
 status: active
-audience: [engineering, operations]
+audience: [operations, product, engineering]
 related_components:
   - coordinacion-proyectos-lec
-  - module-registry
-  - sidebar-nav
 ---
 
 # Coordinación proyectos LEC — guía operativa
 
-Este módulo digitaliza el **concentrado de proyectos** (indicadores por mes/departamento/producto), el **registro mensual de exámenes** vendidos/aplicados y el **catálogo operativo de cursos** (cohortes con fechas y precio). Complementa Eventos, Escuelas, CRM y Documentos sin reemplazarlos.
+Cómo usar el **hub de indicadores** que reemplaza los Excels de concentrado (INDICADORES PROYECTOS, EXAMENES 2026, cursos). Documentación técnica: [COORDINACION_PROYECTOS_LEC.md](../COORDINACION_PROYECTOS_LEC.md). Checklist de release: [coordinacion-proyectos-lec-auditoria-ui-runbook.md](./coordinacion-proyectos-lec-auditoria-ui-runbook.md).
 
-**Documentación técnica completa:** [COORDINACION_PROYECTOS_LEC.md](../COORDINACION_PROYECTOS_LEC.md)  
-**API detallada:** [API_MODULES.md](../API_MODULES.md) (sección Coordinación proyectos LEC)
-
----
-
-## 1. Cómo acceder
-
-1. Inicia sesión en LEC Orb con un rol que tenga el módulo en `member_module_access` (semilla automática en migración para admin/supervisor/operador existentes).
-2. En el sidebar, bajo **Coordinación de proyectos**: enlace principal **Coordinación de proyectos (LEC)** y entradas **Catálogos**, **Evidencias**, **Comparativos**; el resto de secciones sigue en **pestañas** arriba del contenido. Convenciones: [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md).
-3. Atajo adicional: desde **Coordinación de Exámenes → Proyectos (Coordinación)** (`/dashboard/coordinacion-examenes/proyectos`) hay enlace directo al mismo módulo.
-
-Si no ves el menú: revisar permisos en **Usuarios** o que la migración `20260614_coordinacion_proyectos_lec.sql` esté aplicada y el slug `coordinacion-proyectos-lec` exista en `module_registry`.
+**No confundir con:** [Proyectos (Empresa)](../PROJECT_MANAGEMENT_MODULE.md) (`project-management` / Kanban).
 
 ---
 
-## 2. Subpantallas (qué hace cada una)
+## 1. Cuándo usar este módulo
 
-| Pestaña | Uso diario |
-|---------|------------|
-| **Overview** | Totales del año: número de proyectos, beneficiarios, ingreso proyectos, conteos de líneas de examen y cursos. Alerta “sin ingreso” en proyectos. |
-| **Concentrado** | Tabla del Excel de indicadores (una fila = un proyecto institucional). |
-| **Exámenes** | Tabla tipo hoja mensual EXAMENES (candidato o escuela, examen, cantidades, montos). |
-| **Cursos** | Cursos reales impartidos (fechas, participantes, precio). **No** es el simulador de márgenes en Académico. |
-| **Catálogos** | Departamentos, tipos de examen y producto/servicio — sirven para normalizar nombres (evitar “COORDINACION EXAMNES” duplicado). |
-| **Evidencias** | Lista proyectos con oficio, carta, encuesta o checklist pendientes. |
-| **Importar** | Pega un arreglo JSON para carga masiva (ver sección 4). |
-| **Comparativos** | Edita conteos 2025 / 2026 / proyectado por bucket (grandes, medianos, chicos, micro, totales). |
+| Usar coordinación proyectos LEC | Usar PM empresa |
+|--------------------------------|-----------------|
+| Reportar ingresos, beneficiados, evidencias por mes | Gestionar tareas y tableros internos |
+| Registrar líneas de examen vendidos | Seguimiento operativo de entregables |
+| Oferta de cursos operativos (fechas, participantes) | — |
+| Comparativos KPI por tamaño (MI/C/M/G) | — |
 
 ---
 
-## 3. Relación con otros módulos LEC
+## 2. Cómo entrar
 
-```text
-Excel / operación manual
-        ↓
-  Coordinación proyectos LEC (este módulo)
-        ↘ opcional                    ↘ opcional
-    Eventos + Escuelas          CRM (oportunidad)
-        ↘
-    Documentos (evidencias PDF / enlaces)
-        ↘
-    Proyectos (Empresa) Kanban  ← solo si se enlaza pm_project_id
-```
+| Vía | Ruta |
+|-----|------|
+| Sidebar | **Coordinación de proyectos** → **Overview** |
+| URL directa | `/dashboard/coordinacion-proyectos-lec` |
+| Desde exámenes | `/dashboard/coordinacion-examenes/proyectos` (enlace rápido) |
 
-- **Eventos / escuelas:** usar `event_id` y `school_id` cuando la fila nazca de una sesión o cliente ya digitalizado.
-- **CRM:** vincular `crm_opportunity_id` para trazabilidad comercial.
-- **Documentos:** guardar URLs en `evidence_office_url`, `evidence_satisfaction_url`, `evidence_survey_url` o evolucionar a FK a `documents`.
-- **PM (Proyectos Empresa):** usar solo si el equipo quiere tablero de tareas **separado** del concentrado numérico.
+**Permiso:** slug `coordinacion-proyectos-lec` en tu perfil (`member_module_access`). Roles típicos con acceso: admin, supervisor, operador.
 
 ---
 
-## 4. Importación masiva (pantalla Importar)
+## 3. Pestañas principales
 
-1. Elige entidad: **Concentrado de proyectos** o **Líneas de exámenes**.
-2. Pega un JSON que sea un **arreglo** de objetos (máx. 2000 filas por petición).
+| Pestaña | Para qué sirve |
+|---------|----------------|
+| **Overview** | Resumen del año: conteos, sumas de ingresos y beneficiados |
+| **Concentrado** | Proyectos institucionales por mes (`lec_program_projects`) |
+| **Exámenes** | Líneas mensuales tipo Excel exámenes |
+| **Cursos** | Ofertas operativas (`lec_course_offerings`) — distinto del simulador en Académico |
+| **Importar** | Carga masiva JSON (hasta 2000 filas por entidad) |
 
-### 4.1 Proyectos (`entity: "program_projects"`)
+**Solo en sidebar (mismo permiso):**
 
-El backend intenta reconocer columnas similares al Excel de indicadores (mayúsculas/minúsculas flexibles):
+| Enlace sidebar | Ruta |
+|----------------|------|
+| Catálogos | `…/catalogos` |
+| Evidencias | `…/evidencias` |
+| Comparativos | `…/comparativos` |
 
-| Campo reconocido | Ejemplo | Notas |
-|------------------|---------|--------|
-| `Mes` / `mes` / `MES` | `ENE`, `FEB`, … | Se convierte al primer día del mes del **año calendario actual** del servidor al importar; para otro año, normaliza fechas en API o amplía el importador. |
-| `Departamento` | Debe coincidir (sin distinguir mayúsculas) con un nombre en `lec_cp_departments`. |
-| `Descripción` / `descripcion` | Texto obligatorio. |
-| `Tipo de cliente` / `client_type` | Default `Institución`. |
-| `Producto/Servicio` / `product_service` | Se resuelve a `product_service_id` si coincide con catálogo; si no, se guarda `product_service_label`. |
-| `Beneficiados` / `beneficiaries` | Entero. |
-| `Ingreso` / `ingreso` / `revenue` | Numérico. |
-| `Tamaño` / `size` | `MI`, `C`, `M`, `G`. |
+---
 
-### 4.2 Exámenes (`entity: "exam_sales_lines"`)
+## 4. Departamentos (catálogo)
 
-| Campo | Notas |
+Al crear la org se cargan departamentos por defecto:
+
+1. Coordinación Exámenes  
+2. Baja California  
+3. Feria del Libro  
+4. Coordinación Académica  
+5. Coordinación de Proyectos  
+
+Puedes editarlos en **Catálogos**. El departamento clasifica filas del concentrado; **no** cambia el menú lateral.
+
+Ver [COORDINACIONES_LEC_ARQUITECTURA.md](../COORDINACIONES_LEC_ARQUITECTURA.md) para la relación con los otros tres ejes.
+
+---
+
+## 5. Enlaces a otros módulos
+
+Al capturar un proyecto en **Concentrado**, opcionalmente vincula:
+
+| Campo | Módulo |
 |-------|--------|
-| `exam_month` o `Mes` | Fecha `YYYY-MM-DD` o etiqueta de mes como arriba. |
-| `Nombre del candidato / institución` / `candidate_or_institution` / `Nombre` | Obligatorio. |
-| `Examen solicitado` / `examen` / `exam_type_label` | Se mapea a catálogo `lec_cp_exam_types` por nombre. |
-| `Cantidad aplicados` / `quantity` | Default 1. |
-| `Monto acumulado` / `monto` / `amount` | Opcional. |
-| `Confirmación`, `Correo electrónico`, `Celular` | Opcionales. |
+| Escuela | Directorio → Escuelas |
+| Evento | Eventos / Coordinación exámenes |
+| Oportunidad CRM | CRM pipeline |
+| Proyecto PM | Proyectos (Empresa) |
 
-Si una fila falla validación Zod, se omite y el mensaje aparece en el array `errors` de la respuesta (máx. 50 mensajes devueltos).
+Esto permite trazabilidad sin duplicar datos maestros.
 
 ---
 
-## 5. Operación en Supabase
+## 6. Importación desde Excel
 
-- **Migración:** `supabase/migrations/20260614_coordinacion_proyectos_lec.sql` (no editar migraciones ya aplicadas; solo añadir nuevas).
-- **RLS:** no desactivar en tablas `lec_*`.
-- **Tipos TypeScript:** regenerar `database.types.ts` tras aplicar migración.
+1. Ir a **Importar**.
+2. Elegir entidad: `program_projects` o `exam_sales_lines`.
+3. Pegar JSON con columnas flexibles (nombres tipo Excel aceptados — ver API en doc técnica).
+4. Revisar resumen de filas creadas/actualizadas.
 
----
-
-## 6. Diferencia clara vs “Proyectos (Empresa)”
-
-| Pregunta | Coordinación proyectos LEC | Proyectos (Empresa) |
-|----------|---------------------------|---------------------|
-| ¿Es Kanban? | No | Sí (`pm_tasks`, columnas, etc.) |
-| ¿Lleva ingresos y beneficiados por fila? | Sí | No (es gestión de trabajo) |
-| ¿Reemplaza el Excel de indicadores? | Objetivo sí | No |
+**Tip:** importar por mes y departamento reduce errores de clasificación.
 
 ---
 
-## 7. Referencias de código
+## 7. Evidencias y cierre
 
-| Qué | Dónde |
-|-----|--------|
-| Rutas dashboard | `src/app/(dashboard)/dashboard/coordinacion-proyectos-lec/` |
-| API | `src/app/api/v1/coordinacion-proyectos/` |
-| Zod + slug módulo | `src/lib/coordinacion-proyectos/schemas.ts` |
-| Sidebar | `src/components/sidebar-nav.tsx` (`NATIVE_ROUTES`) |
-| Hub coordinación exámenes | `src/app/(dashboard)/dashboard/coordinacion-examenes/proyectos/page.tsx` |
+En **Evidencias** aparecen proyectos con URLs de evidencia pendientes o checklist incompleto. Completar:
+
+- `evidence_office_url`, `evidence_satisfaction_url`, `evidence_survey_url`
+- Marcar `checklist_done` cuando aplique
 
 ---
 
-Volver al **[índice del Wiki](./README.md)** o al **[MOC principal](../index.md)**.
+## 8. Roles y restricciones
+
+| Rol | Ver | Editar / importar |
+|-----|-----|-------------------|
+| admin | Sí | Sí |
+| supervisor | Sí | Sí |
+| operador | Sí | Sí (según permisos por miembro) |
+| applicator | No (portal aparte) | No |
+
+**Sede (futuro):** operadores de Baja California deberían ver solo filas de su región cuando se active RLS por sede — [sedes-multisede-y-aislamiento-operativo.md](./sedes-multisede-y-aislamiento-operativo.md).
+
+---
+
+## 9. Soporte y cambios
+
+| Necesidad | Contacto / acción |
+|-----------|-------------------|
+| Falta permiso al módulo | Admin org → Usuarios → acceso módulos |
+| Error en import | Revisar formato JSON; ver logs auditoría |
+| Cambio de catálogo departamentos | Catálogos en UI o API catalog |
+
+Para desarrollo: actualizar [COORDINACION_PROYECTOS_LEC.md](../COORDINACION_PROYECTOS_LEC.md) y tests en `src/tests/api/coordinacion-proyectos.test.ts`.
+
+---
+
+Volver a [auditoría coordinaciones](./auditoria-coordinaciones-sidebar.md) o al **[índice wiki](./README.md)**.

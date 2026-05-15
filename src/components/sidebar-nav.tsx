@@ -135,7 +135,7 @@ function ensureDashboardFirst(groups: NavGroup[]): NavGroup[] {
 // - module_registry.category → collapsible de primer nivel (ej. «Coordinación de proyectos»).
 // - Misma category → enlaces hermanos ordenados A→Z.
 // - Solo «Coordinación de Exámenes» usa subgrupos anidados (buildCoordinationExamSubgroups).
-// - «Coordinación de proyectos»: enlaces extra Catálogos / Evidencias / Comparativos (misma rama useMemo).
+// - «Coordinación de proyectos»: `buildCoordinacionProyectosSubgroups` (Vista general + subdesplegable).
 // Doc: docs/wiki/sidebar-modulos-y-agrupacion.md
 // ─────────────────────────────────────────────────────────────────────────────
 const NATIVE_ROUTES: Record<string, string> = {
@@ -254,6 +254,33 @@ function moduleToNavItem(mod: ModuleRegistryEntry, category: string): NavItem {
     }
     const href = NATIVE_ROUTES[mod.slug] ?? `/dashboard/m/${mod.slug}`;
     return { label: mod.name, href, icon: mod.icon, module: mod.slug };
+}
+
+/** Sidebar bajo «Coordinación de proyectos»: vista general + subdesplegable (Catálogos / Evidencias / Comparativos). */
+function buildCoordinacionProyectosSubgroups(mods: ModuleRegistryEntry[], category: string): NavSubgroup[] {
+    const cpSlug = "coordinacion-proyectos-lec";
+    const basePath = NATIVE_ROUTES[cpSlug] ?? "/dashboard/coordinacion-proyectos-lec";
+    const mainItems = mods.map((mod) => {
+        const item = moduleToNavItem(mod, category);
+        if (mod.slug === cpSlug) {
+            return { ...item, label: "Overview" };
+        }
+        return item;
+    });
+    const secondary: NavItem[] = [
+        { label: "Catálogos", href: `${basePath}/catalogos`, icon: "BookOpen", module: cpSlug },
+        { label: "Evidencias", href: `${basePath}/evidencias`, icon: "FolderOpen", module: cpSlug },
+        { label: "Comparativos", href: `${basePath}/comparativos`, icon: "BarChart3", module: cpSlug },
+    ];
+    const leadIcon = mods[0]?.icon ?? "Layers";
+    return [
+        { label: "Vista general", icon: leadIcon, items: mainItems },
+        {
+            label: "Catálogos, evidencias y comparativos",
+            icon: "FolderOpen",
+            items: secondary,
+        },
+    ];
 }
 
 function buildCoordinationExamSubgroups(mods: ModuleRegistryEntry[]): NavSubgroup[] {
@@ -477,19 +504,13 @@ export function SidebarNav({ variant, className, isCollapsed }: SidebarNavProps)
             }
 
             if (category === "Coordinación de proyectos") {
-                const cpSlug = "coordinacion-proyectos-lec";
-                const basePath = NATIVE_ROUTES[cpSlug] ?? "/dashboard/coordinacion-proyectos-lec";
-                const fromMods = mods.map((mod) => moduleToNavItem(mod, category));
-                const secondary: NavItem[] = [
-                    { label: "Catálogos", href: `${basePath}/catalogos`, icon: "BookOpen", module: cpSlug },
-                    { label: "Evidencias", href: `${basePath}/evidencias`, icon: "FolderOpen", module: cpSlug },
-                    { label: "Comparativos", href: `${basePath}/comparativos`, icon: "BarChart3", module: cpSlug },
-                ];
-                const items = [...fromMods, ...secondary];
+                const subgroups = buildCoordinacionProyectosSubgroups(mods, category);
+                const items = subgroups.flatMap(flattenSubgroupItems);
                 categoryGroups.push({
                     label: categoryDisplayLabel(category),
                     icon: CATEGORY_ICONS[category] ?? "Layers",
                     items,
+                    subgroups,
                 });
                 continue;
             }

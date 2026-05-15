@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CP_MODULE } from "@/lib/coordinacion-proyectos/schemas";
 import { useUser } from "@/lib/hooks/use-user";
-import { CpDeniedState, CpLoadingState, CpPageBlurb, cpTableShellClass } from "../_components/cp-ui";
+import { CpDeniedState, CpLoadingState, CpPageBlurb, cpTableShellClass } from "@/app/(dashboard)/dashboard/coordinacion-proyectos-lec/_components/cp-ui";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

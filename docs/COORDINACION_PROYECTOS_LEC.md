@@ -2,7 +2,7 @@
 title: "Coordinación proyectos LEC — módulo nativo"
 slug: coordinacion-proyectos-lec
 date: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 status: active
 audience: [engineering, operations, product]
 related_components:
@@ -16,6 +16,8 @@ related_components:
 
 Reemplaza el flujo manual basado en Excel (**INDICADORES PROYECTOS**, **EXAMENES 2026**, listados de cursos) con datos **tenant-scoped** (`org_id`), RLS y API versionada. **No** sustituye al PM Kanban (`project-management` / `pm_*`): aquí vive el **concentrado comercial-operativo**; el tablero de tareas sigue en [Proyectos (Empresa)](./PROJECT_MANAGEMENT_MODULE.md).
 
+**Contexto de los cuatro ejes LEC** (Exámenes, Feria del Libro, Académica, este hub): [COORDINACIONES_LEC_ARQUITECTURA.md](./COORDINACIONES_LEC_ARQUITECTURA.md).
+
 | Concepto | Valor |
 |----------|--------|
 | **Slug RBAC / `member_module_access.module`** | `coordinacion-proyectos-lec` |
@@ -27,6 +29,8 @@ Reemplaza el flujo manual basado en Excel (**INDICADORES PROYECTOS**, **EXAMENES
 | **Constante módulo** | `CP_MODULE` en `schemas.ts` (mismo string que slug) |
 
 **Wiki operativa (pasos para coordinación):** [coordinacion-proyectos-lec.md](./wiki/coordinacion-proyectos-lec.md)
+
+**Auditoría (paths, API, UI, runbook, checklist claro/oscuro):** [coordinacion-proyectos-lec-auditoria-ui-runbook.md](./wiki/coordinacion-proyectos-lec-auditoria-ui-runbook.md)
 
 ---
 
@@ -112,7 +116,11 @@ Detalle extendido y convenciones comunes: [API_MODULES.md](./API_MODULES.md) (se
 | `…/importar` | JSON + `entity` → `POST …/import`. |
 | `…/comparativos` | Edición de `kpi-comparison`. |
 
+**Componentes UI compartidos:** `src/app/(dashboard)/dashboard/coordinacion-proyectos-lec/_components/cp-ui.tsx` (`CpStatCard`, tablas con `cpTableShellClass`, `CpPanel`, estados de carga/denegación). Diseño alineado a tokens Tailwind/shadcn y **modo claro/oscuro** (sin `slate-*` fijos en estas vistas).
+
 **Hub Coordinación exámenes:** enlace rápido en `/dashboard/coordinacion-examenes/proyectos`.
+
+**Checklist de revisión:** [wiki/coordinacion-proyectos-lec-auditoria-ui-runbook.md](./wiki/coordinacion-proyectos-lec-auditoria-ui-runbook.md).
 
 ---
 
@@ -141,4 +149,5 @@ Al cambiar rutas API, campos de tablas o slug del módulo:
 
 1. Actualizar este archivo y [API_MODULES.md](./API_MODULES.md).
 2. Actualizar [wiki/coordinacion-proyectos-lec.md](./wiki/coordinacion-proyectos-lec.md) si afecta operación.
-3. Revisar [wiki/README.md](./wiki/README.md) y [index.md](./index.md) (MOC).
+3. Si cambia relación con otros ejes o sidebar: [COORDINACIONES_LEC_ARQUITECTURA.md](./COORDINACIONES_LEC_ARQUITECTURA.md) y [wiki/auditoria-coordinaciones-sidebar.md](./wiki/auditoria-coordinaciones-sidebar.md).
+4. Revisar [wiki/README.md](./wiki/README.md) y [index.md](./index.md) (MOC).

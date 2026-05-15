@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import {
   Users,
@@ -448,7 +448,7 @@ export default function HRProfiles() {
                     setIsGeneratingPDF(true);
                     const tid = toast.loading("Generando PDF...");
                     try {
-                      const { blob, fileName } = await generateJobProfilePDFFromView(selectedProfile);
+                      const { blob } = await generateJobProfilePDFFromView(selectedProfile);
                       // Open PDF in a new tab for viewing
                       const url = URL.createObjectURL(blob);
                       window.open(url, '_blank');

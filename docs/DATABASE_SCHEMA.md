@@ -3,6 +3,8 @@
 Schema completo extraído de `supabase/migrations/`. Agrupa tablas por dominio.
 Fuente de verdad para el schema actual: los archivos `.sql` en `supabase/migrations/`.
 
+> **Última ampliación (Paso 1 plan backend):** §17–22 — sedes, CRM, IH, courses/inventory, PM. Ver [BACKEND_DOCUMENTATION_PLAN.md](./BACKEND_DOCUMENTATION_PLAN.md).
+
 > **Regla de migraciones:** nunca editar archivos existentes. Solo agregar archivos nuevos.
 
 ---
@@ -59,10 +61,13 @@ Asociación usuario–organización con rol RBAC.
 | `org_id` | uuid | FK → `organizations` |
 | `user_id` | uuid | FK → `auth.users` |
 | `role` | member_role | Default `operador` |
+| `location` | text | Sede asignada (nombre exacto de `org_locations`); ver §17 |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
 UNIQUE: `(org_id, user_id)`. RLS: solo admins pueden insertar/actualizar/eliminar.
+
+> **RLS por sede en datos operativos:** 🔵 planificado — ver [wiki/sedes-multisede-y-aislamiento-operativo.md](./wiki/sedes-multisede-y-aislamiento-operativo.md). Hoy `location` se usa en invitaciones y UI; las APIs no filtran automáticamente por sede.
 
 ---
 
@@ -874,4 +879,217 @@ Migración: `supabase/migrations/20260614_coordinacion_proyectos_lec.sql`.
 | `lec_kpi_size_comparison` | Comparativos por bucket de tamaño de proyecto. |
 
 Todas con **RLS** por `org_id` y políticas alineadas a miembros autenticados. Detalle funcional: [COORDINACION_PROYECTOS_LEC.md](./COORDINACION_PROYECTOS_LEC.md).
+
+---
+
+## 17. Catálogo de sedes (`org_locations`)
+
+Migración: `supabase/migrations/20260521_org_locations_catalog.sql`.
+
+### `org_locations`
+
+Catálogo por organización de sedes operativas (Sonora, Baja California, etc.).
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | |
+| `org_id` | uuid | FK → `organizations` |
+| `name` | varchar(200) | UNIQUE por org (`lower(btrim(name))`) |
+| `sort_order` | int | Default 0 |
+| `is_active` | boolean | Default true |
+| `created_at` / `updated_at` | timestamptz | |
+
+**RLS:** SELECT miembros de la org; INSERT/UPDATE/DELETE solo `role = admin`.
+
+**Seed:** SONORA, BAJA CALIFORNIA, NUEVO LEON + sedes legacy desde `org_members` / `org_invitations`.
+
+**Uso:** validación en `POST /api/v1/invitations` y PATCH de usuarios; columna `org_members.location` almacena el **nombre** (texto), no el UUID.
+
+---
+
+## 18. CRM comercial (`crm_*`)
+
+Migración: `supabase/migrations/20260513_crm_foundation_v2.sql` (reemplaza experimento `crm_prospects`).  
+ADR: [ADR-009](./adr/ADR-009-crm-module-foundation.md).
+
+### `crm_contacts`
+
+Directorio de cuentas/contactos.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `type` | text | `school` \| `company` \| `individual` |
+| `name` | text | |
+| `source` | text | `whatsapp`, `referral`, `web`, `fair`, `call`, `outbound`, `existing` |
+| `school_id` | uuid | FK opcional → `schools` |
+| `assigned_to` | uuid | FK → `auth.users` |
+| `tags` | jsonb | Default `[]` |
+| `is_active` | boolean | Default true |
+
+**RLS:** SELECT cualquier miembro de la org; escritura **admin** y **supervisor** (`crm_contacts_write_supervisors`).  
+**Audit:** trigger `fn_audit_log` en INSERT/UPDATE/DELETE.
+
+### `crm_opportunities`
+
+Pipeline de ventas.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `contact_id` | uuid | FK → `crm_contacts` |
+| `title` | text | Campo principal (no `name`) |
+| `stage` | text | `new` → `qualified` → `proposal` → `negotiation` → `won` \| `lost` |
+| `expected_amount` | numeric(15,2) | |
+| `probability` | int | 0–100 |
+| `quote_id` | uuid | FK opcional → `quotes` |
+| `won_at` / `lost_at` | timestamptz | |
+
+**RLS:** igual que contactos (lectura org, escritura supervisor+).
+
+### `crm_activities`
+
+Actividades comerciales.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `contact_id` | uuid | Requerido |
+| `opportunity_id` | uuid | Opcional |
+| `type` | text | `call`, `email`, `meeting`, `task`, `whatsapp`, `note` |
+| `status` | text | `pending`, `done`, `cancelled` |
+| `due_date` | timestamptz | |
+
+**RLS:** igual que contactos.
+
+> **Nota:** `crm_prospects` fue eliminada en v2. No usar en código nuevo.
+
+---
+
+## 19. IH Billing — CxC Cambridge (`ih_*`)
+
+Migración: `supabase/migrations/20260429_ih_billing.sql`.  
+UI: `/dashboard/coordinacion-examenes/cxc`. Módulo sidebar: `ih-billing`.
+
+### `ih_tariffs`
+
+Tarifa IH → LEC por `org_id`, `year`, `exam_type`. UNIQUE `(org_id, year, exam_type)`.
+
+### `ih_invoices`
+
+Facturas emitidas a International House.
+
+| Campo | Notas |
+|-------|-------|
+| `region` | `SONORA` \| `BAJA_CALIFORNIA` |
+| `status` | `DRAFT`, `SENT`, `PAID`, `PARTIAL` |
+| `invoice_number`, `period_label` | Identificación comercial |
+
+### `ih_sessions`
+
+Sesiones aplicadas (unidad de cobro).
+
+| Campo | Notas |
+|-------|-------|
+| `region` | Sonora / BC |
+| `subtotal_lec` | GENERATED: `students_applied * tariff` |
+| `balance` | GENERATED: subtotal − `amount_paid_ih` |
+| `status` | `PENDING`, `PAID`, `PAID_DIFF`, `FUTURE` |
+| `ih_invoice_id` | FK opcional → factura |
+| UNIQUE | `(org_id, school_name, exam_type, session_date)` |
+
+### `ih_payments` / `ih_payment_sessions`
+
+Pagos recibidos de IH y tabla puente de conciliación sesión ↔ pago (`students_paid`, `amount_applied`).
+
+**Storage:** `proof_path` → bucket `ih-payment-proofs` (convención `{org_id}/{id}`).
+
+**RLS (todas las tablas `ih_*`):** política amplia “org members can manage” — cualquier miembro de la org con acceso al módulo finanzas/IH en API. **No hay RLS por sede**; filtro regional vía columna `region` en queries.
+
+---
+
+## 20. Cursos (simulador) e inventario feria
+
+Migración: `supabase/migrations/20260510_sprint_4_courses_inventory.sql`.
+
+### `courses` — Coordinación Académica (simulador)
+
+Proyección financiera de cursos (precio, costos fijos/variables, break-even). Distinto de `lec_course_offerings` (concentrado LEC).
+
+| Campo | Notas |
+|-------|-------|
+| `status` | `draft`, `published`, `active`, `completed`, `cancelled` |
+| `price_per_student`, `target_students` | Simulación |
+| `fixed_cost_*`, `var_cost_*` | Costos |
+
+**RLS:** SELECT miembros org; ALL admin/supervisor.
+
+### `inventory_*` — Feria del libro / almacén
+
+| Tabla | Rol |
+|-------|-----|
+| `inventory_items` | Catálogo SKU |
+| `inventory_locations` | Almacén, feria, oficina (`type`: warehouse, event, office, other) |
+| `inventory_stock` | Cantidad por ubicación |
+| `inventory_transactions` | purchase, sale, transfer, adjustment, loss, return |
+
+**RLS:** igual patrón que `courses`.
+
+### Relación con `packs` / `movements` (§3)
+
+El módulo legacy **Speaking Packs** (`packs`, `movements`, API `/packs`, `/scan`) convive con `inventory_*`. Sidebar slug `inventory` apunta a `/dashboard/logistica/inventario` (tablas nuevas). No mezclar modelos en reportes sin mapeo explícito.
+
+---
+
+## 21. Project Management (`pm_*`)
+
+Migración: `supabase/migrations/20260515_project_management_module_phase1.sql`.  
+Doc: [PROJECT_MANAGEMENT_MODULE.md](./PROJECT_MANAGEMENT_MODULE.md), ADR-007.
+
+| Tabla | Rol |
+|-------|-----|
+| `pm_projects` | Proyecto Kanban (`key` único por org, `status` active/archived) |
+| `pm_boards` | Tablero por proyecto |
+| `pm_columns` | Columnas (`slug`, `sort_order`, `is_done`, `wip_limit`) |
+| `pm_tasks` | Tareas (`column_id`, `assignee_user_id`, `priority`, `ref` único por org) |
+| `pm_labels` / `pm_task_labels` | Etiquetas |
+
+**RLS:** políticas por org en migración (lectura miembros; mutación según rol — ver migración completa).
+
+**Distinción:** `pm_projects` ≠ `lec_program_projects` (concentrado comercial). Enlace opcional vía `lec_program_projects.pm_project_id`.
+
+---
+
+## 22. RPCs y Storage (ampliación)
+
+Complementa §782–801. Ver migraciones para funciones añadidas después de la fecha del doc base.
+
+### RPCs adicionales (referencia)
+
+| Función | Uso |
+|---------|-----|
+| `fn_accept_applicator_portal_invitation` | Portal aplicadores |
+| `fn_expire_old_invitations` | Limpieza invitaciones vencidas |
+| Políticas/triggers CRM | `handle_updated_at_*` en tablas `crm_*` |
+
+### Storage buckets (completo)
+
+| Bucket | Uso |
+|--------|-----|
+| `petty-cash-receipts` | Caja chica |
+| `org-documents` | DMS |
+| `cenni-certificates` | PDF certificados CENNI |
+| `viaticos-receipts` | Comprobantes viáticos |
+| `ih-payment-proofs` | Comprobantes pagos IH |
+| `event-documents` | Documentos por evento (si configurado en migración eventos) |
+
+---
+
+## Mantenimiento del schema
+
+Tras cada migración nueva en `supabase/migrations/`:
+
+1. Añadir sección aquí (o extender tabla existente).  
+2. Regenerar `src/types/database.types.ts` (UTF-8 — ver `CLAUDE.md`).  
+3. Actualizar [API_MODULES.md](./API_MODULES.md) si hay rutas nuevas.  
+4. `npm run check:sidebar-docs` si afecta módulos de coordinación.
+
+Plan de cierre de huecos: [BACKEND_DOCUMENTATION_PLAN.md](./BACKEND_DOCUMENTATION_PLAN.md).
 

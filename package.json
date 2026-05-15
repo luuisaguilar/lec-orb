@@ -14,7 +14,8 @@
     "test:watch": "vitest --config vitest.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:pm": "playwright test tests/e2e/pm-smoke.spec.ts",
-    "export:logistica-payroll": "npx tsx scripts/export-logistica-payroll-lines.ts"
+    "export:logistica-payroll": "npx tsx scripts/export-logistica-payroll-lines.ts",
+    "check:sidebar-docs": "npx tsx scripts/check-coordinaciones-sidebar-drift.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

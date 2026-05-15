@@ -2,7 +2,7 @@
 title: "Sidebar, Sistema Uno / Cambridge y datos compartidos"
 slug: sidebar-navegacion-sistema-uno
 date: 2026-05-13
-updated: 2026-05-14
+updated: 2026-05-15
 tags: [wiki, navigation, rbac, cambridge, sistema-uno]
 status: active
 audience: [engineering, product]
@@ -49,5 +49,9 @@ Ver skill del repo: **`.cursor/skills/directorio-modulos-nativos-lec/SKILL.md`**
 
 ## Referencias
 
+- Arquitectura cuatro coordinaciones: [COORDINACIONES_LEC_ARQUITECTURA.md](../COORDINACIONES_LEC_ARQUITECTURA.md)
+- Auditoría sidebar y roadmap: [auditoria-coordinaciones-sidebar.md](./auditoria-coordinaciones-sidebar.md)
+- Sedes / Baja California: [sedes-multisede-y-aislamiento-operativo.md](./sedes-multisede-y-aislamiento-operativo.md)
 - Coordinación de exámenes y rutas: [eventos-documentos-coordinacion](./eventos-documentos-coordinacion.md)
+- Padres y subgrupos: [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)
 - Índice wiki: [README](./README.md)

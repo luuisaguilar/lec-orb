@@ -15,7 +15,6 @@ import {
     ShieldCheck,
     Trash2,
     Wrench,
-    ShieldAlert,
 } from "lucide-react";
 import { useUser } from "@/lib/hooks/use-user";
 import { toast } from "sonner";

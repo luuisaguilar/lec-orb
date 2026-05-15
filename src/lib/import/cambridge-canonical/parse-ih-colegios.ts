@@ -3,7 +3,6 @@ import * as XLSX from "xlsx";
 import { cellToIsoDate, spanishOrLooseDateToIso } from "./dates";
 
 /** Año del ciclo en planificación IH (UNOi 2025–2026 → fechas sueltas sin año). */
-const PLANNING_YEAR = 2026;
 import { ihExamLabelToExamType } from "./exam-labels";
 import type { IHApplicationRecord } from "./types";
 

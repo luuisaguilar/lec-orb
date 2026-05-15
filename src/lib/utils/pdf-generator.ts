@@ -47,7 +47,6 @@ export async function generateJobProfilePDF(node: OrgNode) {
   const headerColor: [number, number, number] = [15, 23, 42];
   const margin = 15;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const contentWidth = pageWidth - margin * 2;
   let y = margin;
 
   // ─── HEADER ───

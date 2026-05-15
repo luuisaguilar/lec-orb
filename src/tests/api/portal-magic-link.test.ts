@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/v1/portal/magic-link/route";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 
 const signInWithOtp = vi.fn();
 
@@ -16,9 +18,6 @@ vi.mock("@supabase/supabase-js", () => ({
 vi.mock("@/lib/env/app-url", () => ({
     getConfiguredAppOrigin: vi.fn(() => "https://app.test"),
 }));
-
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@supabase/supabase-js";
 
 describe("POST /api/v1/portal/magic-link", () => {
     const token = "0123456789abcdef0123456789abcdef";

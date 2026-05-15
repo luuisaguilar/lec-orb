@@ -3,6 +3,7 @@ title: "Sidebar — módulos padre, submódulos y cómo pedirlos al agente"
 slug: sidebar-modulos-y-agrupacion
 date: 2026-05-14
 updated: 2026-05-15
+tags: [wiki, sidebar, module_registry, navigation, rbac, coordinaciones]
 tags: [wiki, sidebar, module_registry, navigation, rbac]
 status: active
 audience: [engineering, product]
@@ -12,6 +13,12 @@ related_components:
 ---
 
 # Sidebar: jerarquía y convenciones (LEC Orb)
+
+Para la **auditoría de los cuatro ejes de coordinación** (Exámenes, Feria del Libro, Académica, Proyectos) y el roadmap de consolidación, ver:
+
+- [COORDINACIONES_LEC_ARQUITECTURA.md](../COORDINACIONES_LEC_ARQUITECTURA.md)
+- [auditoria-coordinaciones-sidebar.md](./auditoria-coordinaciones-sidebar.md)
+- [sedes-multisede-y-aislamiento-operativo.md](./sedes-multisede-y-aislamiento-operativo.md)
 
 El menú lateral del dashboard se arma en **`src/components/sidebar-nav.tsx`** a partir de:
 
@@ -70,7 +77,7 @@ Si quieres que el agente **siempre** respete una guía de marca, lo habitual es 
 ## Nivel 2 — Submódulos en sidebar (anidado especial)
 
 - **«Coordinación de Exámenes»** usa **`subgroups`**: segunda y tercera fila (p. ej. Cambridge → Sistema Uno → enlaces), en `buildCoordinationExamSubgroups()` y sets `COORD_EXAM_*_SLUGS`.
-- **«Coordinación de proyectos»** añade **enlaces sintéticos** (Catálogos, Evidencias, Comparativos) en la misma categoría que el slug `coordinacion-proyectos-lec`, en `sidebar-nav.tsx` (rama `category === 'Coordinación de proyectos'`). No son filas extra en `module_registry`; comparten RBAC del mismo slug.
+- **«Coordinación de proyectos»** usa **`subgroups`**: primero **Vista general** (enlace **Overview** al `module_registry`), luego **Catálogos, evidencias y comparativos** (subdesplegable con tres rutas). Implementado en `buildCoordinacionProyectosSubgroups()` en `sidebar-nav.tsx`.
 
 Para **otro padre** con subgrupos colapsables como Exámenes: añadir rama `if (category === '…') { … subgroups … }` y un builder tipo `buildTuPadreSubgroups`.
 
@@ -115,7 +122,7 @@ Sidebar / module_registry:
 ## Caso concreto: Coordinación de proyectos (LEC)
 
 - **Padre sidebar:** categoría **`Coordinación de proyectos`** (hermano de **Coordinación de Exámenes**).
-- **Hijos en sidebar:** entrada del registry (`coordinacion-proyectos-lec`) + enlaces **Catálogos**, **Evidencias**, **Comparativos** (rutas `/catalogos`, `/evidencias`, `/comparativos`).
+- **Hijos en sidebar:** subgrupo **Vista general** (entrada del registry) y subgrupo colapsable **Catálogos, evidencias y comparativos** (tres enlaces). Misma categoría y RBAC `coordinacion-proyectos-lec`.
 - **Pestañas en vista:** Overview, Concentrado, Exámenes, Cursos, Importar (`coordinacion-proyectos-shell.tsx`).
 - **Slug / RBAC:** `coordinacion-proyectos-lec` → base `/dashboard/coordinacion-proyectos-lec`.
 - Migraciones de alineación: `20260615_coordinacion_proyectos_lec_nav_category.sql`, `20260616_coordinacion_proyectos_sidebar_parent.sql`.

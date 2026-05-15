@@ -2,7 +2,7 @@
 title: "LEC Orb Wiki — índice temático"
 slug: wiki-index
 date: 2026-05-09
-updated: 2026-05-09
+updated: 2026-05-15
 tags: [wiki, moc, index, knowledge-map]
 status: active
 audience: [engineering]
@@ -48,6 +48,8 @@ Este documento agrupa el conocimiento del repo **por dominio de negocio y por de
 
 | Tema | Documentos |
 |------|------------|
+| Plan documentación backend (4 pasos) | [BACKEND_DOCUMENTATION_PLAN](../BACKEND_DOCUMENTATION_PLAN.md) |
+| Flujos backend E2E (F1–F7) | [BACKEND_FLOWS](../BACKEND_FLOWS.md) |
 | Módulos y APIs | [API_MODULES](../API_MODULES.md) |
 | Esquema de datos | [DATABASE_SCHEMA](../DATABASE_SCHEMA.md) |
 | RBAC / grupos | [RBAC_9_GROUPS_VALIDATION](../RBAC_9_GROUPS_VALIDATION.md) |
@@ -78,6 +80,24 @@ Detalle de validación (Zod, sede, puesto, orden 400 vs 403): **[invitaciones-ca
 | Runbook PM | [PM_RUNBOOK](../PM_RUNBOOK.md) | |
 
 **Rutas de aplicación (referencia rápida):** `/dashboard/proyectos-global/*`, `/dashboard/proyectos` — detalle en [PM_PATHS_AND_ROUTES](../PM_PATHS_AND_ROUTES.md).
+
+---
+
+## E2. Cuatro coordinaciones LEC (sidebar, hub KPI, multisede)
+
+**Entrada canónica:** **[COORDINACIONES_LEC_ARQUITECTURA](../COORDINACIONES_LEC_ARQUITECTURA.md)** — visión de los cuatro ejes (Exámenes, Feria del Libro, Académica, Proyectos) e interconexión.
+
+| Tema | Wiki / docs |
+|------|-------------|
+| Auditoría sidebar + roadmap por fases | [auditoria-coordinaciones-sidebar](./auditoria-coordinaciones-sidebar.md) |
+| Hub concentrado (operación) | [coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md) |
+| Hub concentrado (técnico) | [COORDINACION_PROYECTOS_LEC](../COORDINACION_PROYECTOS_LEC.md) |
+| Checklist UI/API release | [coordinacion-proyectos-lec-auditoria-ui-runbook](./coordinacion-proyectos-lec-auditoria-ui-runbook.md) |
+| Sedes (BC) y aislamiento operador | [sedes-multisede-y-aislamiento-operativo](./sedes-multisede-y-aislamiento-operativo.md) |
+| Convenciones sidebar / padres | [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md) |
+| Sistema Uno, Feria label, Directorio | [sidebar-navegacion-y-sistema-uno](./sidebar-navegacion-y-sistema-uno.md) |
+
+**Dependencias:** `module_registry` ↔ `sidebar-nav.tsx` ↔ `lec_cp_departments` (departamentos ≠ categorías sidebar).
 
 ---
 
@@ -169,6 +189,10 @@ Entrada: [executive-observability/README](../executive-observability/README.md).
 |------|---------|
 | Coordinación de exámenes + documentos de evento | [eventos-documentos-coordinacion](./eventos-documentos-coordinacion.md) |
 | Invitaciones — campos y API | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
+| Arquitectura 4 coordinaciones | [COORDINACIONES_LEC_ARQUITECTURA](../COORDINACIONES_LEC_ARQUITECTURA.md) |
+| Auditoría sidebar coordinaciones | [auditoria-coordinaciones-sidebar](./auditoria-coordinaciones-sidebar.md) |
+| Sedes / Baja California / RLS | [sedes-multisede-y-aislamiento-operativo](./sedes-multisede-y-aislamiento-operativo.md) |
+| Coordinación proyectos LEC (operación) | [coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md) |
 
 ---
 
@@ -182,6 +206,8 @@ LEC_ORB_MASTER_MAP ←→ API_MODULES ←→ DATABASE_SCHEMA
   RBAC validation      module_registry / sidebar-nav
        ↓
 ONBOARDING + ADR-001 → invitations API → join flow
+       ↓
+COORDINACIONES_LEC_ARQUITECTURA → sidebar-nav / lec_cp_* / 4 ejes
        ↓
 PM module (ADR-007) ↔ proyectos-global / proyectos
        ↓

@@ -167,7 +167,7 @@ function KanbanView({ records, statusField, listFields, moduleSlug }: {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export default function DynamicModule({ module, fields, orgId: _orgId, userRole }: DynamicModuleProps) {
+export default function DynamicModule({ module, fields, userRole }: DynamicModuleProps) {
     const [search, setSearch] = useState("");
     const [showCreate, setShowCreate] = useState(false);
     const [view, setView] = useState<"table" | "kanban">("table");

@@ -4,6 +4,8 @@ Base path: `/api/v1/`
 Auth: todos los endpoints requieren `withAuth`. Ver patrón en `CLAUDE.md`.  
 Tenant: todos los queries filtran por `org_id` del member autenticado.
 
+> **Última ampliación (Paso 1 plan backend):** CRM, IH Billing, PM, Courses. Schema: [DATABASE_SCHEMA §17–22](./DATABASE_SCHEMA.md).
+
 ---
 
 ## Índice rápido
@@ -36,7 +38,11 @@ Tenant: todos los queries filtran por `org_id` del member autenticado.
 | [TOEFL — Administrations](#toefl--administrations) | `/toefl/administrations` | GET POST | — | `toefl_administrations` |
 | [TOEFL — Codes](#toefl--codes) | `/toefl/codes` | GET POST | — | `toefl_codes` |
 | [Users](#users) | `/users` | GET DELETE | — | `org_members`, `profiles` |
-| [Coordinación proyectos LEC](#coordinación-proyectos-lec) | `/coordinacion-proyectos/*` | GET POST PATCH DELETE | — | `lec_program_projects`, `lec_exam_sales_lines`, `lec_course_offerings`, `lec_cp_*`, `lec_kpi_size_comparison` |
+| [Coordinación proyectos LEC](#coordinación-proyectos-lec) | `/coordinacion-proyectos/*` | GET POST PATCH DELETE | — | `lec_*` |
+| [CRM](#crm-comercial) | `/crm/*` | GET POST PATCH DELETE | — | `crm_contacts`, `crm_opportunities`, `crm_activities` |
+| [IH Billing (CxC)](#ih-billing-cxc-cambridge) | `/finance/ih/*` | GET POST PATCH | — | `ih_sessions`, `ih_invoices`, `ih_payments`, `ih_tariffs` |
+| [Project Management](#project-management-pm) | `/pm/*` | GET POST PATCH DELETE | — | `pm_projects`, `pm_tasks`, … |
+| [Courses (simulador)](#courses-simulador-académico) | `/courses` | GET POST PUT | — | `courses` |
 
 ---
 
@@ -1152,6 +1158,204 @@ Actualiza rol, sede (`location` vs catálogo `org_locations`), vínculo a RRHH y
 ```
 
 
+## CRM comercial
+
+**Ruta base:** `/api/v1/crm`  
+**RBAC en rutas:** `module: "crm"` — en `permissions.ts`, el slug `crm` acepta cualquier fila en `member_module_access` entre: `crm`, `crm-pipeline`, `crm-directory`, `crm-activities`, `crm-metrics`.
+
+**ADR / tablas:** [ADR-009](./adr/ADR-009-crm-module-foundation.md), [DATABASE_SCHEMA §18](./DATABASE_SCHEMA.md#18-crm-comercial-crm_).
+
+### GET `/crm/contacts`
+
+**Acción:** `view`  
+**Query:** `type`, `source`, `q`, `assigned_to`, `limit` (max 500), `offset`.
+
+**Response 200:**
+```json
+{ "contacts": [...], "total": 42 }
+```
+
+### POST `/crm/contacts`
+
+**Acción:** `edit` — body Zod: `type`, `name`, `email`, `phone`, `source`, `school_id`, etc.
+
+**Response 201:** `{ "contact": { ... } }`
+
+### GET/PATCH/DELETE `/crm/contacts/[id]`
+
+CRUD por id. Mutaciones con `logAudit`.
+
+### GET `/crm/opportunities`
+
+**Acción:** `view`  
+**Query:** `stage`, `contact_id`, `assigned_to`, `q`.
+
+**Response 200:**
+```json
+{ "opportunities": [...], "total": 10 }
+```
+
+> **Gotcha:** la respuesta usa la clave `opportunities`, no `data`. El join incluye `crm_contacts(id, name, type, email, phone)`.
+
+### POST `/crm/opportunities`
+
+**Acción:** `edit`  
+**Body:** `contact_id`, `title`, `stage`, `expected_amount`, `probability`, `expected_close`, `quote_id`, `assigned_to`, `notes`.
+
+### GET/PATCH/DELETE `/crm/opportunities/[id]`
+
+CRUD por id.
+
+### GET `/crm/activities`
+
+**Acción:** `view` — filtros: `type`, `status`, `contact_id`, `opportunity_id`, paginación.
+
+### POST `/crm/activities`
+
+**Acción:** `edit` — `type`, `subject`, `contact_id`, `due_date`, etc.
+
+### GET/PATCH/DELETE `/crm/activities/[id]`
+
+Incluye marcar completada / eliminar según implementación en `[id]/route.ts`.
+
+**RLS DB:** escritura CRM en Postgres solo admin/supervisor; operadores con `can_view` en módulo CRM pueden leer vía API si tienen permiso.
+
+---
+
+## IH Billing (CxC Cambridge)
+
+**Ruta base:** `/api/v1/finance/ih`  
+**RBAC en rutas:** `module: "finanzas"` (alias → `payments` en `MODULE_ALIAS_MAP`). El sidebar usa slug `ih-billing` en `member_module_access`.
+
+**Tablas:** [DATABASE_SCHEMA §19](./DATABASE_SCHEMA.md#19-ih-billing--cxc-cambridge-ih_).  
+**UI:** `/dashboard/coordinacion-examenes/cxc`.
+
+### GET `/finance/ih/sessions`
+
+**Acción:** `view`  
+**Query:** `region` (`SONORA` \| `BAJA_CALIFORNIA`), `status`, `year`, `school` (ilike).
+
+**Response 200:** array de sesiones (no wrapper `{ sessions }`).
+
+### POST `/finance/ih/sessions`
+
+**Acción:** `edit`  
+**Body:** `school_name`, `exam_type`, `session_date`, `region`, `students_applied`, `tariff`, `status`, `school_id`, `ih_invoice_id`.  
+**409** si viola UNIQUE por escuela/examen/fecha.
+
+### GET/PATCH/DELETE `/finance/ih/sessions/[id]`
+
+CRUD sesión individual.
+
+### POST `/finance/ih/sessions/import`
+
+Import masivo desde Excel (ver ruta `sessions/import/route.ts`).
+
+### GET `/finance/ih/invoices`
+
+**Acción:** `view` — incluye join `ih_sessions(...)`. Filtros `region`, `status`.
+
+### POST `/finance/ih/invoices`
+
+**Acción:** `edit` — opcional `session_ids[]` para ligar sesiones al crear.
+
+### GET/PATCH `/finance/ih/invoices/[id]`
+
+Detalle y actualización. Ruta print en UI: `invoices/[id]/print`.
+
+### GET/POST `/finance/ih/payments`
+
+Listado y alta de pagos IH (`region`, `amount`, `payment_date`, `reference`, `proof_path`).
+
+### GET/PATCH `/finance/ih/payments/[id]`
+
+### POST `/finance/ih/payments/[id]/reconcile`
+
+**Acción:** `edit`  
+**Body:** `{ "mode": "manual", "allocations": [{ "session_id", "students_paid", "amount" }] }` o `{ "mode": "auto" }` (sugerencia sesiones PENDING misma región).
+
+### GET/POST `/finance/ih/tariffs`
+
+Lista y alta de tarifas por año/tipo examen.
+
+### POST `/finance/ih/tariffs` (seed)
+
+Carga tarifas históricas 2023–2026 embebidas en código si la org no tiene filas.
+
+### GET `/finance/ih/summary`
+
+**Acción:** `view`  
+**Query:** `year` (default año actual).
+
+**Response 200:** agregados por región (`executed`, `paid`, `balance`, `future`, `alerts` por escuela vencida).
+
+---
+
+## Project Management (PM)
+
+**Ruta base:** `/api/v1/pm`  
+**RBAC module:** `project-management`  
+**Doc:** [PROJECT_MANAGEMENT_MODULE.md](./PROJECT_MANAGEMENT_MODULE.md), [PM_PATHS_AND_ROUTES.md](./PM_PATHS_AND_ROUTES.md).
+
+### GET `/pm/projects`
+
+**Acción:** `view` — query `status`, `q`.
+
+**Response 200:**
+```json
+{ "projects": [...], "total": 3 }
+```
+
+### POST `/pm/projects`
+
+**Acción:** `edit` — crea proyecto + tablero + columnas por defecto (`name`, `key` opcional, `description`, `owner_user_id`).
+
+### GET/PATCH/DELETE `/pm/projects/[id]`
+
+### GET `/pm/tasks`
+
+**Acción:** `view` — filtros por proyecto/columna/asignado (ver route).
+
+### POST `/pm/tasks`
+
+**Acción:** `edit` — alta en columna.
+
+### GET/PATCH/DELETE `/pm/tasks/[id]`
+
+### POST `/pm/tasks/[id]/move`
+
+**Acción:** `edit` — body `{ "column_id": "uuid", "sort_order"?: number }`. Actualiza `completed_at` si columna `is_done`.
+
+---
+
+## Courses (simulador académico)
+
+**Ruta:** `/api/v1/courses`  
+**RBAC module:** `courses`  
+**Tabla:** `courses` — ver [DATABASE_SCHEMA §20](./DATABASE_SCHEMA.md#20-cursos-simulador-e-inventario-feria).
+
+Distinto de **`lec_course_offerings`** ([Coordinación proyectos LEC](#coordinación-proyectos-lec)).
+
+### GET `/courses`
+
+**Acción:** `view` — lista por `org_id`, orden `created_at` desc.
+
+**Response 200:** array de cursos (sin wrapper).
+
+### POST `/courses`
+
+**Acción:** `edit` — body spread en insert; `status` default `draft`. `logAudit` en INSERT.
+
+### PUT `/courses`
+
+**Acción:** `edit` — body debe incluir `id`; actualización parcial del resto de campos.
+
+> No hay `DELETE` documentado en route actual; usar `status = cancelled` si se añade en UI.
+
+**Inventario feria:** las rutas `/packs`, `/scan` usan módulo `inventory` y tablas legacy `packs`/`movements`; el inventario multi-ubicación (`inventory_*`) se expone desde UI `/dashboard/logistica/inventario` (endpoints dedicados pueden añadirse — verificar `src/app/api` antes de integrar).
+
+---
+
 ## Coordinación proyectos LEC
 
 **Ruta base:** `/api/v1/coordinacion-proyectos`  
@@ -1385,6 +1589,36 @@ en la tabla `module_permissions` de Supabase.
 | /sgc/catalogs/severities | POST | sgc | edit | Solo admin/supervisor |
 | /sgc/catalogs/severities/[id] | PATCH | sgc | edit | Solo admin/supervisor |
 | /sgc/catalogs/severities/[id] | DELETE | sgc | edit | Solo admin/supervisor |
+| `/crm/contacts` | GET | crm | view | Slug CRM vía `CRM_ACCESS_SLUGS` |
+| `/crm/contacts` | POST | crm | edit | DB: supervisor+ |
+| `/crm/contacts/[id]` | PATCH | crm | edit | — |
+| `/crm/contacts/[id]` | DELETE | crm | delete | — |
+| `/crm/opportunities` | GET | crm | view | Response `{ opportunities }` |
+| `/crm/opportunities` | POST | crm | edit | — |
+| `/crm/opportunities/[id]` | PATCH | crm | edit | — |
+| `/crm/activities` | GET | crm | view | — |
+| `/crm/activities` | POST | crm | edit | — |
+| `/finance/ih/sessions` | GET | finanzas | view | Alias → payments |
+| `/finance/ih/sessions` | POST | finanzas | edit | — |
+| `/finance/ih/sessions/import` | POST | finanzas | edit | — |
+| `/finance/ih/invoices` | GET | finanzas | view | — |
+| `/finance/ih/invoices` | POST | finanzas | edit | — |
+| `/finance/ih/payments` | GET | finanzas | view | — |
+| `/finance/ih/payments` | POST | finanzas | edit | — |
+| `/finance/ih/payments/[id]/reconcile` | POST | finanzas | edit | manual \| auto |
+| `/finance/ih/tariffs` | GET | finanzas | view | — |
+| `/finance/ih/tariffs` | POST | finanzas | edit | Incl. seed histórico |
+| `/finance/ih/summary` | GET | finanzas | view | Dashboard CxC |
+| `/pm/projects` | GET | project-management | view | — |
+| `/pm/projects` | POST | project-management | edit | Crea board + columnas |
+| `/pm/tasks` | GET | project-management | view | — |
+| `/pm/tasks` | POST | project-management | edit | — |
+| `/pm/tasks/[id]/move` | POST | project-management | edit | Kanban drag |
+| `/courses` | GET | courses | view | — |
+| `/courses` | POST | courses | edit | — |
+| `/courses` | PUT | courses | edit | Body incluye `id` |
+| `/coordinacion-proyectos/overview` | GET | coordinacion-proyectos-lec | view | Ver sección LEC |
+| `/coordinacion-proyectos/import` | POST | coordinacion-proyectos-lec | edit | Bulk JSON |
 > **Patrones de delete:**
 > - **Hard delete** (elimina el registro): `events`, `applicators`
 > - **Soft delete vía `deleted_at`**: `cenni`, `packs`, `schools`
