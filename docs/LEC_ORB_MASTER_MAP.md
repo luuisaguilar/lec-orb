@@ -1,6 +1,6 @@
 # LEC Orb Master Map
 
-Ultima actualizacion: 2026-05-07
+Ultima actualizacion: 2026-05-15
 Fuente principal: `README.md`, `PROJECT_CONTEXT.md`, `HANDOFF.md`, `docs/ROADMAP.md`.
 
 ---
@@ -81,6 +81,14 @@ Este flujo define la base comun de seguridad y consistencia para todos los modul
 - Concentrado mensual, lineas de examenes, oferta de cursos, catalogos por org, comparativos KPI; import bulk JSON.
 - Enlaces opcionales a `schools`, `events`, `crm_opportunities`, `pm_projects` y hub desde Coordinacion de Examenes (`/dashboard/coordinacion-examenes/proyectos`).
 - Documentacion: `docs/COORDINACION_PROYECTOS_LEC.md`, wiki `docs/wiki/coordinacion-proyectos-lec.md`.
+
+### 4.8 Cuatro coordinaciones LEC (arquitectura de producto)
+- **Documento maestro:** `docs/COORDINACIONES_LEC_ARQUITECTURA.md`.
+- **Ejes:** Coordinacion Examenes (sidebar anidado), Feria del Libro (`inventory` / categoria Logistica), Coordinacion Academica (`courses` / categoria Academico), hub Coordinacion de Proyectos (`coordinacion-proyectos-lec`).
+- **Interconexion:** `lec_cp_departments` + FKs en `lec_program_projects`; departamentos seed incluyen BC y Feria — no son modulos de menu.
+- **Multisede:** `org_locations`, `org_members.location`; plan RLS en `docs/wiki/sedes-multisede-y-aislamiento-operativo.md`.
+- **Auditoria sidebar:** `docs/wiki/auditoria-coordinaciones-sidebar.md`.
+- **Flujos E2E backend:** `docs/BACKEND_FLOWS.md` (F1–F7).
 
 ---
 

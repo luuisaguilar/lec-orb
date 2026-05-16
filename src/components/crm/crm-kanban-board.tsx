@@ -42,7 +42,7 @@ const STAGE_CONFIG: Record<CrmOpportunityStage, { name: string; color: string; o
 type CrmKanbanBoardProps = {
     opportunities: CrmOpportunity[];
     onMoveOpportunity: (id: string, stage: CrmOpportunityStage) => Promise<void>;
-    onEditOpportunity: (opp: CrmOpportunity) => void;
+    onOpenOpportunityDetail: (opp: CrmOpportunity) => void;
 };
 
 function stageDroppableId(stage: string) {
@@ -110,10 +110,10 @@ function DroppableStage({
 
 function DraggableOppCard({
     opp,
-    onEdit,
+    onOpenDetail,
 }: {
     opp: CrmOpportunity;
-    onEdit: (o: CrmOpportunity) => void;
+    onOpenDetail: (o: CrmOpportunity) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: oppDraggableId(opp.id),
@@ -129,21 +129,32 @@ function DraggableOppCard({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "cursor-grab rounded-xl border bg-card/80 backdrop-blur-md p-3.5 shadow-sm hover:shadow-md transition-all duration-200 active:cursor-grabbing group",
+                "rounded-xl border bg-card/80 backdrop-blur-md p-3.5 shadow-sm hover:shadow-md transition-all duration-200 group",
                 isDragging ? "opacity-60 ring-2 ring-indigo-500/50 shadow-xl shadow-indigo-500/20" : "border-white/5 hover:border-indigo-500/30"
             )}
         >
             <div className="flex gap-2.5">
                 <button
                     type="button"
-                    className="mt-1 shrink-0 touch-none text-muted-foreground/30 hover:text-indigo-400 transition-colors"
+                    className="mt-1 shrink-0 touch-none cursor-grab text-muted-foreground/30 hover:text-indigo-400 transition-colors active:cursor-grabbing"
                     {...listeners}
                     {...attributes}
                     aria-label="Arrastrar"
                 >
                     <GripVertical className="h-5 w-5" />
                 </button>
-                <div className="min-w-0 flex-1 text-left cursor-pointer" onClick={() => onEdit(opp)}>
+                <div
+                    className="min-w-0 flex-1 cursor-pointer text-left"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpenDetail(opp)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onOpenDetail(opp);
+                        }
+                    }}
+                >
                     {opp.contact_name ? (
                         <p className="text-sm font-semibold text-foreground/90 mb-0.5 truncate">{opp.contact_name}</p>
                     ) : null}
@@ -181,7 +192,7 @@ const dropAnimation = {
     }),
 };
 
-export function CrmKanbanBoard({ opportunities, onMoveOpportunity, onEditOpportunity }: CrmKanbanBoardProps) {
+export function CrmKanbanBoard({ opportunities, onMoveOpportunity, onOpenOpportunityDetail }: CrmKanbanBoardProps) {
     const [activeOpp, setActiveOpp] = useState<CrmOpportunity | null>(null);
 
     const sensors = useSensors(
@@ -268,7 +279,7 @@ export function CrmKanbanBoard({ opportunities, onMoveOpportunity, onEditOpportu
                         count={oppsByStage.get(stage)?.length || 0}
                     >
                         {(oppsByStage.get(stage) ?? []).map((o) => (
-                            <DraggableOppCard key={o.id} opp={o} onEdit={onEditOpportunity} />
+                            <DraggableOppCard key={o.id} opp={o} onOpenDetail={onOpenOpportunityDetail} />
                         ))}
                     </DroppableStage>
                 ))}

@@ -2,7 +2,7 @@
 title: "Eventos — documentos por examen y Coordinación de Exámenes"
 slug: eventos-documentos-coordinacion
 date: 2026-05-09
-updated: 2026-05-09
+updated: 2026-05-15
 tags: [wiki, events, documents, exams, navigation, supabase]
 status: active
 audience: [engineering, operations]
@@ -95,6 +95,8 @@ Tras aplicar migraciones en un entorno, recargar sesión; el menú sale de **`GE
 
 ## Documentación relacionada
 
+- [COORDINACIONES_LEC_ARQUITECTURA](../COORDINACIONES_LEC_ARQUITECTURA.md) — cuatro coordinaciones y hub KPI.
+- [auditoria-coordinaciones-sidebar](./auditoria-coordinaciones-sidebar.md) — inventario sidebar y roadmap.
 - [CAMBRIDGE_LOGISTICS_IMPORT_MATRIX](../CAMBRIDGE_LOGISTICS_IMPORT_MATRIX.md) — contexto logístico Cambridge.
 - [API_MODULES](../API_MODULES.md) — inventario de módulos API.
 - [Índice Wiki](./README.md) — mapa temático.

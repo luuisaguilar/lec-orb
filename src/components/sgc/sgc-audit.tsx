@@ -147,7 +147,6 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
   const audit: AuditInstance | undefined = data?.audit;
   const items: AuditItem[] = useMemo(() => data?.audit?.checks ?? [], [data?.audit?.checks]);
   const cars: AuditCar[] = useMemo(() => data?.audit?.cars ?? [], [data?.audit?.cars]);
-  const timeline: AuditTimeline[] = useMemo(() => data?.audit?.timeline ?? [], [data?.audit?.timeline]);
 
   const selectedCar = useMemo(() => cars.find(c => c.id === selectedCarId), [cars, selectedCarId]);
 
@@ -313,7 +312,6 @@ function AuditDetail({ auditId, onBack }: { auditId: string; onBack: () => void 
 
   return (
     <div className="space-y-6">
-      {/* ... header and cards ... */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={onBack} className="border-slate-200 dark:border-slate-800 h-9">
@@ -661,7 +659,7 @@ export default function SGCAudit() {
   const [creating, setCreating] = useState(false);
 
   const { data, isLoading, mutate } = useSWR("/api/v1/sgc/audits", fetcher);
-  const { hasPermission, isAdmin, isAtLeastSupervisor, isLoading: userLoading } = useUser();
+  const { isAtLeastSupervisor, isLoading: userLoading } = useUser();
 
   const audits: AuditInstance[] = useMemo(() => data?.audits ?? [], [data?.audits]);
 

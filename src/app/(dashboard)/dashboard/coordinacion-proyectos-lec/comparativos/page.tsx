@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CP_MODULE } from "@/lib/coordinacion-proyectos/schemas";
 import { useUser } from "@/lib/hooks/use-user";
+import { CpDeniedState, CpLoadingState, CpPageBlurb, cpTableShellClass } from "@/app/(dashboard)/dashboard/coordinacion-proyectos-lec/_components/cp-ui";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -29,8 +30,8 @@ export default function ComparativosCpPage() {
         [data, overrides],
     );
 
-    if (userLoading) return <p className="text-muted-foreground">Cargando…</p>;
-    if (!hasPermission(CP_MODULE, "view")) return <p className="text-destructive">Sin acceso.</p>;
+    if (userLoading) return <CpLoadingState />;
+    if (!hasPermission(CP_MODULE, "view")) return <CpDeniedState message="Sin acceso." />;
 
     const save = async () => {
         if (!hasPermission(CP_MODULE, "edit")) {
@@ -66,8 +67,8 @@ export default function ComparativosCpPage() {
 
     return (
         <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Totales por tamaño (hoja GRAFICA). Edita y guarda.</p>
-            <div className="rounded-md border border-slate-700/50">
+            <CpPageBlurb>Totales por tamaño (hoja GRAFICA). Edita y guarda.</CpPageBlurb>
+            <div className={cpTableShellClass}>
                 <Table>
                     <TableHeader>
                         <TableRow className="border-b border-border/80 bg-muted/40 hover:bg-muted/40 dark:bg-muted/25">

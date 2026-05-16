@@ -2,7 +2,7 @@
 title: "LEC Orb — Mapa de contenidos (MOC)"
 slug: docs-index
 date: 2026-05-09
-updated: 2026-05-14
+updated: 2026-05-15
 status: active
 audience: [engineering, product, operations]
 related_components:
@@ -48,8 +48,9 @@ Este archivo es el **índice maestro** (*Map of Content*) del repositorio `lec-o
 
 | Recurso | Para qué sirve |
 |--------|----------------|
-| [API_MODULES](./API_MODULES.md) | Catálogo de módulos API y convenciones (incluye **Coordinación proyectos LEC**). |
-| [COORDINACION_PROYECTOS_LEC](./COORDINACION_PROYECTOS_LEC.md) | Módulo nativo: indicadores, exámenes mensuales, cursos operativos; tablas `lec_*` y RBAC. |
+| [BACKEND_DOCUMENTATION_PLAN](./BACKEND_DOCUMENTATION_PLAN.md) | Roadmap para cerrar huecos de documentación backend (auditoría). |
+| [BACKEND_FLOWS](./BACKEND_FLOWS.md) | Flujos E2E as-built (invitación, eventos, nómina, IH, portal, hub LEC, CRM). |
+| [API_MODULES](./API_MODULES.md) | Catálogo de módulos API y convenciones. |
 | [DATABASE_SCHEMA](./DATABASE_SCHEMA.md) | Esquema y convenciones de datos (alto nivel). |
 | [RBAC_9_GROUPS_VALIDATION](./RBAC_9_GROUPS_VALIDATION.md) | Validación de grupos y permisos (RBAC). |
 | [DEMO_MODE](./DEMO_MODE.md) | Modo demo: motivación y comportamiento esperado. |
@@ -75,8 +76,19 @@ Este archivo es el **índice maestro** (*Map of Content*) del repositorio `lec-o
 | [PM_PATHS_AND_ROUTES](./PM_PATHS_AND_ROUTES.md) | Rutas y paths del área PM. |
 | [PM_RUNBOOK](./PM_RUNBOOK.md) | Runbook operativo PM. |
 | [ADR-007 — PM foundation](./adr/ADR-007-project-management-module-foundation.md) | Decisión de arquitectura del PM. |
-| [COORDINACION_PROYECTOS_LEC](./COORDINACION_PROYECTOS_LEC.md) | Concentrado operativo/comercial (indicadores, exámenes mensuales, cursos); distinto del PM Kanban. |
-| [Wiki — Coordinación proyectos LEC](./wiki/coordinacion-proyectos-lec.md) | Guía operativa: acceso, import JSON, integraciones. |
+
+---
+
+## 5b. Coordinaciones LEC (Exámenes, Feria, Académica, Proyectos)
+
+| Recurso | Para qué sirve |
+|--------|----------------|
+| [BACKEND_DOCUMENTATION_PLAN](./BACKEND_DOCUMENTATION_PLAN.md) | **Plan en 4 pasos:** schema/API, flujos E2E, drift check, estados implementado vs planificado. |
+| [COORDINACIONES_LEC_ARQUITECTURA](./COORDINACIONES_LEC_ARQUITECTURA.md) | **Entrada canónica:** cuatro ejes, sidebar objetivo, interconexión y roadmap. |
+| [COORDINACION_PROYECTOS_LEC](./COORDINACION_PROYECTOS_LEC.md) | Hub KPI / concentrado: tablas, API, RBAC. |
+| [Wiki — auditoría sidebar](./wiki/auditoria-coordinaciones-sidebar.md) | Inventario mayo 2026, matrices condensar/agregar. |
+| [Wiki — sedes y BC](./wiki/sedes-multisede-y-aislamiento-operativo.md) | Multisede sin comprometer datos operativos. |
+| [Wiki — operación hub LEC](./wiki/coordinacion-proyectos-lec.md) | Guía para coordinadores (pestañas, import, departamentos). |
 
 ---
 
@@ -160,10 +172,14 @@ Todos bajo [`docs/adr/`](./adr/):
 ## 12. Wiki (explicación profunda por dominio)
 
 - **[Índice del Wiki (temas, dependencias y enlaces)](./wiki/README.md)** — lectura recomendada después de este MOC.
+- **[Coordinaciones LEC — arquitectura](./COORDINACIONES_LEC_ARQUITECTURA.md)** — cuatro ejes + hub + multisede.
+- **[Flujos backend E2E](./BACKEND_FLOWS.md)** — F1–F7 con diagramas y estado implementado.
+- **[Auditoría sidebar coordinaciones](./wiki/auditoria-coordinaciones-sidebar.md)** — estado actual y plan por fases.
+- **[Sedes multiregión](./wiki/sedes-multisede-y-aislamiento-operativo.md)** — Baja California y RLS propuesto.
+- **[Coordinación proyectos LEC — operación](./wiki/coordinacion-proyectos-lec.md)** — guía de uso del concentrado.
 - **[Eventos — documentos y Coordinación de Exámenes](./wiki/eventos-documentos-coordinacion.md)** — rutas, tags, migraciones y navegación.
 - **[Invitaciones — campos obligatorios y API](./wiki/invitaciones-campos-y-api.md)** — contrato Zod, orden de validación y sedes/puesto.
-- **[Coordinación proyectos LEC](./wiki/coordinacion-proyectos-lec.md)** — indicadores, exámenes, cursos, importación e integración con otros módulos.
-- **[Sidebar — módulos padre / submódulos / plantilla para el agente](./wiki/sidebar-modulos-y-agrupacion.md)** — `module_registry.category`, `sidebar-nav.tsx`, casos especiales (Coordinación de Exámenes).
+- **[Sidebar — módulos y agrupación](./wiki/sidebar-modulos-y-agrupacion.md)** — padres, subgrupos, plantilla para agentes.
 
 ---
 

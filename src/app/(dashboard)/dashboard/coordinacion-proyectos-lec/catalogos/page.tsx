@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { CP_MODULE } from "@/lib/coordinacion-proyectos/schemas";
 import { useUser } from "@/lib/hooks/use-user";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CpDeniedState, CpListCard, CpLoadingState } from "../_components/cp-ui";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -11,26 +11,26 @@ export default function CatalogosCpPage() {
     const { hasPermission, isLoading: userLoading } = useUser();
     const { data, isLoading } = useSWR("/api/v1/coordinacion-proyectos/catalog", fetcher);
 
-    if (userLoading) return <p className="text-muted-foreground">Cargando…</p>;
-    if (!hasPermission(CP_MODULE, "view")) return <p className="text-destructive">Sin acceso.</p>;
+    if (userLoading) return <CpLoadingState />;
+    if (!hasPermission(CP_MODULE, "view")) return <CpDeniedState message="Sin acceso." />;
 
     const renderList = (title: string, items: { id: string; name: string }[]) => (
-        <Card className="border-slate-700/50 bg-slate-900/40">
-            <CardHeader>
-                <CardTitle className="text-base">{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                    <p className="text-sm text-muted-foreground">Cargando…</p>
-                ) : (
-                    <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
-                        {(items ?? []).map((x) => (
-                            <li key={x.id}>{x.name}</li>
-                        ))}
-                    </ul>
-                )}
-            </CardContent>
-        </Card>
+        <CpListCard title={title}>
+            {isLoading ? (
+                <p className="text-sm text-muted-foreground">Cargando…</p>
+            ) : (
+                <ul className="max-h-72 space-y-0.5 overflow-y-auto text-sm">
+                    {(items ?? []).map((x) => (
+                        <li
+                            key={x.id}
+                            className="rounded-md px-2 py-1.5 text-foreground/90 odd:bg-muted/50 even:bg-transparent dark:odd:bg-muted/25"
+                        >
+                            {x.name}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </CpListCard>
     );
 
     return (

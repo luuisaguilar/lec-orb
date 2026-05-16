@@ -278,7 +278,7 @@ export default function HROrgChart() {
     const toastId = toast.loading(shouldSaveToSGC ? "Guardando en SGC..." : "Generando perfil de puesto...");
     
     try {
-      const { blob, fileName } = await generateJobProfilePDF(selectedNode);
+      const { blob } = await generateJobProfilePDF(selectedNode);
       
       if (shouldSaveToSGC) {
         const path = `profiles/${selectedNode.id}_${new Date().getTime()}.pdf`;

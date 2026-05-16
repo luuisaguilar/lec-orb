@@ -2,7 +2,7 @@
 title: "LEC Orb Wiki — índice temático"
 slug: wiki-index
 date: 2026-05-09
-updated: 2026-05-14
+updated: 2026-05-15
 tags: [wiki, moc, index, knowledge-map]
 status: active
 audience: [engineering]
@@ -48,11 +48,12 @@ Este documento agrupa el conocimiento del repo **por dominio de negocio y por de
 
 | Tema | Documentos |
 |------|------------|
+| Plan documentación backend (4 pasos) | [BACKEND_DOCUMENTATION_PLAN](../BACKEND_DOCUMENTATION_PLAN.md) |
+| Flujos backend E2E (F1–F7) | [BACKEND_FLOWS](../BACKEND_FLOWS.md) |
 | Módulos y APIs | [API_MODULES](../API_MODULES.md) |
 | Esquema de datos | [DATABASE_SCHEMA](../DATABASE_SCHEMA.md) |
 | RBAC / grupos | [RBAC_9_GROUPS_VALIDATION](../RBAC_9_GROUPS_VALIDATION.md) |
 | Modo demo | [DEMO_MODE](../DEMO_MODE.md) |
-| **Sidebar — jerarquía padre/hijo/subgrupos** | **[sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)** |
 
 **Índice de dependencias sugerido:** `module_registry` (Supabase) ↔ [API_MODULES](../API_MODULES.md) ↔ sidebar Next (`src/components/sidebar-nav.tsx`). Actualizar los tres cuando cambie categoría de un módulo.
 
@@ -66,20 +67,37 @@ Este documento agrupa el conocimiento del repo **por dominio de negocio y por de
 | Invitaciones / guías | [ONBOARDING_INVITACIONES_Y_GUIAS](../ONBOARDING_INVITACIONES_Y_GUIAS.md) | [ADR-001](../adr/ADR-001-invitation-rpc.md) |
 | **Contrato técnico POST invitaciones** | **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)** | — |
 
-Detalle de validación (Zod, sede, puesto, orden 400 vs 403), binding explícito de aplicadores (`applicator_id`), RPC `fn_accept_invitation` 3-step resolution: **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)**.
+Detalle de validación (Zod, sede, puesto, orden 400 vs 403): **[invitaciones-campos-y-api](./invitaciones-campos-y-api.md)**.
 
 ---
 
-## E. Project management (empresa), coordinación LEC y PM
+## E. Project management (empresa) y coordinación
 
 | Tema | Documentos | ADR |
 |------|------------|-----|
 | Módulo PM | [PROJECT_MANAGEMENT_MODULE](../PROJECT_MANAGEMENT_MODULE.md) | [ADR-007](../adr/ADR-007-project-management-module-foundation.md) |
 | Rutas PM | [PM_PATHS_AND_ROUTES](../PM_PATHS_AND_ROUTES.md) | |
 | Runbook PM | [PM_RUNBOOK](../PM_RUNBOOK.md) | |
-| **Coordinación proyectos LEC (indicadores / Excel)** | [COORDINACION_PROYECTOS_LEC.md](../COORDINACION_PROYECTOS_LEC.md), **[wiki coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md)** | — |
 
-**Rutas de aplicación (referencia rápida):** `/dashboard/proyectos-global/*`, `/dashboard/proyectos` — PM; bloque sidebar **`Coordinación de proyectos`** (hermano de Coordinación de Exámenes) → **`/dashboard/coordinacion-proyectos-lec/*`**.
+**Rutas de aplicación (referencia rápida):** `/dashboard/proyectos-global/*`, `/dashboard/proyectos` — detalle en [PM_PATHS_AND_ROUTES](../PM_PATHS_AND_ROUTES.md).
+
+---
+
+## E2. Cuatro coordinaciones LEC (sidebar, hub KPI, multisede)
+
+**Entrada canónica:** **[COORDINACIONES_LEC_ARQUITECTURA](../COORDINACIONES_LEC_ARQUITECTURA.md)** — visión de los cuatro ejes (Exámenes, Feria del Libro, Académica, Proyectos) e interconexión.
+
+| Tema | Wiki / docs |
+|------|-------------|
+| Auditoría sidebar + roadmap por fases | [auditoria-coordinaciones-sidebar](./auditoria-coordinaciones-sidebar.md) |
+| Hub concentrado (operación) | [coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md) |
+| Hub concentrado (técnico) | [COORDINACION_PROYECTOS_LEC](../COORDINACION_PROYECTOS_LEC.md) |
+| Checklist UI/API release | [coordinacion-proyectos-lec-auditoria-ui-runbook](./coordinacion-proyectos-lec-auditoria-ui-runbook.md) |
+| Sedes (BC) y aislamiento operador | [sedes-multisede-y-aislamiento-operativo](./sedes-multisede-y-aislamiento-operativo.md) |
+| Convenciones sidebar / padres | [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md) |
+| Sistema Uno, Feria label, Directorio | [sidebar-navegacion-y-sistema-uno](./sidebar-navegacion-y-sistema-uno.md) |
+
+**Dependencias:** `module_registry` ↔ `sidebar-nav.tsx` ↔ `lec_cp_departments` (departamentos ≠ categorías sidebar).
 
 ---
 
@@ -93,21 +111,18 @@ Detalle de validación (Zod, sede, puesto, orden 400 vs 403), binding explícito
 | Redirecciones legacy | `src/app/(dashboard)/dashboard/institucional/` → rutas nuevas |
 | Registro módulo documentos | `supabase/migrations/20260507_event_documents_module.sql` |
 | Categorías sidebar | `supabase/migrations/20260524_coordinacion_examenes_sidebar.sql` |
-| Navegación | `src/components/sidebar-nav.tsx` (jerarquía: [sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)) |
+| Navegación | `src/components/sidebar-nav.tsx` |
 
-**Enlaces de dominio relacionados:** [CAMBRIDGE_LOGISTICS_IMPORT_MATRIX](../CAMBRIDGE_LOGISTICS_IMPORT_MATRIX.md), [API_MODULES](../API_MODULES.md) (módulo `event-documents`), **[Coordinación proyectos LEC](./coordinacion-proyectos-lec.md)** (indicadores y exámenes comerciales en paralelo a eventos).
+**Enlaces de dominio relacionados:** [CAMBRIDGE_LOGISTICS_IMPORT_MATRIX](../CAMBRIDGE_LOGISTICS_IMPORT_MATRIX.md), [API_MODULES](../API_MODULES.md) (módulo `event-documents`).
 
 ---
 
-## G. Finanzas y CRM
+## G. Finanzas
 
 | Tema | Documentos |
 |------|------------|
 | Módulos financieros | [FINANCE_MODULES](../FINANCE_MODULES.md) |
 | Backlog Caja Chica | [LEC_Backlog_POA_CajaChica](../../LEC_Backlog_POA_CajaChica.md) |
-| **Consolidación nóminas + CRM** | **[consolidacion-nominas-y-crm](./consolidacion-nominas-y-crm.md)** |
-| CRM — backlog y fases | [CRM_BACKLOG](../CRM_BACKLOG.md) |
-| CRM — análisis y decisiones | [CRM_ANALYSIS](../CRM_ANALYSIS.md), [CRM_HANDOFF](../CRM_HANDOFF.md) |
 
 ---
 
@@ -173,10 +188,11 @@ Entrada: [executive-observability/README](../executive-observability/README.md).
 | Tema | Archivo |
 |------|---------|
 | Coordinación de exámenes + documentos de evento | [eventos-documentos-coordinacion](./eventos-documentos-coordinacion.md) |
-| Invitaciones — campos, API y binding de aplicadores | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
-| Consolidación nóminas + CRM (gotchas del schema) | [consolidacion-nominas-y-crm](./consolidacion-nominas-y-crm.md) |
-| **Coordinación proyectos LEC** (indicadores, exámenes, cursos, import) | **[coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md)** |
-| **Sidebar — padres, hijos, subgrupos y plantilla para el agente** | **[sidebar-modulos-y-agrupacion](./sidebar-modulos-y-agrupacion.md)** |
+| Invitaciones — campos y API | [invitaciones-campos-y-api](./invitaciones-campos-y-api.md) |
+| Arquitectura 4 coordinaciones | [COORDINACIONES_LEC_ARQUITECTURA](../COORDINACIONES_LEC_ARQUITECTURA.md) |
+| Auditoría sidebar coordinaciones | [auditoria-coordinaciones-sidebar](./auditoria-coordinaciones-sidebar.md) |
+| Sedes / Baja California / RLS | [sedes-multisede-y-aislamiento-operativo](./sedes-multisede-y-aislamiento-operativo.md) |
+| Coordinación proyectos LEC (operación) | [coordinacion-proyectos-lec](./coordinacion-proyectos-lec.md) |
 
 ---
 
@@ -191,9 +207,9 @@ LEC_ORB_MASTER_MAP ←→ API_MODULES ←→ DATABASE_SCHEMA
        ↓
 ONBOARDING + ADR-001 → invitations API → join flow
        ↓
-PM module (ADR-007) ↔ proyectos-global / proyectos
+COORDINACIONES_LEC_ARQUITECTURA → sidebar-nav / lec_cp_* / 4 ejes
        ↓
-Coordinación proyectos LEC (lec_*) ↔ eventos / escuelas / CRM / documentos
+PM module (ADR-007) ↔ proyectos-global / proyectos
        ↓
 SGC (ADR-005/006) — Finance — Executive observability (ADR-008)
 ```

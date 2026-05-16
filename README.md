@@ -43,6 +43,7 @@ The app is built with Next.js App Router and Supabase, with tenant isolation by 
 - CRM: Kanban pipeline, contacts, opportunities, activities (filter/complete/delete), paginated API
 - Portal (Applicators): dedicated portal with schedule, payroll, metrics; auto-link by email + `applicator_id` binding
 - SGC (Quality): non-conformities, audits, risk assessments, KPI tracking
+- **Coordinación proyectos LEC:** concentrado comercial (`lec_*`), API `/api/v1/coordinacion-proyectos/*`, UI `/dashboard/coordinacion-proyectos-lec/*` — docs: [`docs/COORDINACION_PROYECTOS_LEC.md`](docs/COORDINACION_PROYECTOS_LEC.md), auditoría/UI: [`docs/wiki/coordinacion-proyectos-lec-auditoria-ui-runbook.md`](docs/wiki/coordinacion-proyectos-lec-auditoria-ui-runbook.md)
 
 ## Project Management Module (In Progress)
 
